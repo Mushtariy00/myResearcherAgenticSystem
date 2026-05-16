@@ -1,0 +1,49 @@
+{
+  "topic": "transformer based models",
+  "generated_at": "2026-05-16T14:32:07Z",
+  "key_findings": [
+    {
+      "title": "A Review of Transformer-Based Models for Computer Vision Tasks: Capturing Global Context and Spatial Relationships",
+      "source": "Semantic Scholar (2024)",
+      "summary": "Provides a comprehensive overview of how vision transformers (ViT, Swin, DeiT, etc.) have displaced CNNs across classification, detection, and segmentation, highlighting architectural tweaks for hierarchical processing, token\u2011mixing strategies, and the role of large\u2011scale pre\u2011training on ImageNet\u201121k and downstream fine\u2011tuning. Discusses current limitations such as quadratic attention cost and emerging efficient variants (e.g., hierarchical attention, token pruning).",
+      "url": "https://www.semanticscholar.org/paper/c67e1825cdaa2e8875bf0de90fb918af246ba6e1"
+    },
+    {
+      "title": "Transformer-based models for chemical SMILES representation: A comprehensive literature review",
+      "source": "Semantic Scholar (2024)",
+      "summary": "Surveys the rapid adoption of BERT\u2011 and GPT\u2011style language models for molecular SMILES strings, covering pre\u2011training objectives (masked token prediction, next\u2011sentence\u2011like prediction), fine\u2011tuning for property prediction, reaction outcome prediction, and de\u2011novo molecule generation. Highlights the emergence of graph\u2011aware transformers (e.g., Graphormer) and multimodal models that combine SMILES with graph or 3\u2011D geometry.",
+      "url": "https://www.semanticscholar.org/paper/9cb5496e56d0ebb9f4e91d2685cec49db56f3198"
+    },
+    {
+      "title": "Outlier\u2011Efficient Hopfield Layers for Large Transformer\u2011Based Models",
+      "source": "Semantic Scholar (2024)",
+      "summary": "Introduces OutEffHop, a modern Hopfield memory that approximates an outlier\u2011efficient softmax attention, reducing kurtosis and extreme activation norms in very large language models. Demonstrates 22%+ reduction in activation outliers and up to 3% accuracy gain after post\u2011quantization on BERT, OPT, and ViT, positioning Hopfield\u2011based layers as a drop\u2011in replacement for standard attention in future ultra\u2011large models.",
+      "url": "https://www.semanticscholar.org/paper/faf7488da821133dbf34fe006676adfda4a764a0"
+    },
+    {
+      "title": "Transformer\u2011Based Models for Probabilistic Time Series Forecasting with Explanatory Variables",
+      "source": "Semantic Scholar (2025)",
+      "summary": "Benchmarks six transformer families (Vanilla, Informer, Autoformer, ETSformer, NSTransformer, Reformer) on the M5 retail dataset, showing that integrating calendar, price, and macro\u2011economic covariates reduces NRMSE by up to 12.4% and improves probabilistic calibration. Introduces a unified encoder that treats explanatory variables as parallel token streams, enabling joint learning of temporal dynamics and external drivers.",
+      "url": "https://www.semanticscholar.org/paper/c77e0afc74a210859e4e5c149ee0ac2fd2f201c8"
+    },
+    {
+      "title": "Comprehensive review of Transformer\u2011based models in neuroscience, neurology, and psychiatry",
+      "source": "Semantic Scholar (2024)",
+      "summary": "Analyzes how transformer architectures have been adapted for EEG, fMRI, and clinical text, covering domain\u2011specific tokenizations (e.g., spatial patches for fMRI, multi\u2011modal embeddings for EEG\u2011text), self\u2011supervised pre\u2011training on large neuroimaging repositories, and downstream tasks such as seizure detection, disease prognosis, and symptom severity scoring. Identifies reproducibility gaps and the need for privacy\u2011preserving federated pre\u2011training.",
+      "url": "https://www.semanticscholar.org/paper/0542f98f9a877e34e4bd10ae1a3fd13e4e5ef0cd"
+    },
+    {
+      "title": "Attention Is All You Need",
+      "source": "arXiv (2017)",
+      "summary": "The seminal paper that introduced the Transformer architecture, replacing recurrent networks with multi\u2011head self\u2011attention. Established the foundation for BERT, GPT, and the explosion of large\u2011scale pre\u2011trained models across NLP, vision, and multimodal domains.",
+      "url": "https://arxiv.org/abs/1706.03762"
+    },
+    {
+      "title": "Scaling Laws for Neural Language Models",
+      "source": "OpenAI (2020)",
+      "summary": "Empirically discovered power\u2011law relationships between model size, dataset size, compute, and performance. These scaling laws have guided the development of ever larger transformer models (GPT\u20113, PaLM, LLaMA) and are central to predicting future capabilities up to 2026.",
+      "url": "https://arxiv.org/abs/2001.08361"
+    }
+  ],
+  "synthesis": "Transformer\u2011based models have evolved from a single NLP architecture (Vaswani et al., 2017) to a universal backbone for virtually every modality. Recent literature (2024\u20132026) underscores four converging trends that define the state of the art:\n\n1. **Cross\u2011modal Generalization** \u2013 Vision transformers, graph\u2011aware transformers for chemistry, and multimodal EEG\u2011text models demonstrate that the self\u2011attention mechanism can capture long\u2011range dependencies in spatial, temporal, and relational data when paired with appropriate tokenization and positional encodings. The computer\u2011vision review (2024) and the neuroscience review (2024) both highlight hierarchical token strategies (patches, spatial tokens, or electrode\u2011time tokens) that mitigate the original quadratic cost while preserving global context.\n\n2. **Efficiency Innovations** \u2013 Quadratic attention remains a bottleneck for scaling. Outlier\u2011efficient Hopfield layers (2024) provide a mathematically grounded alternative that reduces activation outliers and improves post\u2011quantization robustness, positioning Hopfield memory as a scalable drop\u2011in for attention in trillion\u2011parameter models. Parallel efforts such as sparse attention, token pruning, and register\u2011based attention (e.g., VGGT-\u03a9, though not directly transformer) reflect a broader shift toward linear\u2011time approximations.\n\n3. **Integration of Explanatory Variables** \u2013 The time\u2011series forecast study (2025) illustrates a new paradigm where transformers ingest heterogeneous covariates as parallel token streams, achieving substantial gains in demand prediction. This approach is being replicated in domains like chemoinformatics (SMILES + molecular graphs) and clinical NLP, where structured metadata is crucial.\n\n4. **Scaling Laws and Predictive Roadmaps** \u2013 The 2020 scaling\u2011law work remains a cornerstone for planning future models. By 2026, we expect the community to routinely train models exceeding 1\u202ftillion parameters, guided by these laws, while relying on efficiency tricks (Hopfield layers, sparse attention) to keep compute and memory tractable.\n\n**Implications for 2026**\n- **Unified Pre\u2011training**: Large multimodal pre\u2011training datasets (text, image, video, graph, EEG) will produce foundation models that can be fine\u2011tuned for niche tasks such as molecular property prediction or clinical severity scoring with minimal data.\n- **Hardware\u2011Algorithm Co\u2011design**: Efficient attention kernels (e.g., OutEffHop) will be baked into next\u2011generation TPU/GPU architectures, enabling real\u2011time deployment of massive transformers in edge settings like medical devices.\n- **Benchmarking & Reproducibility**: Standardized benchmarks across vision, chemistry, and neuroscience (e.g., M5, OpenNeuro, MoleculeNet) are essential to compare architectures fairly; recent surveys call for open\u2011source pipelines and federated pre\u2011training to address data privacy.\n\nIn summary, transformer\u2011based models have transitioned from a niche NLP technique to a versatile, modality\u2011agnostic engine. The next few years will be defined by efficiency breakthroughs, richer multimodal tokenization, and the continued application of scaling laws to predict and guide the growth of ever larger, more capable models.\n"
+}
