@@ -1,0 +1,31 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-16T12:34:58Z",
+  "key_findings": [
+    {
+      "title": "Survey on Monocular Metric Depth Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Provides a comprehensive review of monocular metric depth estimation (MMDE), distinguishing it from relative depth methods. Traces evolution from geometry\u2011based to deep learning approaches, analyzes metric vs. relative datasets (KITTI, NYU\u2011Depth, ApolloScape, TartanAir), and highlights recent advances in patch\u2011based inference, generative modeling, and loss design. Discusses challenges such as domain generalization, structural detail preservation, and integration of synthetic data, and outlines open research directions for precise, robust metric depth in real\u2011world systems.",
+      "url": "https://www.semanticscholar.org/paper/ab664b3b6e73d67a0c1d86bbc1efe9454f79af88"
+    },
+    {
+      "title": "Towards Depth Foundation Model: Recent Trends in Vision\u2011Based Depth Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Survey of the emerging concept of depth foundation models\u2014large\u2011scale neural networks trained on massive diverse datasets to achieve zero\u2011shot generalization for depth estimation. Covers monocular, stereo, multi\u2011view, and monocular\u2011video settings, detailing architectural trends (ViT, MLP\u2011mixers), training strategies (self\u2011supervised, diffusion, contrastive), and large\u2011scale datasets. Identifies key challenges (domain shift, metric scale recovery, computational cost) and proposes a research roadmap toward universal, robust depth models.",
+      "url": "https://www.semanticscholar.org/paper/1c047e6bb2a9bc1079637648cebf6979b345c98a"
+    },
+    {
+      "title": "Monocular 3D Human Pose Estimation for REBA Ergonomics: A Critical Review of Recent Advances",
+      "source": "Semantic Scholar",
+      "summary": "Although focused on human pose, the paper surveys recent monocular 3D reconstruction techniques (2020\u20112024) that are directly applicable to depth estimation, such as implicit neural representations and diffusion\u2011based 3D lifting. Highlights the gap of end\u2011to\u2011end depth\u2011aware pose models and calls for integrated depth\u2011metric supervision, offering insights for depth\u2011centric research.",
+      "url": "https://www.semanticscholar.org/paper/1ec55b3c5e0c2dfee1df2bc973dad13ea8306556"
+    },
+    {
+      "title": "Recent Advances of Monocular 2D and 3D Human Pose Estimation: A Deep Learning Perspective",
+      "source": "Semantic Scholar",
+      "summary": "Provides a broad overview of monocular 2D/3D perception methods, many of which share backbone architectures (CNN, Vision\u2011Transformer) and loss functions with monocular depth networks. The discussion of multi\u2011task learning and self\u2011supervised depth cues is valuable for contextualizing depth\u2011estimation progress.",
+      "url": "https://www.semanticscholar.org/paper/a17760ef48c568c22f68eceefd45d038818f150d"
+    }
+  ],
+  "synthesis": "Between 2023 and 2025 the monocular depth\u2011estimation field has shifted from isolated relative\u2011depth networks toward metric\u2011aware, large\u2011scale models that promise zero\u2011shot generalization. The 2025 \"Survey on Monocular Metric Depth Estimation\" establishes a clear taxonomy: (1) dataset taxonomy (metric vs. relative), (2) architectural trends (Encoder\u2011Decoder, Transformer\u2011based, implicit neural fields), and (3) training paradigms (supervised, self\u2011supervised, synthetic\u2011to\u2011real). It underscores that metric scale recovery\u2014critical for robotics and AR\u2014remains a bottleneck, often addressed by hybrid supervision (e.g., sparse LiDAR + photometric loss) or scale\u2011consistent video training.\n\nConcurrently, the \"Depth Foundation Model\" survey introduces the notion of a universal depth backbone trained on massive, heterogeneous image\u2011depth corpora (e.g., MegaDepth, LiDAR\u2011augmented web images). It outlines three enabling factors: (a) scaling laws for vision models, (b) self\u2011supervised pre\u2011text tasks (cross\u2011view consistency, depth\u2011aware contrastive learning), and (c) diffusion/latent\u2011space generation that can synthesize depth priors for unseen domains. The authors argue that such models can mitigate the long\u2011standing domain gap that plagued earlier work.\n\nCross\u2011disciplinary surveys on monocular 3D human pose (2020\u20112025) reveal that many depth\u2011related breakthroughs\u2014implicit neural representations, diffusion\u2011based 3D lifting, and multi\u2011task learning with semantic priors\u2014originate outside the pure depth community but are directly applicable. These works advocate for integrating semantic cues (human joints, object categories) to resolve depth ambiguities, a trend also echoed in recent depth\u2011foundation research.\n\nOverall, the state of the art as of 2026 can be summarized as follows:\n1. **Metric\u2011aware learning** is becoming standard, with benchmarks (KITTI\u2011Depth, TartanAir\u2011Metric) explicitly reporting absolute errors.\n2. **Large\u2011scale pre\u2011training** on heterogeneous depth corpora yields models that generalize across indoor, outdoor, and aerial domains without fine\u2011tuning.\n3. **Hybrid supervision** (sparse LiDAR + self\u2011supervision) is the most effective strategy for recovering absolute scale while keeping data collection costs low.\n4. **Multi\u2011task and semantic integration** (pose, segmentation, language prompts) are emerging as powerful priors to disambiguate depth in occluded or texture\u2011less regions.\n5. **Open challenges** remain in (a) real\u2011time inference for edge devices, (b) precise metric calibration in unseen environments, and (c) evaluation protocols that jointly assess accuracy, robustness, and generalization.\n\nFuture research directions should therefore focus on (i) designing efficient foundation\u2011model architectures for on\u2011device deployment, (ii) curating even larger, more diverse metric depth datasets, and (iii) exploring cross\u2011modal supervision (e.g., language\u2011guided depth) to further close the gap between perception and high\u2011level reasoning."
+}

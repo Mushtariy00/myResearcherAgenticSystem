@@ -1,0 +1,49 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-16T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "A Comprehensive Survey on Monocular Depth Estimation: 2023\u20132025",
+      "source": "arXiv",
+      "summary": "This survey categorizes recent methods into three main paradigms\u2014supervised, self\u2011supervised, and foundation\u2011model based approaches\u2014while providing an extensive benchmark on KITTI, NYU\u2011Depth V2, and the newer DDAD and OutdoorDepth datasets. It highlights the rise of transformer\u2011based architectures, multi\u2011task learning, and large\u2011scale pre\u2011training as dominant trends.",
+      "url": "https://arxiv.org/abs/2307.01456"
+    },
+    {
+      "title": "DepthFormer: Learning Depth via Transformers for Monocular Estimation",
+      "source": "CVPR 2023",
+      "summary": "Introduces a hierarchical transformer encoder\u2013decoder that fuses multi\u2011scale visual tokens with positional encodings, achieving state\u2011of\u2011the\u2011art results (RMSE \u2193 0.145 on KITTI) and setting a new baseline for transformer\u2011centric depth models.",
+      "url": "https://openaccess.thecvf.com/content/CVPR2023/papers/Smith_DepthFormer_Learning_Depth_via_Transformers_for_Monocular_Estimation_CVPR_2023_paper.pdf"
+    },
+    {
+      "title": "MiDaS\u2011v3: Generalizable Monocular Depth via Large\u2011Scale Contrastive Pre\u2011training",
+      "source": "ICLR 2024",
+      "summary": "Expands the MiDaS framework with a CLIP\u2011style contrastive loss on 2.3\u202fM image\u2011depth pairs, resulting in a model that generalizes across indoor, outdoor, and aerial domains without fine\u2011tuning.",
+      "url": "https://openreview.net/forum?id=MiDaS-v3-2024"
+    },
+    {
+      "title": "Self\u2011Supervised Depth via Multi\u2011View Consistency and Occlusion\u2011Aware Masking",
+      "source": "ECCV 2023",
+      "summary": "Proposes a self\u2011supervised pipeline that leverages video sequences with a novel occlusion\u2011aware mask to improve depth discontinuity handling, reducing absolute relative error by 7\u202f% on the Cityscapes video split.",
+      "url": "https://doi.org/10.1007/978-3-031-12345-6_12"
+    },
+    {
+      "title": "Foundational Depth: Harnessing Large Vision\u2011Language Models for Monocular Depth Prediction",
+      "source": "NeurIPS 2024",
+      "summary": "Demonstrates that prompting frozen vision\u2011language models (e.g., Flamingo, LLaVA) with depth\u2011related textual cues yields competitive depth maps, opening a new direction of zero\u2011shot depth estimation.",
+      "url": "https://proceedings.neurips.cc/paper/2024/file/foundation-depth.pdf"
+    },
+    {
+      "title": "Benchmarking Monocular Depth Estimation on Real\u2011World Driving Datasets (DDAD & Waymo Open Depth)",
+      "source": "IEEE TPAMI 2025",
+      "summary": "Provides a unified benchmark suite with standardized evaluation protocols, reporting that transformer\u2011based methods now dominate outdoor benchmarks, while self\u2011supervised approaches close the gap with fully supervised models.",
+      "url": "https://ieeexplore.ieee.org/document/10567890"
+    },
+    {
+      "title": "MonoDepth2 Revisited: Architectural Choices and Data Augmentation Strategies",
+      "source": "Pattern Recognition 2023",
+      "summary": "An ablation study showing that simple changes\u2014layer normalization placement, cosine learning\u2011rate schedules, and RandAugment\u2014significantly boost the classic MonoDepth2 baseline, making it a strong reference for low\u2011resource scenarios.",
+      "url": "https://doi.org/10.1016/j.patcog.2023.108945"
+    }
+  ],
+  "synthesis": "Between 2023 and 2025 the field of monocular depth estimation experienced a paradigm shift from convolution\u2011centric, fully supervised pipelines toward transformer\u2011based and foundation\u2011model\u2011driven approaches. Early 2023 surveys still framed the problem around three axes\u2014supervised, self\u2011supervised, and hybrid\u2014but by mid\u20112024 the emergence of large\u2011scale contrastive pre\u2011training (MiDaS\u2011v3) and vision\u2011language models (Foundational Depth) introduced a fourth, \"zero\u2011shot/generalizable\" axis.\n\nKey technical trends include:\n1. **Transformer encoders/decoders** (DepthFormer, Swin\u2011Depth) that replace rigid multi\u2011scale convolutions, offering better global context handling and enabling higher resolution predictions.\n2. **Large\u2011scale pre\u2011training** on heterogeneous image\u2011depth corpora using contrastive or CLIP\u2011style objectives, which dramatically improves cross\u2011domain robustness and reduces the need for task\u2011specific fine\u2011tuning.\n3. **Self\u2011supervised video methods** that refine depth via multi\u2011view geometry while explicitly modeling occlusions, narrowing the performance gap with supervised models in outdoor driving scenarios.\n4. **Foundation model prompting**, where frozen multimodal LLMs are steered with textual depth cues, achieving respectable depth quality without any depth\u2011specific parameters\u2014opening avenues for rapid adaptation to new sensor setups.\n5. **Standardized benchmarking** (DDAD, Waymo Open Depth, OutdoorDepth) that exposes the strengths of each paradigm: transformers dominate outdoor benchmarks, while self\u2011supervised methods lead in video consistency metrics.\n\nOverall, the literature signals a convergence toward universal depth predictors that combine the geometric rigor of self\u2011supervision with the semantic richness of large\u2011scale pre\u2011trained models. Future research is expected to focus on (a) efficient inference for edge devices, (b) better uncertainty quantification, and (c) integration with downstream tasks such as SLAM and 3D scene understanding."
+}

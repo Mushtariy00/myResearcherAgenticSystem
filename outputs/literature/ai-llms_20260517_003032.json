@@ -1,0 +1,49 @@
+{
+  "topic": "AI LLMs",
+  "generated_at": "2026-05-16T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Bias is a Math Problem, AI Bias is a Technical Problem: 10-year Literature Review of AI/LLM Bias Research Reveals Narrow [Gender-Centric] Conceptions of 'Bias', and Academia-Industry Gap",
+      "source": "arXiv",
+      "summary": "A systematic review of 189 papers from ACL, FAccT, NeurIPS, and AAAI shows that most AI/LLM bias work lacks explicit definitions of bias, focuses heavily on gender (82%), and rarely provides deployment recommendations, highlighting a gap between academic findings and industry practice.",
+      "url": "https://arxiv.org/abs/2508.11067v1"
+    },
+    {
+      "title": "Pushing the Limits of LLMs in Quantum Operations",
+      "source": "arXiv",
+      "summary": "Benchmarks four publicly available LLMs (WolframLLM, ChatGPT, Gemini, DeepSeek) on generating quantum gate designs; Gemini is fastest, and all models produce usable quantum code ~80% of the time, indicating LLMs can become rapid collaborators for quantum computing workflows.",
+      "url": "https://arxiv.org/abs/2507.21327v1"
+    },
+    {
+      "title": "Conversational Agents and the Understanding of Human Language: Reflections on AI, LLMs, and Cognitive Science",
+      "source": "arXiv",
+      "summary": "Analyzes the relationship between NLP progress and cognitive science, concluding that despite impressive performance of modern LLMs, they have not substantially advanced scientific understanding of human language processing.",
+      "url": "https://arxiv.org/abs/2603.27809v1"
+    },
+    {
+      "title": "Behavioral Economics of AI: LLM Biases and Corrections",
+      "source": "arXiv",
+      "summary": "Extensive experiments reveal that larger, more advanced LLMs exhibit more human\u2011like decision patterns in preference tasks, while in belief\u2011based tasks they often produce rational responses; prompting strategies can further reduce systematic biases.",
+      "url": "https://arxiv.org/abs/2602.09362v1"
+    },
+    {
+      "title": "Who Controls the Conversation? User Perspectives On Generative AI (LLM) System Prompts",
+      "source": "arXiv",
+      "summary": "Explores user attitudes toward hidden system prompts that steer LLM behavior; users desire transparency, value\u2011aligned prompts, and more control, suggesting design guidelines for governance of LLM deployments.",
+      "url": "https://arxiv.org/abs/2603.00089v1"
+    },
+    {
+      "title": "How K-12 Educators Use AI: LLM-Assisted Qualitative Analysis at Scale",
+      "source": "arXiv",
+      "summary": "Introduces a reproducible pipeline that leverages LLMs to conduct large\u2011scale qualitative analysis of 13,000+ educator\u2011AI interactions, uncovering patterns in prompt strategies, adaptation, and evaluation of AI\u2011generated instructional content.",
+      "url": "https://arxiv.org/abs/2507.17985v3"
+    },
+    {
+      "title": "AIS-LLM: A Unified Framework for Maritime Trajectory Prediction, Anomaly Detection, and Collision Risk Assessment with Explainable Forecasting",
+      "source": "arXiv",
+      "summary": "Presents a multimodal architecture that combines time\u2011series AIS data with a large language model to jointly perform trajectory prediction, anomaly detection, and collision risk assessment, outperforming task\u2011specific baselines and offering explainable situation summaries.",
+      "url": "https://arxiv.org/abs/2508.07668v1"
+    }
+  ],
+  "synthesis": "The literature from 2024\u20112026 shows the field of AI LLMs moving beyond pure language modeling toward domain\u2011specific integration, governance, and societal impact. Recent surveys of bias research reveal a persistent narrow focus (mainly gender) and a lack of operational guidance, underscoring the need for broader fairness definitions and stronger academia\u2011industry pathways. Benchmarking studies such as the quantum\u2011operations paper demonstrate that LLMs are becoming practical co\u2011developers across highly technical domains, with performance differences now measured not only by accuracy but also by generation speed and code reliability.\n\nParallel work interrogates the epistemic limits of LLMs. The cognitive\u2011science reflection argues that despite scaling, LLMs still do not illuminate human language mechanisms, a point echoed by behavioral\u2011economics experiments that find LLMs mimic human biases in preference tasks while behaving more rationally in belief\u2011based contexts. Prompt engineering emerges as a critical lever: user\u2011centered studies on system prompts reveal demand for transparency and controllability, informing policy proposals for prompt disclosure and value alignment.\n\nApplication\u2011focused research highlights the versatility of LLMs. In education, novel pipelines enable large\u2011scale qualitative analysis of teacher\u2011AI dialogues, offering actionable insights for instructional design. In maritime traffic management, multimodal AIS\u2011LLM systems illustrate how LLMs can fuse structured sensor data with natural\u2011language reasoning to deliver unified prediction, anomaly detection, and risk assessment with explainable outputs.\n\nOverall, the trajectory points to three converging trends: (1) **Cross\u2011modal integration**\u2014LLMs are being embedded with non\u2011textual data streams (time\u2011series, code, sensor feeds) to solve domain\u2011specific problems; (2) **Governance and transparency**\u2014system prompts, bias definitions, and deployment guidelines are increasingly recognized as essential for trustworthy AI; and (3) **Human\u2011LLM alignment**\u2014research is moving toward methods that harness LLMs' human\u2011like decision patterns while correcting systematic biases through prompting and fine\u2011tuning. These developments, together with foundational works such as BERT (2018) and GPT\u20114 (2023), set the stage for the next generation of LLMs that are not only larger but also more controllable, multimodal, and socially responsible."
+}

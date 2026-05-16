@@ -5,7 +5,8 @@ description = "agentic-ai-system using crewAI"
 authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.10,<3.14"
 dependencies = [
-    "crewai[tools]==1.14.4"
+    "crewai[tools]==1.14.4",
+    "streamlit>=1.40,<2.0"
 ]
 
 [project.scripts]
@@ -16,6 +17,7 @@ replay = "agentic_ai_system.main:replay"
 test = "agentic_ai_system.main:test"
 run_with_trigger = "agentic_ai_system.main:run_with_trigger"
 run_flow = "agentic_ai_system.main:run_flow"
+run_ui = "agentic_ai_system.run_ui:main"
 
 [build-system]
 requires = ["hatchling"]

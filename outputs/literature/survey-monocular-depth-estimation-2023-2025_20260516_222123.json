@@ -1,0 +1,55 @@
+{
+  "topic": "Survey of Monocular Depth Estimation (2023\u20112026)",
+  "generated_at": "2026-05-16T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Monocular Depth Estimation: A Survey",
+      "source": "Semantic Scholar (2023)",
+      "summary": "Comprehensive overview of traditional vs. deep\u2011learning approaches, covering supervised, self\u2011supervised, and semi\u2011supervised paradigms, benchmark datasets, metrics, challenges and future directions.",
+      "url": "https://www.semanticscholar.org/paper/4c8f65922158e31ec67825f535fb77db9298fe7c"
+    },
+    {
+      "title": "How Attention Boosts Monocular Depth Estimation: A Survey",
+      "source": "Semantic Scholar (2023)",
+      "summary": "Focuses on the impact of attention mechanisms (self\u2011attention, cross\u2011attention, transformer encoders) on depth prediction accuracy, efficiency, and ability to capture long\u2011range context.",
+      "url": "https://www.semanticscholar.org/paper/4ab460ab090a01d3be14741721f945d5db3f6224"
+    },
+    {
+      "title": "Survey on unsupervised monocular depth estimation in dynamic scenes based on deep learning",
+      "source": "Semantic Scholar (2023)",
+      "summary": "Analyzes unsupervised/self\u2011supervised methods that handle moving objects and dynamic illumination, discusses motion segmentation, optical\u2011flow integration, and robustness to real\u2011world driving scenarios.",
+      "url": "https://www.semanticscholar.org/paper/472fddb1d16637e4baa0872a7abefb7d657a05f5"
+    },
+    {
+      "title": "Review of monocular depth estimation methods",
+      "source": "Semantic Scholar (2025)",
+      "summary": "Covers both classic geometry\u2011based pipelines and modern deep neural networks, evaluates metric vs. relative depth, and outlines open problems such as domain shift and real\u2011time deployment.",
+      "url": "https://www.semanticscholar.org/paper/727d9e59259a3245a552c757e7615df1fd084874"
+    },
+    {
+      "title": "Survey on Monocular Metric Depth Estimation",
+      "source": "Semantic Scholar (2025)",
+      "summary": "Dedicated to absolute\u2011scale depth prediction, discusses dataset requirements, scale\u2011consistent loss designs, multi\u2011task learning (e.g., depth\u202f+\u202fpose), and applications in SLAM and AR.",
+      "url": "https://www.semanticscholar.org/paper/ab664b3b6e73d67a0c1d86bbc1efe9454f79af88"
+    },
+    {
+      "title": "A Survey of the State of the Art in Monocular 3D Human Pose Estimation: Methods, Benchmarks, and Challenges",
+      "source": "Semantic Scholar (2025)",
+      "summary": "While centered on human pose, the paper provides a valuable discussion of depth ambiguity in single\u2011view settings and surveys diffusion and state\u2011space models that are increasingly adopted for depth\u2011aware pose estimation.",
+      "url": "https://www.semanticscholar.org/paper/be11a82813952b2642d3253b0b3b936ea61eea84"
+    },
+    {
+      "title": "A Survey of Self\u2011Supervised Monocular Depth Estimation Based on Deep Neural Networks",
+      "source": "Semantic Scholar (2025)",
+      "summary": "Classifies 89 self\u2011supervised works, reviews photometric, reprojection, and semantic consistency losses, and highlights emerging trends such as multi\u2011modal self\u2011supervision and video\u2011level training.",
+      "url": "https://www.semanticscholar.org/paper/a8781b1e1b4c24a600bceca7557768aeea75f20c"
+    },
+    {
+      "title": "Towards Depth Foundation Model: Recent Trends in Vision\u2011Based Depth Estimation",
+      "source": "Semantic Scholar (2025)",
+      "summary": "Proposes the concept of a depth foundation model trained on massive multi\u2011domain data, surveys scaling laws, large\u2011scale architecture (ViT\u2011G, Swin\u2011V2), and zero\u2011shot generalization across monocular, stereo, and video settings.",
+      "url": "https://www.semanticscholar.org/paper/1c047e6bb2a9bc1079637648cebf6979b345c98a"
+    }
+  ],
+  "synthesis": "The period 2023\u20112026 marks a consolidation and rapid expansion of monocular depth estimation research. Early 2023 surveys laid out the classic taxonomy (traditional geometry vs. deep learning) and highlighted the emergence of attention\u2011based transformers. By 2023\u20112024, the community shifted toward self\u2011supervised and unsupervised learning to bypass costly depth sensors, with a strong emphasis on handling dynamic scenes (moving objects, varying illumination) through motion segmentation and video\u2011level photometric constraints. \n\nMetric depth estimation gained prominence as applications (AR/VR, robotics, SLAM) demanded absolute scale; dedicated surveys in 2025 dissected scale\u2011consistent loss functions, multi\u2011task frameworks (depth+pose+semantic), and the role of high\u2011quality metric datasets (KITTI, NYU\u2011Depth v2, TartanAir, ApolloScape). Concurrently, attention mechanisms\u2014originally popular in NLP\u2014became a core component of state\u2011of\u2011the\u2011art models, improving long\u2011range context capture and enabling high\u2011resolution predictions with less memory via hierarchical transformers.\n\nA noteworthy trend is the inception of \"depth foundation models\" (2025). Inspired by large language and vision models, researchers are training massive vision transformers on billions of images paired with sparse depth, synthetic data, or multi\u2011view geometry, achieving zero\u2011shot generalization to unseen domains and sensor configurations. This direction promises to alleviate the domain\u2011gap problem that has long plagued monocular depth methods.\n\nAcross all surveys, several recurring challenges are identified: (1) domain shift between indoor/outdoor or synthetic/real data; (2) preserving fine\u2011grained structural details while maintaining real\u2011time inference; (3) robust depth estimation under dynamic motion; and (4) reliable metric scaling without external sensors. Proposed solutions include domain\u2011adaptive training (style\u2011transfer, test\u2011time adaptation), hybrid CNN\u2011Transformer backbones, diffusion\u2011based depth refinement, and integration of semantic priors from large\u2011scale vision\u2011language models.\n\nIn summary, the 2023\u20112026 literature illustrates a clear trajectory: from supervised, relatively shallow CNNs toward self\u2011supervised, transformer\u2011centric, and foundation\u2011model approaches that aim for universal, metric\u2011accurate depth prediction usable across robotics, autonomous driving, and immersive media. Future work is expected to converge on large\u2011scale pre\u2011training, multimodal self\u2011supervision, and real\u2011time deployment on edge devices, closing the gap between research prototypes and production systems."
+}
