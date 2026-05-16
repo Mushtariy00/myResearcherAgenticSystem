@@ -1,0 +1,37 @@
+{
+  "topic": "Monocular Depth Estimation (Survey 2023\u20112025)",
+  "generated_at": "2026-05-16T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Monocular Depth Estimation: A Survey",
+      "source": "Semantic Scholar",
+      "summary": "Comprehensive review of traditional and deep\u2011learning approaches up to 2023. Covers supervised, self\u2011supervised and semi\u2011supervised paradigms, benchmark datasets (KITTI, NYU\u2011Depth, Make3D, etc.), evaluation metrics, and discusses open challenges such as domain shift, handling non\u2011Lambertian surfaces and real\u2011time deployment.",
+      "url": "https://www.semanticscholar.org/paper/4c8f65922158e31ec67825f535fb77db9298fe7c"
+    },
+    {
+      "title": "SPIdepth: Strengthened Pose Information for Self\u2011Supervised Monocular Depth Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Introduces a larger, pretrained PoseNet to stabilize motion estimation in self\u2011supervised training. Achieves state\u2011of\u2011the\u2011art results on KITTI (AbsRel\u00a00.029) and wins the NTIRE\u00a02025 HR Mono Depth Challenge, demonstrating improved robustness on transparent and mirror surfaces.",
+      "url": "https://www.semanticscholar.org/paper/847f96f8b935fe161af453063845854481d4d5b5"
+    },
+    {
+      "title": "SoccerNet\u00a02025 Challenges Results \u2013 Monocular Depth Estimation Track",
+      "source": "Semantic Scholar",
+      "summary": "Provides a large\u2011scale, sport\u2011broadcast benchmark for relative depth from single\u2011camera video. Highlights the gap between academic benchmarks (KITTI, NYU) and real\u2011world broadcast data, and shows that transformer\u2011based architectures with multi\u2011scale attention achieve the best scores.",
+      "url": "https://www.semanticscholar.org/paper/594df4df273f1eef21fa3978a4e8fbf76f3f6fff"
+    },
+    {
+      "title": "Multi\u2011task learning with cross\u2011task consistency for improved depth estimation in colonoscopy",
+      "source": "Semantic Scholar",
+      "summary": "Applies monocular depth estimation to medical endoscopy. Uses a shared encoder with surface\u2011normal and depth decoders plus a cross\u2011task consistency loss, yielding ~15\u202f% relative error reduction over the BTS baseline on the C3VD dataset. Shows the benefit of auxiliary geometric tasks in low\u2011texture domains.",
+      "url": "https://www.semanticscholar.org/paper/79fa42f7befddf42b740c66f099a0de1f7eef1db"
+    },
+    {
+      "title": "A Survey on Deep 3D Human Pose Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Although focused on pose, this 2024 survey dedicates a substantial section to depth\u2011ambiguity solutions in monocular setups, including depth\u2011aware pose lifting and diffusion models. It is frequently cited by recent depth\u2011estimation works for its analysis of geometric priors.",
+      "url": "https://www.semanticscholar.org/paper/54df29e9339f34fcc3d1f86ef70b07438addfabf"
+    }
+  ],
+  "synthesis": "The period 2023\u20112025 has witnessed rapid convergence of three trends in monocular depth estimation. First, self\u2011supervised learning has become the dominant paradigm, moving away from expensive dense LiDAR supervision. Works such as SPIdepth demonstrate that the often\u2011overlooked pose estimation component is a critical bottleneck; strengthening it with pretrained representations yields large gains and improves robustness on challenging surfaces (transparent, reflective). Second, the community is expanding the domain of application. Beyond autonomous\u2011driving benchmarks (KITTI, Cityscapes), new challenges like SoccerNet\u00a02025 and medical colonoscopy introduce diverse lighting, motion, and texture conditions, exposing the limits of existing models and spurring multi\u2011task and transformer\u2011based designs. Third, survey literature has matured, with the 2023 \"Monocular Depth Estimation: A Survey\" providing a solid taxonomy of supervised/self\u2011supervised methods and outlining open problems (domain adaptation, real\u2011time inference, uncertainty). The 2024 pose\u2011estimation survey further contextualizes depth ambiguity solutions, encouraging cross\u2011disciplinary ideas such as diffusion priors and large\u2011language\u2011model\u2011derived semantic cues. Collectively, these developments point to a future where monocular depth estimation will be (a) more physically grounded through better pose and surface normal supervision, (b) more generalizable across domains via multi\u2011task consistency and large\u2011scale pretraining, and (c) evaluated on increasingly realistic, task\u2011specific benchmarks."
+}

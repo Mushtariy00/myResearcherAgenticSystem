@@ -45,6 +45,12 @@ To run the CLI-first supervisor flow with approval checkpoints:
 $ run_flow "Survey monocular depth estimation 2023-2025"
 ```
 
+To run the Streamlit UI:
+
+```bash
+$ run_ui
+```
+
 The current default model is configured as `openai/gpt-oss-120b:free` (set via `MODEL` / agent `llm` config).
 Literature outputs from the supervisor flow are persisted to `outputs/literature/*.json`.
 Flow run metadata, stage events, and approvals are persisted to `outputs/flow_runs.db`.

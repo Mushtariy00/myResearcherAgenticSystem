@@ -1,0 +1,37 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-16T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Review of monocular depth estimation methods",
+      "source": "Semantic Scholar",
+      "summary": "Comprehensive overview of traditional and deep\u2011learning based monocular depth estimation up to 2025, covering handcrafted features, geometry\u2011based techniques and the shift toward CNN/transformer models. Highlights remaining limitations such as scale ambiguity and generalization across domains.",
+      "url": "https://www.semanticscholar.org/paper/727d9e59259a3245a552c757e7615df1fd084874"
+    },
+    {
+      "title": "Survey on Monocular Metric Depth Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Focuses on metric (absolute\u2011scale) depth estimation, tracing the evolution from geometry\u2011based formulations to modern self\u2011supervised and supervised deep networks. Discusses benchmark datasets (KITTI, NYU\u2011Depth, TartanAir), architectural trends (encoder\u2011decoder, transformer, diffusion), and open challenges like domain adaptation and uncertainty quantification.",
+      "url": "https://www.semanticscholar.org/paper/ab664b3b6e73d67a0c1d86bbc1efe9454f79af88"
+    },
+    {
+      "title": "A Survey of the State of the Art in Monocular 3D Human Pose Estimation: Methods, Benchmarks, and Challenges",
+      "source": "Semantic Scholar",
+      "summary": "Although centered on 3D human pose, this survey dedicates a substantial section to recent monocular depth cues, especially diffusion\u2011based and state\u2011space models that alleviate depth ambiguity. It provides a useful cross\u2011reference for depth\u2011aware pose pipelines introduced after 2023.",
+      "url": "https://www.semanticscholar.org/paper/be11a82813952b2642d3253b0b3b936ea61eea84"
+    },
+    {
+      "title": "A Survey on Self\u2011Supervised Monocular Depth Estimation Based on Deep Neural Networks",
+      "source": "Semantic Scholar",
+      "summary": "Covers 89 self\u2011supervised methods (2020\u20112025), categorising them by photometric loss design, pose net architecture, and handling of dynamic scenes. Highlights the rise of multi\u2011frame transformers, robust masking strategies, and hybrid supervised\u2011self\u2011supervised training that improve performance on outdoor benchmarks.",
+      "url": "https://www.semanticscholar.org/paper/a8781b1e1b4c24a600bceca7557768aeea75f20c"
+    },
+    {
+      "title": "Monocular Depth Estimation: A Survey",
+      "source": "Semantic Scholar",
+      "summary": "Broad 2023 survey that organises methods into supervised, self\u2011supervised, and semi\u2011supervised groups, and analyses datasets, metrics, and emerging challenges such as real\u2011time inference for edge devices and integration with SLAM systems.",
+      "url": "https://www.semanticscholar.org/paper/4c8f65922158e31ec67825f535fb77db9298fe7c"
+    }
+  ],
+  "synthesis": "From 2023 to 2025 the monocular depth estimation literature has matured from a fragmented collection of supervised CNNs to a cohesive ecosystem that blends self\u2011supervision, transformer architectures, and diffusion models. Early surveys (e.g., the 2023 \"Monocular Depth Estimation: A Survey\") laid out the basic taxonomy and identified the need for metric depth and real\u2011time deployment. Subsequent works (2024\u20112025) expanded this foundation in three major directions:\n1. **Metric Depth Estimation** \u2013 The 2025 \"Survey on Monocular Metric Depth Estimation\" emphasises absolute scale recovery, crucial for robotics and AR. It documents the rise of depth\u2011scale alignment modules, multi\u2011task learning with surface normals, and the use of synthetic\u2011real domain bridges.\n2. **Self\u2011Supervised Learning** \u2013 The dedicated 2025 self\u2011supervised survey catalogs 89 methods, noting a shift from simple photometric losses to more robust multi\u2011frame transformer encoders, dynamic\u2011scene masking, and hybrid losses that combine geometry with learned priors. This trend has driven performance on KITTI and DDAD to approach fully supervised baselines while eliminating the need for dense LiDAR labels.\n3. **Advanced Architectures & Diffusion** \u2013 Recent cross\u2011domain surveys (e.g., the 3D human pose paper) highlight diffusion\u2011based depth generators and state\u2011space models that explicitly model uncertainty and temporal coherence. These techniques address long\u2011standing depth\u2011ambiguity issues and enable high\u2011fidelity detail preservation.\nAcross all surveys, common challenges persist: generalisation to unseen environments, handling dynamic objects, and achieving low\u2011latency inference on edge hardware. Benchmark analyses show that transformer\u2011based backbones (ViT\u2011B/16, Swin) and lightweight CNN\u2011Transformer hybrids now dominate leaderboards, while metric\u2011scale consistency is increasingly evaluated via absolute\u2011relative error (Abs Rel) and scale\u2011invariant metrics. The literature collectively points toward unified frameworks that jointly predict depth, pose, and semantics in a self\u2011supervised manner, paving the way for robust, metric\u2011accurate depth perception in autonomous systems by 2026."
+}

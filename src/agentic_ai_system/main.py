@@ -1,25 +1,14 @@
 #!/usr/bin/env python
-import os
 import sys
 import warnings
 
 from datetime import datetime
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Route OpenAI-compatible calls through OpenRouter when only OPENROUTER_API_KEY is set.
-if os.getenv("OPENROUTER_API_KEY") and not os.getenv("OPENAI_API_KEY"):
-    os.environ["OPENAI_API_KEY"] = os.environ["OPENROUTER_API_KEY"]
-
-if not os.getenv("OPENAI_API_BASE"):
-    os.environ["OPENAI_API_BASE"] = "https://openrouter.ai/api/v1"
-
-if not os.getenv("OPENAI_BASE_URL"):
-    os.environ["OPENAI_BASE_URL"] = "https://openrouter.ai/api/v1"
 
 from agentic_ai_system.crew import AgenticAiSystem
+from agentic_ai_system.env_setup import configure_runtime_env
 from agentic_ai_system.supervisor_flow import CheckpointRejected, ResearchSupervisorFlow
+
+configure_runtime_env()
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
