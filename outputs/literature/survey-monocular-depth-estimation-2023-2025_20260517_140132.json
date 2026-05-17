@@ -1,0 +1,37 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-17T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Recent Advances of Monocular 2D and 3D Human Pose Estimation: A Deep Learning Perspective",
+      "source": "Semantic Scholar",
+      "summary": "Estimation of the human pose from a monocular camera has been an emerging research topic in the computer vision community with many applications. Recently, benefiting from the deep learning technologies, a significant amount of research efforts have advanced the monocular human pose estimation both in 2D and 3D areas. Although there have been some works to summarize different approaches, it still remains challenging for researchers to have an in-depth view of how these approaches work from 2D to 3D. In this article, we provide a comprehensive and holistic 2D-to-3D perspective to tackle this problem. First, we comprehensively summarize the 2D and 3D representations of human body. Then, we sum",
+      "url": "https://www.semanticscholar.org/paper/a17760ef48c568c22f68eceefd45d038818f150d"
+    },
+    {
+      "title": "A survey on monocular 3D human pose estimation",
+      "source": "Semantic Scholar",
+      "summary": "Recovering human pose from an RGB image or a video has drawn increasing attention in recent years due to its minimum sensor requirements and broad applicability in diverse fields, e.g., human-computer interaction, robotics, video analytics and augmented reality. Although a large amount of work has been devoted to this field, 3D human pose estimation based on monocular images or videos remains a very challenging task due to a variety of difficulties such as depth ambiguities, occlusion, background clutters and lack of training data. In this survey, we will summarize recent advances in monocular 3D human pose estimation, discuss capabilities and limitations of different approaches, present a s",
+      "url": "https://www.semanticscholar.org/paper/0c30ec75c022511f33e0531aabdf7b00f9b2f86f"
+    },
+    {
+      "title": "Monocular 3D Human Pose Estimation for REBA Ergonomics: A Critical Review of Recent Advances",
+      "source": "Semantic Scholar",
+      "summary": ": Advancements in deep learning have considerably enhanced techniques for Rapid Entire Body Assessment (REBA) pose estimation by leveraging progress in three-dimensional human modeling. This survey provides an extensive overview of recent advancements, particularly emphasizing monocular image-based methodologies and their incorporation into ergonomic risk assessment frameworks. By reviewing literature from 2016 to 2024, this study offers a current and comprehensive analysis of techniques, existing challenges, and emerging trends in three-dimensional human pose estimation. In contrast to traditional reviews organized by learning paradigms, this survey examines how three-dimensional pose estim",
+      "url": "https://www.semanticscholar.org/paper/1ec55b3c5e0c2dfee1df2bc973dad13ea8306556"
+    },
+    {
+      "title": "Towards Depth Foundation Model: Recent Trends in Vision-Based Depth Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Depth estimation is a fundamental task in 3D computer vision, crucial for applications such as 3D reconstruction, free-viewpoint rendering, robotics, autonomous driving, and AR/VR technologies. Traditional methods relying on hardware sensors like LiDAR are often limited by high costs, low resolution, and environmental sensitivity, limiting their applicability in real-world scenarios. Recent advances in vision-based methods offer a promising alternative, yet they face challenges in generalization and stability due to either the low-capacity model architectures or the reliance on domain-specific and small-scale datasets. The emergence of scaling laws and foundation models in other domains has ",
+      "url": "https://www.semanticscholar.org/paper/1c047e6bb2a9bc1079637648cebf6979b345c98a"
+    },
+    {
+      "title": "Survey on Monocular Metric Depth Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Monocular metric depth estimation (MMDE) aims to generate depth maps with an absolute metric scale from a single RGB image, which enables accurate spatial understanding, 3D reconstruction, and autonomous navigation. Unlike conventional monocular depth estimation that predicts only relative depth, MMDE maintains geometric consistency across frames and supports reliable integration with visual SLAM, high-precision 3D modeling, and novel view synthesis. This survey provides a comprehensive review of MMDE, tracing its evolution from geometry-based formulations to modern learning-based frameworks. The discussion emphasizes the importance of datasets, distinguishing metric datasets that supply abs",
+      "url": "https://www.semanticscholar.org/paper/ab664b3b6e73d67a0c1d86bbc1efe9454f79af88"
+    }
+  ],
+  "synthesis": "The supplied analyses contain no textual excerpts, summaries, or identified findings from any papers covering monocular depth estimation between 2023 and 2025. Consequently, no concrete evidence can be extracted regarding prevailing methodologies, benchmark performances, or emerging research directions within this period. The absence of content itself highlights a critical gap: existing literature surveys or overviews that could inform a comprehensive synthesis are either unavailable in the provided dataset or have not been shared for analysis. To advance a meaningful survey, future work must first gather and preprocess the full texts of recent monocular depth estimation studies, ensuring that essential details\u2014such as model architectures (e.g., transformer\u2011based encoders, self\u2011supervised training regimes), dataset variations, and evaluation metrics\u2014are captured. Only with this foundational corpus can researchers identify trends, compare approaches, and pinpoint substantive research gaps, such as limited generalization across domains, real\u2011time inference constraints, and the integration of multimodal cues. Until such evidence is acquired, a substantive literature synthesis remains unattainable."
+}

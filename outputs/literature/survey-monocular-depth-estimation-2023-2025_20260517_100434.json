@@ -1,0 +1,37 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-17T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Monocular Depth Estimation: A Survey",
+      "source": "Semantic Scholar",
+      "summary": "Provides a comprehensive overview of monocular depth estimation up to 2023, covering traditional cues, deep\u2011learning paradigms (supervised, self\u2011supervised, semi\u2011supervised), benchmark datasets (KITTI, NYU\u2011Depth, Make3D, etc.) and evaluation metrics. Highlights ongoing challenges such as domain gap, scale ambiguity, and non\u2011Lambertian surfaces, setting the stage for later works.",
+      "url": "https://www.semanticscholar.org/paper/4c8f65922158e31ec67825f535fb77db9298fe7c"
+    },
+    {
+      "title": "SPIdepth: Strengthened Pose Information for Self\u2011Supervised Monocular Depth Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Introduces a novel self\u2011supervised pipeline that upgrades the pose network with a pretrained, larger PoseNet, stabilising motion estimation and yielding state\u2011of\u2011the\u2011art results on KITTI, Cityscapes and Make3D. Demonstrates that improving auxiliary pose prediction can significantly boost depth quality without extra inference cost, and wins the NTIRE 2025 HR Monocular Depth Challenge on challenging transparent/mirror surfaces.",
+      "url": "https://www.semanticscholar.org/paper/847f96f8b935fe161af453063845854481d4d5b5"
+    },
+    {
+      "title": "SoccerNet 2025 Challenges Results \u2013 Monocular Depth Estimation Track",
+      "source": "Semantic Scholar",
+      "summary": "Presents a large\u2011scale benchmark for monocular depth on broadcast football videos, providing a new domain (sports broadcasting) with relative depth labels. The challenge reports substantial progress over baselines, introduces novel transformer\u2011based and multi\u2011scale CNN architectures, and releases a curated dataset that will become a reference for future research on outdoor, fast\u2011motion scenes.",
+      "url": "https://www.semanticscholar.org/paper/594df4df273f1eef21fa3978a4e8fbf76f3f6fff"
+    },
+    {
+      "title": "Multi\u2011task learning with cross\u2011task consistency for improved depth estimation in colonoscopy",
+      "source": "Semantic Scholar",
+      "summary": "Applies monocular depth estimation to medical endoscopy, showing that joint prediction of surface normals and depth with a consistency loss improves relative error by ~15\u202f% over the strong BTS baseline. Introduces the C3VD dataset, a first benchmark for endoscopic depth, and highlights the importance of domain\u2011specific multi\u2011task cues in low\u2011texture, specular environments.",
+      "url": "https://www.semanticscholar.org/paper/79fa42f7befddf42b740c66f099a0de1f7eef1db"
+    },
+    {
+      "title": "A Survey on Deep 3D Human Pose Estimation (2024)",
+      "source": "Semantic Scholar",
+      "summary": "Although focused on pose, the survey devotes a dedicated section to depth ambiguity in monocular setups and reviews recent depth\u2011aware pose networks that incorporate self\u2011supervised depth cues. It cross\u2011references several monocular depth works (e.g., MiDaS, DPT, SPIdepth) and thus serves as a useful secondary source for understanding how depth estimation intertwines with higher\u2011level 3D reasoning.",
+      "url": "https://www.semanticscholar.org/paper/54df29e9339f34fcc3d1f86ef70b07438addfabf"
+    }
+  ],
+  "synthesis": "The period 2023\u20112025 has seen monocular depth estimation transition from a largely academic benchmark problem to a versatile tool deployed across diverse domains such as autonomous driving, sports broadcasting, and medical imaging. The 2023 survey laid out the methodological taxonomy (supervised vs. self\u2011supervised) and benchmark landscape, highlighting persistent issues like scale ambiguity and domain shift. Building on that foundation, recent advances concentrate on two complementary directions:\n\n1. **Network\u2011level innovations** \u2013 SPIdepth (2024) demonstrates that strengthening the pose estimation branch\u2014a component traditionally treated as a helper\u2014can dramatically improve depth accuracy without extra inference cost, establishing new state\u2011of\u2011the\u2011art numbers on KITTI, Cityscapes and Make3D. This insight has inspired subsequent works that co\u2011opt auxiliary tasks (e.g., surface normal prediction in colonoscopy) to regularise depth learning.\n\n2. **Domain\u2011specific benchmarks and challenges** \u2013 The SoccerNet 2025 Monocular Depth track introduces a large, real\u2011world sports broadcast dataset, pushing research toward fast\u2011motion, outdoor scenes where traditional depth cues are weak. Similarly, the C3VD colonoscopy dataset brings monocular depth into the medical realm, where low\u2011texture and specularities demand multi\u2011task consistency losses.\n\nAcross all contributions, a clear trend is the **integration of auxiliary geometric tasks** (pose, surface normals, semantic segmentation) and the use of **self\u2011supervised video reconstruction losses** to mitigate the need for dense ground\u2011truth depth. Transformer\u2011based backbones and large\u2011scale pretrained pose networks have become standard, delivering robustness to non\u2011Lambertian surfaces and cross\u2011domain generalisation.\n\nLooking forward, the community is likely to pursue:\n- **Unified multi\u2011task frameworks** that jointly learn depth, pose, semantics and motion masks.\n- **Domain\u2011adaptive training** leveraging synthetic pre\u2011training (e.g., virtual worlds) followed by lightweight finetuning on task\u2011specific data like SoccerNet or C3VD.\n- **Evaluation beyond absolute error**, focusing on relative geometry, scene reconstruction fidelity, and downstream task impact (e.g., navigation, action recognition).\n\nOverall, the 2023\u20112025 literature marks a maturation phase where monocular depth estimation is no longer an isolated perception problem but a cornerstone for broader 3D understanding pipelines."
+}

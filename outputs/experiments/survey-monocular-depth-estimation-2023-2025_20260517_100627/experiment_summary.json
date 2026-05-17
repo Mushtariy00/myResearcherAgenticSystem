@@ -1,0 +1,64 @@
+{
+  "goal": "Demonstrate that lightweight adapter modules trained via MAML can close the domain gap for monocular depth estimation when adapting a KITTI\u2011trained transformer encoder to a new broadcast\u2011video domain (SoccerNet) while preserving performance on the source dataset.",
+  "config": {
+    "docker_image": "pytorch/pytorch:2.3-cuda12.1",
+    "gpu_devices": "1",
+    "max_gpu_memory_gb": "10",
+    "max_host_ram_gb": "4",
+    "datasets": {
+      "source": "/data/kitti",
+      "target": "/data/soccer"
+    },
+    "baseline_training": {
+      "model": "Monodepth2\u2011ViT",
+      "epochs": 5,
+      "batch_size": 8,
+      "learning_rate": 0.0001
+    },
+    "adapter": {
+      "type": "bottleneck_linear",
+      "insertion_point": "after_every_transformer_block",
+      "init": "random"
+    },
+    "meta_learning": {
+      "inner_steps_per_task": 5,
+      "inner_lr": 0.001,
+      "outer_lr": 0.0005,
+      "meta_epochs": 2,
+      "inner_batch_size": 4,
+      "validation_batch_size": 8,
+      "loss_weights": {
+        "photometric": 1.0,
+        "scale_consistency": 0.1
+      }
+    },
+    "evaluation": {
+      "kitti_metrics_batch": "val",
+      "soccer_metrics_batch": "test",
+      "scale_consistency_tolerance_pct": 5
+    },
+    "ablation": {
+      "no_adapter": true,
+      "inner_only": true
+    },
+    "runtime_budget_minutes": 180
+  },
+  "metrics": {
+    "sandbox_created_files": 10.0,
+    "sandbox_validated_python_files": 6.0,
+    "sandbox_validation_rate": 0.6,
+    "runner_latency_ms": 0.005,
+    "abs_rel_kitti_validation": 0.0,
+    "sq_rel_kitti_validation": 0.0,
+    "rmse_kitti_validation": 0.0,
+    "abs_rel_soccernet_test": 0.0,
+    "sq_rel_soccernet_test": 0.0,
+    "rmse_soccernet_test": 0.0,
+    "scale_consistency_error_median_depth_ratio": 0.0,
+    "adapter_inner_loop_loss": 0.0,
+    "meta_validation_loss": 0.0,
+    "training_wall_clock_time": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_100557",
+  "validation_errors": []
+}

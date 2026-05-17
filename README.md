@@ -1,6 +1,6 @@
-# AgenticAiSystem Crew
+# AgenticAiSystem
 
-Welcome to the AgenticAiSystem Crew project, powered by [crewAI](https://crewai.com). This template is designed to help you set up a multi-agent AI system with ease, leveraging the powerful and flexible framework provided by crewAI. Our goal is to enable your agents to collaborate effectively on complex tasks, maximizing their collective intelligence and capabilities.
+Agentic research pipeline with a CLI-first supervisor flow, optional Streamlit UI, and modular stage helpers for literature, method, coding, experiment, and writing.
 
 ## Installation
 
@@ -23,21 +23,10 @@ crewai install
 **Add your `OPENAI_API_KEY` into the `.env` file**
 
 - Modify `src/agentic_ai_system/config/agents.yaml` to define your agents
-- Modify `src/agentic_ai_system/config/tasks.yaml` to define your tasks
-- Modify `src/agentic_ai_system/crew.py` to add your own logic, tools and specific args
-- Modify `src/agentic_ai_system/main.py` to add custom inputs for your agents and tasks
+- Modify `src/agentic_ai_system/orchestration/supervisor_flow.py` to change stage logic and approvals
+- Modify `src/agentic_ai_system/main.py` to add custom inputs for your entrypoints
 
 ## Running the Project
-
-To kickstart your crew of AI agents and begin task execution, run this from the root folder of your project:
-
-```bash
-$ crewai run
-```
-
-This command initializes the agentic-ai-system Crew, assembling the agents and assigning them tasks as defined in your configuration.
-
-This example, unmodified, will run the create a `report.md` file with the output of a research on LLMs in the root folder.
 
 To run the CLI-first supervisor flow with approval checkpoints:
 
@@ -54,14 +43,18 @@ $ run_ui
 The current default model is configured as `openai/gpt-oss-120b:free` (set via `MODEL` / agent `llm` config).
 Literature outputs from the supervisor flow are persisted to `outputs/literature/*.json`.
 Flow run metadata, stage events, and approvals are persisted to `outputs/flow_runs.db`.
+Coding-stage sandbox artifacts are written to `sandbox/<topic>_<timestamp>/`.
+Experiment-stage execution summaries are written to `outputs/experiments/<topic>_<timestamp>/`.
+Writing-stage section drafts are written to `outputs/writing/<topic>_<timestamp>/`.
+Generated artifacts stay in `sandbox/` and `outputs/`; the repo root is not used for stage outputs.
 
-## Understanding Your Crew
+## Understanding the system
 
-The agentic-ai-system Crew is composed of multiple AI agents, each with unique roles, goals, and tools. These agents collaborate on a series of tasks, defined in `config/tasks.yaml`, leveraging their collective skills to achieve complex objectives. The `config/agents.yaml` file outlines the capabilities and configurations of each agent in your crew.
+The system is composed of modular stage helpers plus CrewAI agents used by the supervisor flow. The `config/agents.yaml` file defines agent roles, while the supervisor flow coordinates them with explicit checkpoints.
 
 ## Support
 
-For support, questions, or feedback regarding the AgenticAiSystem Crew or crewAI.
+For support, questions, or feedback regarding AgenticAiSystem or crewAI.
 - Visit our [documentation](https://docs.crewai.com)
 - Reach out to us through our [GitHub repository](https://github.com/joaomdmoura/crewai)
 - [Join our Discord](https://discord.com/invite/X4JWnZnxPb)

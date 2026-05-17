@@ -5,7 +5,7 @@ import threading
 
 import streamlit as st
 
-from agentic_ai_system.supervisor_flow import CheckpointRejected, ResearchSupervisorFlow
+from agentic_ai_system.orchestration.supervisor_flow import CheckpointRejected, ResearchSupervisorFlow
 from agentic_ai_system.ui.bridge import (
     approval_decision,
     approval_event,
@@ -19,6 +19,11 @@ def patch_flow_for_streamlit() -> None:
         return
 
     def streamlit_approval_gate(self, stage: str, preview: str) -> None:
+        if getattr(self.state, "auto_mode", False):
+            approval_decision["approved"] = True
+            self.state.approvals[stage] = True
+            self._persistence.log_approval(self._run_id(), stage, True)
+            return
         approval_event.clear()
         approval_decision["approved"] = False
         ui_update_queue.put(
@@ -37,7 +42,7 @@ def patch_flow_for_streamlit() -> None:
     ResearchSupervisorFlow._streamlit_patched = True  # type: ignore[attr-defined]
 
 
-def start_flow(topic: str, current_year: str) -> None:
+def start_flow(topic: str, current_year: str, auto_mode: bool = False) -> None:
     clear_ui_queue()
     st.session_state.flow_running = True
     st.session_state.current_stage = "literature"
@@ -49,6 +54,7 @@ def start_flow(topic: str, current_year: str) -> None:
     flow = ResearchSupervisorFlow()
     flow.state.topic = topic
     flow.state.current_year = current_year
+    flow.state.auto_mode = auto_mode
     st.session_state.flow_state = flow
 
     def run_flow_thread() -> None:
@@ -62,4 +68,3 @@ def start_flow(topic: str, current_year: str) -> None:
 
     worker = threading.Thread(target=run_flow_thread, daemon=True)
     worker.start()
-

@@ -1,0 +1,25 @@
+{
+  "topic": "Survey of Monocular Depth Estimation (2023\u20112025)",
+  "generated_at": "2026-05-17T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Monocular Depth Estimation: A Survey",
+      "source": "Semantic Scholar",
+      "summary": "Provides a comprehensive overview of monocular depth estimation, covering traditional cue\u2011based methods and deep\u2011learning approaches (supervised, self\u2011supervised, semi\u2011supervised). Lists benchmark datasets (KITTI, NYU\u2011Depth V2, Make3D, Cityscapes) and evaluation metrics, and discusses open challenges such as domain adaptation, handling non\u2011Lambertian surfaces, and real\u2011time deployment.",
+      "url": "https://www.semanticscholar.org/paper/4c8f65922158e31ec67825f535fb77db9298fe7c"
+    },
+    {
+      "title": "SPIdepth: Strengthened Pose Information for Self\u2011Supervised Monocular Depth Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Introduces a self\u2011supervised framework that upgrades the pose network with a larger pre\u2011trained backbone, improving depth prediction without extra inference cost. Sets new state\u2011of\u2011the\u2011art on KITTI (AbsRel\u202f0.029) and wins the NTIRE\u202f2025 HR Mono Depth Challenge, highlighting robustness to transparent and mirror surfaces.",
+      "url": "https://www.semanticscholar.org/paper/847f96f8b935fe161af453063845854481d4d5b5"
+    },
+    {
+      "title": "SoccerNet 2025 Challenges Results \u2013 Monocular Depth Estimation Track",
+      "source": "Semantic Scholar",
+      "summary": "Presents a benchmark for relative depth estimation from broadcast football video. Provides large\u2011scale annotated data, unified evaluation protocols, and baseline implementations, establishing a new real\u2011world testbed for scene\u2011specific depth estimation.",
+      "url": "https://www.semanticscholar.org/paper/594df4df273f1eef21fa3978a4e8fbf76f3f6fff"
+    }
+  ],
+  "synthesis": "The period 2023\u20112025 has seen monocular depth estimation mature from a largely academic research problem to a benchmarked component in domain\u2011specific applications. The foundational survey (2023) consolidates the taxonomy of methods\u2014traditional cue\u2011based, fully supervised CNN/Transformer models, and the dominant self\u2011supervised paradigm that leverages video warping. It also codifies the standard datasets and metrics that continue to drive progress.\n\nRecent breakthroughs focus on two fronts: (1) enhancing self\u2011supervised training pipelines and (2) expanding evaluation beyond autonomous\u2011driving scenes. SPIdepth demonstrates that the often\u2011overlooked pose estimation sub\u2011module can be a bottleneck; by strengthening it with a pre\u2011trained, higher\u2011capacity backbone, depth quality improves dramatically, achieving record\u2011low errors on KITTI and winning a high\u2011resolution challenge on challenging non\u2011Lambertian surfaces. This underscores a shift toward holistic system design where pose and depth networks are co\u2011optimized.\n\nConcurrently, community\u2011driven challenges such as SoccerNet 2025 introduce large\u2011scale, sport\u2011broadcast data, emphasizing relative depth for scene understanding in broadcast video. These benchmarks push the field toward handling diverse lighting, fast motion, and camera intrinsics that differ from driving datasets.\n\nKey trends emerging up to 2026:\n- **Self\u2011supervision remains dominant**, but the focus is on better motion modeling (pose networks, dynamic masks) and robustness to non\u2011rigid scenes.\n- **Transformer\u2011based encoders and diffusion models** are increasingly explored for depth prediction, though the survey notes they are not yet standardized.\n- **Cross\u2011domain generalization** is a primary challenge; recent works incorporate domain\u2011adaptive modules and synthetic pre\u2011training.\n- **Real\u2011time constraints** are addressed via lightweight backbones and efficient warping schemes, enabling deployment on edge devices.\n\nOverall, the literature indicates that monocular depth estimation is transitioning from a research benchmark to a practical perception module across autonomous driving, robotics, medical imaging, and sports analytics. Future work should prioritize universal representations that generalize across domains, integrate richer geometric cues (normals, semantics), and maintain the low computational footprint required for real\u2011world use.\n"
+}

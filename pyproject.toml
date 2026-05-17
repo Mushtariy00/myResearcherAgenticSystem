@@ -10,12 +10,8 @@ dependencies = [
 ]
 
 [project.scripts]
-agentic_ai_system = "agentic_ai_system.main:run"
-run_crew = "agentic_ai_system.main:run"
-train = "agentic_ai_system.main:train"
-replay = "agentic_ai_system.main:replay"
-test = "agentic_ai_system.main:test"
-run_with_trigger = "agentic_ai_system.main:run_with_trigger"
+agentic_ai_system = "agentic_ai_system.main:run_flow"
+run_crew = "agentic_ai_system.main:run_flow"
 run_flow = "agentic_ai_system.main:run_flow"
 run_ui = "agentic_ai_system.run_ui:main"
 

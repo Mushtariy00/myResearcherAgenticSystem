@@ -1,0 +1,66 @@
+{
+  "goal": "Prototype a scalable pipeline for large\u2011model monocular depth estimation (2023\u20112025) by pre\u2011training a vision\u2011language transformer with synthetic RGB\u2011depth data, validating that contrastive image\u2011text alignment, masked depth prediction, and consistency regularization jointly reduce depth error (RMSE < 0.5) while keeping inference latency < 30\u202fms on 224\u00d7224 inputs.",
+  "config": {
+    "docker_image": "vl_dfm_sandbox:latest",
+    "python_version": "3.10",
+    "pytorch_version": "2.2",
+    "model_architecture": "ViT-B/16 + depth decoder",
+    "model_size_parameters": {
+      "hidden_dim": 768,
+      "num_transformer_layers": 12,
+      "decoder_upsample_factor": 4
+    },
+    "training": {
+      "epochs": 2,
+      "batch_size": 32,
+      "learning_rate": 0.0003,
+      "optimizer": "AdamW",
+      "weight_decay": 0.01,
+      "gradient_clipping_norm": 1.0
+    },
+    "synthetic_data": {
+      "num_samples": 10000,
+      "image_resolution": [
+        224,
+        224
+      ],
+      "depth_noise_std": 0.05,
+      "caption_generator": "rule_based"
+    },
+    "loss_weights": {
+      "contrastive": 1.0,
+      "masked_depth": 1.0,
+      "consistency": 0.5
+    },
+    "evaluation": {
+      "metrics": [
+        "RMSE",
+        "AbsRel",
+        "InferenceLatencyMs"
+      ],
+      "latency_measurement": "torch.cuda.Event",
+      "latency_batch_size": 1
+    },
+    "checkpoint": {
+      "save_every_n_epochs": 1,
+      "output_dir": "./checkpoints"
+    }
+  },
+  "metrics": {
+    "sandbox_created_files": 7.0,
+    "sandbox_validated_python_files": 4.0,
+    "sandbox_validation_rate": 0.5714,
+    "runner_latency_ms": 0.005,
+    "contrastive_loss": 0.0,
+    "masked_depth_l1_loss": 0.0,
+    "consistency_mse_loss": 0.0,
+    "total_training_loss": 0.0,
+    "validation_rmse": 0.0,
+    "validation_absrel": 0.0,
+    "average_inference_latency_ms": 0.0,
+    "gpu_memory_utilization_percent": 0.0,
+    "training_throughput_images_per_sec": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655",
+  "validation_errors": []
+}

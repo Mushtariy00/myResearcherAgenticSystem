@@ -16,7 +16,7 @@ from agentic_ai_system.ui.components import (
     render_welcome_screen,
 )
 from agentic_ai_system.ui.runtime import patch_flow_for_streamlit
-from agentic_ai_system.ui.state import initialize_session_state
+from agentic_ai_system.ui.state import advance_stage, initialize_session_state
 
 configure_runtime_env()
 
@@ -53,6 +53,8 @@ def process_ui_events() -> None:
                 st.session_state.approval_needed = False
                 st.session_state.approval_data = None
                 st.session_state.flow_error = msg.get("error", "Unknown flow error.")
+            elif msg_type == "stage_completed":
+                advance_stage(msg["stage"])
     except queue.Empty:
         pass
 
@@ -65,7 +67,7 @@ def main() -> None:
     st.title("🔬 Agentic Research System")
     st.markdown("### Semi-autonomous research pipeline with human approval checkpoints")
 
-    topic, _ = render_sidebar()
+    topic, _, _ = render_sidebar()
 
     if st.session_state.flow_running:
         st.header(f"Research Progress: {topic}")

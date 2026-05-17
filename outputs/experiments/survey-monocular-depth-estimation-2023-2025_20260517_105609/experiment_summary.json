@@ -1,0 +1,108 @@
+{
+  "goal": "Evaluate the impact of a learned dynamic\u2011object mask on self\u2011supervised monocular depth estimation across static (KITTI) and dynamic (SoccerNet) domains, and verify that the mask improves depth accuracy while maintaining real\u2011time inference performance.",
+  "config": {
+    "docker_image": "pytorch/pytorch:2.2-cuda12.1-runtime",
+    "datasets": {
+      "kitti_train_subset": "data/kitti/train_subset.csv",
+      "soccernet_clip": "data/soccer/clip.csv"
+    },
+    "model_architecture": {
+      "encoder": "ResNet\u201118 (ImageNet pre\u2011trained)",
+      "depth_head": "1\u00d71 conv stack",
+      "pose_head": "1\u00d71 conv stack",
+      "dynamic_mask_head": "shallow upsample\u2011conv decoder"
+    },
+    "training_phases": [
+      {
+        "name": "Phase 1",
+        "epochs": 5,
+        "freeze_mask_head": true,
+        "domains": [
+          "kitti"
+        ],
+        "losses": [
+          "photometric"
+        ]
+      },
+      {
+        "name": "Phase 2",
+        "epochs": 10,
+        "freeze_mask_head": false,
+        "domains": [
+          "kitti",
+          "soccernet"
+        ],
+        "losses": [
+          "photometric_weighted_by_mask",
+          "mask_regularization"
+        ]
+      },
+      {
+        "name": "Phase 3",
+        "epochs": 5,
+        "pose_refinement": true,
+        "domains": [
+          "kitti",
+          "soccernet"
+        ],
+        "losses": [
+          "photometric_weighted_by_mask",
+          "mask_regularization",
+          "pose_refinement"
+        ]
+      }
+    ],
+    "optimizer": {
+      "type": "AdamW",
+      "lr": 0.0001,
+      "weight_decay": 0.0001
+    },
+    "batch_size": 8,
+    "image_resolution": "384x1280",
+    "pseudo_mask_generation": {
+      "script": "scripts/generate_pseudo_masks.py",
+      "method": "optical\u2011flow magnitude threshold",
+      "epochs": 5
+    },
+    "evaluation": {
+      "kitti_test_split": "data/kitti/test.csv",
+      "soccernet_held_out": "data/soccer/held_out.csv",
+      "metrics": [
+        "AbsRel",
+        "SqRel",
+        "RMSE",
+        "RMSE_log",
+        "\u03b4<1.25"
+      ],
+      "visualizations": [
+        "depth_map",
+        "dynamic_mask",
+        "pose_trajectory"
+      ]
+    },
+    "export": {
+      "format": "TorchScript",
+      "script": "export_torchscript.py"
+    },
+    "benchmark": {
+      "hardware": "Jetson\u2011Orin Nano",
+      "target_latency_ms": 30,
+      "fps_target": 33
+    }
+  },
+  "metrics": {
+    "sandbox_created_files": 11.0,
+    "sandbox_validated_python_files": 6.0,
+    "sandbox_validation_rate": 0.5455,
+    "runner_latency_ms": 0.009,
+    "training_loss_photometric": 0.0,
+    "mask_activation_mean": 0.0,
+    "absrel_kitti_test": 0.0,
+    "absrel_soccernet_held_out": 0.0,
+    "1_25_accuracy_both_domains": 0.0,
+    "inference_latency_ms_per_frame": 0.0,
+    "fps_on_edge_hardware": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_105539",
+  "validation_errors": []
+}

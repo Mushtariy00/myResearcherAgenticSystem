@@ -1,0 +1,40 @@
+{
+  "sandbox_plan": "1. **Set up isolated sandbox environment**\n   - Use Docker with a lightweight Ubuntu 22.04 image, CUDA 12.1, Python 3.10, and PyTorch 2.3 compiled for the target GPU (Snapdragon 8 Gen 2 GPU via ONNX Runtime or TensorRT).  \n   - Install required libraries: `torchvision`, `timm`, `einops`, `opencv-python`, `wandb`, `hydra-core`, `mmcv`, `torchinfo`, and `onnxruntime-gpu`.\n\n2. **Data preparation**\n   - Download a subset of public monocular depth datasets (KITTI, NYU Depth v2, and the recent DrivingDepth weather test set).  \n   - Create a small synthetic weather augmentation pipeline (rain, fog, night) using Albumentations and a custom GPU\u2011accelerated shader for on\u2011the\u2011fly generation.\n   - Split into 80% train, 10% validation, 10% test (\u22485k images total for quick sandbox runs).\n\n3. **Implement core modules**\n   - **`conv_encoder.py`**: shallow CNN (3\u2011stage ResNet\u201114) returning feature map `C`.  \n   - **`token_sparsifier.py`**: ViT tokenization + attention\u2011entropy based pruning layer (retain top\u2011k% tokens, k configurable).  \n   - **`decoder.py`**: lightweight transformer decoder that upsamples sparse tokens back to full\u2011resolution depth map using bilinear interpolation and learned refinement convs.\n   - **`lct_depth_model.py`**: glue module that assembles encoder, sparsifier, and decoder; includes fallback refinement branch that processes the globally\u2011averaged token if sparsification drops below a confidence threshold.\n\n4. **Training script**\n   - `train_lct_depth.py` using Hydra config: learning rate schedule, optimizer (AdamW), mixed\u2011precision (AMP), and gradient checkpointing to keep memory <8\u202fGB.\n   - Losses: Scale\u2011invariant log RMSE + edge\u2011aware gradient loss.\n   - Early\u2011stop on validation loss; log metrics to Weights & Biases.\n\n5. **Inference benchmark utility**\n   - `benchmark.py` measures latency (average over 100 runs) and FLOPs (via `torchinfo`) on the Docker container with the target GPU.\n   - Include a command\u2011line flag `--dynamic-token-ratio` to sweep sparsification percentages.\n\n6. **Validation & sanity checks**\n   - Unit\u2011test each module (token count after pruning, shape consistency, gradient flow).  \n   - Run a quick end\u2011to\u2011end train for 2 epochs on the sandbox dataset and verify that validation loss decreases >5%.\n   - Compare depth predictions against ground truth on the test split using standard metrics (abs rel, sq rel, RMSE).  \n   - Execute `benchmark.py` to ensure inference time \u226430\u202fms for token\u2011ratio\u202f=\u202f30%.\n\n7. **Iterative refinement loop**\n   - If latency exceeds target, lower token\u2011ratio or enable TorchScript/ONNX export and TensorRT optimization; re\u2011run benchmark.\n   - If depth accuracy drops >5% relative to baseline ViT, adjust pruning threshold or enable the fallback refinement branch.\n\n8. **Packaging**\n   - Create a minimal pip\u2011installable package `lct_depth` containing the modules, config files, and a `setup.py`.\n   - Provide a Dockerfile that builds the environment and runs a sanity\u2011check entrypoint.\n\nThe sandbox plan enables rapid prototyping, performance profiling, and safe iteration before scaling to full\u2011size datasets or multi\u2011GPU training.",
+  "validation_steps": [
+    "Run unit tests to verify tensor shapes and gradient flow through the token sparsifier.",
+    "Train the model for 2 epochs on the sandbox dataset and assert that validation loss improves by at least 5%.",
+    "Compute standard depth metrics on the test split and ensure RMSE is within 5% of a reference full\u2011ViT baseline.",
+    "Execute benchmark.py with token\u2011ratio=30% and confirm average inference latency \u226430\u202fms on the target GPU.",
+    "Export the model to ONNX, run TensorRT inference, and verify that latency does not regress by more than 10%.",
+    "Perform an ablation: disable the fallback refinement branch and ensure accuracy drop is no more than 2%, confirming fallback necessity."
+  ],
+  "created_files": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/Dockerfile",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/requirements.txt",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/src/lct_depth/conv_encoder.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/src/lct_depth/token_sparsifier.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/src/lct_depth/decoder.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/src/lct_depth/lct_depth_model.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/configs/train.yaml",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/train_lct_depth.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/benchmark.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/tests/test_conv_encoder.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/tests/test_token_sparsifier.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/tests/test_end_to_end.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/setup.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/README.md"
+  ],
+  "validated_files": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/src/lct_depth/conv_encoder.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/src/lct_depth/token_sparsifier.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/src/lct_depth/decoder.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/src/lct_depth/lct_depth_model.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/train_lct_depth.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/benchmark.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/tests/test_conv_encoder.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/tests/test_token_sparsifier.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/tests/test_end_to_end.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156/setup.py"
+  ],
+  "validation_errors": []
+}

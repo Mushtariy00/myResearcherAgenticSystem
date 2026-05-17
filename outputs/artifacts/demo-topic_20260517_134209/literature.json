@@ -1,0 +1,15 @@
+{
+  "contract_version": "1",
+  "stage": "literature",
+  "topic": "demo topic",
+  "generated_at": "2026-05-17T13:42:09.700728",
+  "primary_path": "/tmp/tmp5cqjr2n9/literature.json",
+  "auxiliary_paths": [
+    "/tmp/tmp5cqjr2n9/literature.json"
+  ],
+  "summary": "Literature synthesis stored",
+  "status": "completed",
+  "metadata": {
+    "key_findings": 1
+  }
+}

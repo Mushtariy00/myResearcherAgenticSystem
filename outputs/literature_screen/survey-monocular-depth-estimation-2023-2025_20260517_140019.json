@@ -1,0 +1,15 @@
+{
+  "selected_indices": [
+    3,
+    4
+  ],
+  "rejected_indices": [
+    0,
+    1,
+    2,
+    5,
+    6,
+    7
+  ],
+  "selection_rationale": "Index 4 is a dedicated survey on monocular metric depth estimation, directly matching the target topic (2023-2025). Index 3, while not a survey, is a recent overview of trends in vision-based depth estimation and thus the closest alternative covering depth estimation advances. All other entries focus on monocular human pose estimation or unrelated domains and are therefore excluded."
+}

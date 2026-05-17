@@ -1,0 +1,16 @@
+[
+  {
+    "index": 0,
+    "title": "Paper One",
+    "source": "arxiv",
+    "relevance_assessment": "Fallback analysis after error: The read operation timed out",
+    "key_findings": [
+      "Full-text extraction available at /home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/demo-topic_20260517_134209/paper_01.txt"
+    ],
+    "limitations": [
+      "Could not resolve an open-access PDF URL."
+    ],
+    "evidence_snippets": [],
+    "summary": "Fallback analysis generated from the fetched paper text because the LLM failed with: The read operation timed out"
+  }
+]

@@ -1,0 +1,58 @@
+{
+  "goal": "Evaluate the trade\u2011off between token sparsification ratio and monocular depth estimation accuracy/latency on embedded GPU (Snapdragon 8 Gen 2) using a lightweight ViT\u2011based model (LCT\u2011Depth) across diverse weather\u2011augmented datasets (KITTI, NYU\u2011Depth v2, DrivingDepth).",
+  "config": {
+    "docker_image": "ubuntu:22.04-cuda12.1-py3.10",
+    "gpu_target": "Snapdragon 8 Gen 2 (ONNX Runtime / TensorRT backend)",
+    "datasets": [
+      "KITTI_subset",
+      "NYU_Depth_v2_subset",
+      "DrivingDepth_weather_subset"
+    ],
+    "train_split": 0.8,
+    "val_split": 0.1,
+    "test_split": 0.1,
+    "batch_size": 8,
+    "num_epochs": 20,
+    "learning_rate": 0.0001,
+    "optimizer": "AdamW",
+    "mixed_precision": true,
+    "gradient_checkpointing": true,
+    "token_ratio_schedule": [
+      0.3,
+      0.4,
+      0.5
+    ],
+    "early_stop_patience": 3,
+    "losses": [
+      "scale_invariant_log_rmse",
+      "edge_aware_gradient"
+    ],
+    "benchmark_runs": 100,
+    "latency_target_ms": 30,
+    "accuracy_baseline": {
+      "model": "full_ViT_baseline",
+      "rmse_tolerance_percent": 5
+    },
+    "latency_tolerance_percent": 10,
+    "fallback_branch_enabled": true
+  },
+  "metrics": {
+    "sandbox_created_files": 14.0,
+    "sandbox_validated_python_files": 10.0,
+    "sandbox_validation_rate": 0.7143,
+    "runner_latency_ms": 0.004,
+    "validation_loss": 0.0,
+    "validation_abs_rel": 0.0,
+    "validation_sq_rel": 0.0,
+    "validation_rmse": 0.0,
+    "validation_rmse_log": 0.0,
+    "inference_latency_ms": 0.0,
+    "throughput_fps": 0.0,
+    "model_flops": 0.0,
+    "token_count_before": 0.0,
+    "token_count_after": 0.0,
+    "fallback_branch_usage_rate": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_110156",
+  "validation_errors": []
+}

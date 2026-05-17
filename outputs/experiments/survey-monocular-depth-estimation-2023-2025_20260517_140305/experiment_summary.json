@@ -1,0 +1,55 @@
+{
+  "goal": "Validate a sandbox\u2011first pipeline for monocular depth estimation using self\u2011supervised learning on a small curated video subset, demonstrating that the proposed Vision\u2011Depth Foundation Model (VDFM) can be trained reproducibly and achieve depth accuracy (AbsRel \u2264 0.30) comparable to or better than a MiDaS\u2011small baseline.",
+  "config": {
+    "docker_image": "python:3.10-slim",
+    "cuda_version": "12.1",
+    "torch_version": "2.3.0",
+    "batch_size": 2,
+    "learning_rate": 0.0001,
+    "max_iterations": 1000,
+    "dataset_subset": "5k video clips (3\u2011second each, 10\u202ffps)",
+    "sparse_depth_source": "COLMAP SfM",
+    "model_backbone": "swin_tiny",
+    "model_decoder": "upsample_1x1",
+    "losses": [
+      "photometric_reconstruction",
+      "sparse_depth_l1",
+      "edge_aware_smoothness"
+    ],
+    "metrics": [
+      "AbsRel",
+      "SqRel",
+      "RMSE",
+      "RMSElog",
+      "delta<1.25"
+    ],
+    "benchmark_datasets": [
+      "NYU-Depth-V2 subset",
+      "KITTI Eigen split subset"
+    ],
+    "hardware": "RTX 3090, <=8\u202fGB GPU memory, Docker memory limit 12\u202fGB",
+    "mixed_precision": false,
+    "gradient_accumulation_steps": 1,
+    "seed": 42,
+    "log_interval": 50,
+    "checkpoint_interval": 200,
+    "output_dir": "/workspace/outputs"
+  },
+  "metrics": {
+    "sandbox_created_files": 9.0,
+    "sandbox_validated_python_files": 5.0,
+    "sandbox_validation_rate": 0.5556,
+    "runner_latency_ms": 0.005,
+    "training_loss": 0.0,
+    "photometric_loss": 0.0,
+    "sparse_depth_consistency_loss": 0.0,
+    "edge_aware_smoothness_loss": 0.0,
+    "absrel": 0.0,
+    "sqrel": 0.0,
+    "rmse": 0.0,
+    "rmselog": 0.0,
+    "delta_1_25": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260517_140248",
+  "validation_errors": []
+}

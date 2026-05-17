@@ -1,0 +1,30 @@
+{
+  "research_gaps": [
+    "No curated, up-to-date repository of large\u2011model monocular depth estimation papers (2023\u20112025) with standardized summaries and metrics.",
+    "Absence of a comprehensive benchmark covering diverse domains (indoor, outdoor, aerial, agricultural) and real\u2011time constraints for evaluating large\u2011scale depth models.",
+    "Limited exploration of foundation\u2011model scaling laws, multimodal pre\u2011training, and uncertainty quantification specific to monocular depth estimation.",
+    "Insufficient methods for efficient adaptation (domain adaptation, few\u2011shot fine\u2011tuning) of massive depth models to new sensor setups and resource\u2011restricted platforms."
+  ],
+  "proposals": [
+    {
+      "name": "Unified Large\u2011Model Depth Benchmark (ULMDB)",
+      "rationale": "Collect and harmonize existing datasets across multiple domains, provide standard evaluation protocols (accuracy, runtime, memory, uncertainty), and host a leaderboard for transformer\u2011based and diffusion\u2011based depth models.",
+      "expected_benefit": "Enables reproducible comparison, drives community progress, and surfaces real\u2011world performance gaps such as latency and domain shift.",
+      "risk": "High initial curation effort and potential licensing constraints on proprietary datasets."
+    },
+    {
+      "name": "Vision\u2011Language\u2011Depth Foundation Model (VLDFM)",
+      "rationale": "Pre\u2011train a large transformer on billions of web\u2011scale RGB images paired with noisy depth cues derived from stereo, structure\u2011from\u2011motion, and language descriptions, using contrastive and masked depth prediction objectives.",
+      "expected_benefit": "Leverages scaling laws to produce a zero\u2011shot depth estimator that generalizes across domains, reduces dependence on task\u2011specific data, and can be fine\u2011tuned with minimal labels.",
+      "risk": "Requires massive compute and careful handling of noisy pseudo\u2011depth; risk of propagating systematic bias from web data."
+    },
+    {
+      "name": "Adaptive Distillation with Depth\u2011Sensitive Normalization (ADDSN)",
+      "rationale": "Build on recent findings that global depth normalization can hurt distillation; introduce a per\u2011region, uncertainty\u2011aware normalization and a student\u2011teacher curriculum that focuses on hard depth ranges.",
+      "expected_benefit": "Produces compact student models (~50\u202f% parameters) that retain the accuracy of large teachers while improving robustness to pseudo\u2011label noise, facilitating deployment on edge devices.",
+      "risk": "Complex training pipeline; may require careful hyper\u2011parameter tuning to avoid over\u2011fitting to teacher errors."
+    }
+  ],
+  "recommended_option": "Vision\u2011Language\u2011Depth Foundation Model (VLDFM)",
+  "implementation_focus": ""
+}

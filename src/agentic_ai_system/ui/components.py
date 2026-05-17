@@ -2,19 +2,26 @@ from __future__ import annotations
 
 from datetime import datetime
 import sqlite3
+from pathlib import Path
 
 import streamlit as st
 
 from agentic_ai_system.ui.bridge import approval_decision, approval_event
 from agentic_ai_system.ui.runtime import start_flow
-from agentic_ai_system.ui.state import STAGE_NAMES, STAGE_ORDER, reset_session_state
+from agentic_ai_system.ui.state import STAGE_NAMES, STAGE_ORDER, advance_stage, reset_session_state
 
 
-def render_sidebar() -> tuple[str, str]:
+def render_sidebar() -> tuple[str, str, bool]:
     with st.sidebar:
         st.header("Research Configuration")
         topic = st.text_input("Research Topic", value="Survey monocular depth estimation 2023-2025")
         current_year = st.text_input("Current Year", value=str(datetime.now().year))
+        auto_mode = st.checkbox(
+            "Auto mode",
+            value=st.session_state.flow_auto_mode,
+            help="Skip approval prompts and continue to the next stage automatically.",
+        )
+        st.session_state.flow_auto_mode = auto_mode
 
         col1, col2 = st.columns(2)
         with col1:
@@ -22,7 +29,7 @@ def render_sidebar() -> tuple[str, str]:
                 if st.session_state.flow_running:
                     st.warning("Flow is already running.")
                 else:
-                    start_flow(topic, current_year)
+                    start_flow(topic, current_year, auto_mode=auto_mode)
                     st.rerun()
         with col2:
             if st.button("🛑 Stop Flow", use_container_width=True):
@@ -36,7 +43,7 @@ def render_sidebar() -> tuple[str, str]:
             reset_session_state()
             st.rerun()
 
-    return topic, current_year
+    return topic, current_year, auto_mode
 
 
 def render_progress_indicators() -> None:
@@ -71,12 +78,7 @@ def render_approval_section() -> None:
             approval_decision["approved"] = True
             st.session_state.approval_needed = False
             st.session_state.approval_data = None
-            st.session_state.last_completed_stages.add(stage)
-            if stage in STAGE_ORDER:
-                idx = STAGE_ORDER.index(stage)
-                st.session_state.current_stage = (
-                    STAGE_ORDER[idx + 1] if idx < len(STAGE_ORDER) - 1 else "completed"
-                )
+            advance_stage(stage)
             approval_event.set()
             st.rerun()
     with col2:
@@ -109,6 +111,20 @@ def render_results_section() -> None:
                 if finding.url:
                     st.write(f"   *URL:* {finding.url}")
             st.write(f"**Synthesis:** {state.literature_output.synthesis}")
+            if getattr(state, "literature_screen_output", None):
+                st.write("**Selected Indices:**")
+                st.write(f"- {state.literature_screen_output.selected_indices}")
+                st.write(f"**Screen Rationale:** {state.literature_screen_output.selection_rationale}")
+            if getattr(state, "literature_screen_path", ""):
+                st.write(f"**Screening Artifact:** `{state.literature_screen_path}`")
+            if getattr(state, "literature_manifest_path", ""):
+                st.write(f"**Artifact Manifest:** `{state.literature_manifest_path}`")
+            if getattr(state, "literature_fetch_dir", ""):
+                st.write(f"**Full Text Directory:** `{state.literature_fetch_dir}`")
+            if getattr(state, "literature_fetch_manifest_path", ""):
+                st.write(f"**Full Text Manifest:** `{state.literature_fetch_manifest_path}`")
+            if getattr(state, "literature_analysis_manifest_path", ""):
+                st.write(f"**Paper Analysis Manifest:** `{state.literature_analysis_manifest_path}`")
 
     if state.method_output:
         with st.expander("🔬 Method Results", expanded=False):
@@ -122,6 +138,10 @@ def render_results_section() -> None:
                 st.write(f"  *Expected Benefit:* {proposal.expected_benefit}")
                 st.write(f"  *Risk:* {proposal.risk}")
             st.write(f"**Recommended Option:** {state.method_output.recommended_option}")
+            if getattr(state, "method_artifact_path", ""):
+                st.write(f"**Artifact File:** `{state.method_artifact_path}`")
+            if getattr(state, "method_manifest_path", ""):
+                st.write(f"**Artifact Manifest:** `{state.method_manifest_path}`")
 
     if state.coding_output:
         with st.expander("💻 Coding Results", expanded=False):
@@ -132,6 +152,22 @@ def render_results_section() -> None:
             st.write("**Validation Steps:**")
             for step in state.coding_output.validation_steps:
                 st.write(f"- {step}")
+            if state.coding_execution:
+                st.write(f"**Sandbox Directory:** `{state.coding_execution.sandbox_dir}`")
+                st.write(
+                    f"**Created Files:** {len(state.coding_execution.created_files)} | "
+                    f"**Validated Python Files:** {len(state.coding_execution.validated_files)}"
+                )
+                if state.coding_execution.validation_errors:
+                    st.write("**Validation Errors:**")
+                    for error in state.coding_execution.validation_errors:
+                        st.write(f"- {error}")
+                if state.coding_execution.created_files:
+                    st.write("**Created File Contents:**")
+                    for path in state.coding_execution.created_files:
+                        st.code(Path(path).read_text(encoding="utf-8"), language="python" if path.endswith(".py") else None)
+                if getattr(state, "coding_manifest_path", ""):
+                    st.write(f"**Artifact Manifest:** `{state.coding_manifest_path}`")
 
     if state.experiment_output:
         with st.expander("🧪 Experiment Results", expanded=False):
@@ -142,6 +178,14 @@ def render_results_section() -> None:
             st.write("**Metrics to Track:**")
             for metric in state.experiment_output.metrics_to_track:
                 st.write(f"- {metric}")
+            if state.experiment_execution:
+                st.write(f"**Run Directory:** `{state.experiment_execution.run_dir}`")
+                st.write(f"**Summary File:** `{state.experiment_execution.summary_file}`")
+                st.write("**Captured Metrics:**")
+                for key, value in state.experiment_execution.metrics.items():
+                    st.write(f"- {key}: {value}")
+            if getattr(state, "experiment_manifest_path", ""):
+                st.write(f"**Artifact Manifest:** `{state.experiment_manifest_path}`")
 
     if state.writing_output:
         with st.expander("📝 Writing Results", expanded=False):
@@ -150,6 +194,14 @@ def render_results_section() -> None:
             st.write("**Sections:**")
             for section in state.writing_output.sections:
                 st.write(f"- **{section.name}**: {section.objective}")
+            if state.writing_artifact_dir:
+                st.write(f"**Artifact Directory:** `{state.writing_artifact_dir}`")
+            if state.writing_artifact_files:
+                st.write("**Generated Draft Files:**")
+                for path in state.writing_artifact_files:
+                    st.write(f"- `{path}`")
+            if getattr(state, "writing_manifest_path", ""):
+                st.write(f"**Artifact Manifest:** `{state.writing_manifest_path}`")
 
 
 def render_flow_controls() -> None:
@@ -220,4 +272,3 @@ def render_footer() -> None:
         st.caption("🟡 Waiting for Approval" if st.session_state.approval_needed else "🟢 Ready")
     with col3:
         st.caption(f"Updated: {datetime.now().strftime('%H:%M:%S')}")
-

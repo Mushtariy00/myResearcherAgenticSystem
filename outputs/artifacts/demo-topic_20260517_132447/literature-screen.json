@@ -1,0 +1,17 @@
+{
+  "contract_version": "1",
+  "stage": "literature_screen",
+  "topic": "demo topic",
+  "generated_at": "2026-05-17T13:24:47.476197",
+  "primary_path": "/tmp/tmppdllhyzz/screen.json",
+  "auxiliary_paths": [
+    "/tmp/tmppdllhyzz/screen.json"
+  ],
+  "summary": "Literature screening selection stored",
+  "status": "completed",
+  "metadata": {
+    "selected_indices": [
+      0
+    ]
+  }
+}

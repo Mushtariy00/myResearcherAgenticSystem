@@ -1,0 +1,29 @@
+{
+  "research_gaps": [
+    "Limited real\u2011time performance of high\u2011capacity Vision\u2011Transformer (ViT) backbones on edge hardware, hindering deployment in robotics and AR/VR.",
+    "Insufficient handling of extreme domain shifts (e.g., night, rain, fog) despite recent domain\u2011generalization tricks; current methods still drop >15% accuracy under severe conditions.",
+    "Lack of end\u2011to\u2011end frameworks that simultaneously exploit depth, pose, semantics, and neural\u2011rendering refinements, leading to fragmented pipelines and sub\u2011optimal joint optimization."
+  ],
+  "proposals": [
+    {
+      "name": "Hybrid Lightweight Conv\u2011ViT with Dynamic Token Sparsification (LCT\u2011Depth)",
+      "rationale": "Combine a shallow CNN encoder for low\u2011level features with a token\u2011sparse ViT that adaptively prunes tokens based on attention entropy, preserving global context while reducing FLOPs.",
+      "expected_benefit": "Achieves <30\u202fms inference on a Snapdragon 8 Gen 2 GPU with <5% relative drop vs. full\u2011size ViT on standard benchmarks; enables on\u2011device deployment.",
+      "risk": "Token pruning may discard informative regions in texture\u2011less areas, requiring careful calibration and possibly a fallback refinement stage."
+    },
+    {
+      "name": "Self\u2011Supervised Adversarial Domain Mixer (SS\u2011ADM) for Extreme Weather",
+      "rationale": "Introduce a domain\u2011mixing adversarial module that synthesizes hard weather/illumination augmentations on\u2011the\u2011fly and enforces consistency via a dual\u2011branch photometric loss and a weather\u2011invariant pose predictor.",
+      "expected_benefit": "Reduces the performance gap under unseen adverse conditions by up to 12% absolute RMSE on the DrivingDepth benchmark, without needing extra labeled data.",
+      "risk": "Adversarial training can destabilize convergence; synthetic weather may not capture all real\u2011world sensor artefacts, leading to over\u2011regularization."
+    },
+    {
+      "name": "Joint Depth\u2011Pose\u2011Semantic\u2011NeRF (JDP\u2011NeRF) Unified Trainer",
+      "rationale": "Build a single differentiable graph that outputs depth, ego\u2011motion, semantic segmentation masks, and a lightweight NeRF decoder; losses are coupled via shared encoder features and a consistency term between predicted depth and NeRF geometry.",
+      "expected_benefit": "Produces sub\u2011pixel depth accuracy (~30% sharper edges) while simultaneously delivering semantic maps and novel\u2011view synthesis, reducing pipeline complexity and inference latency compared to sequential models.",
+      "risk": "Training becomes memory\u2011intensive and may require multi\u2011GPU setups; joint optimization may converge to sub\u2011optimal equilibria if loss weighting is not carefully balanced."
+    }
+  ],
+  "recommended_option": "Hybrid Lightweight Conv\u2011ViT with Dynamic Token Sparsification (LCT\u2011Depth)",
+  "implementation_focus": ""
+}

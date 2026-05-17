@@ -1,0 +1,27 @@
+{
+  "contract_version": "1",
+  "stage": "coding",
+  "topic": "large model monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-17T14:26:55.201378",
+  "primary_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/coding_execution_manifest.json",
+  "auxiliary_paths": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/Dockerfile",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/requirements.txt",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/synthetic_data.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/model.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/train_vldfm.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/eval_vldfm.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/README.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/synthetic_data.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/model.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/train_vldfm.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/large-model-monocular-depth-estimation-2023-2025_20260517_142655/eval_vldfm.py"
+  ],
+  "summary": "Coding sandbox generated",
+  "status": "completed",
+  "metadata": {
+    "created_files": 7,
+    "validated_files": 4,
+    "validation_errors": 0
+  }
+}

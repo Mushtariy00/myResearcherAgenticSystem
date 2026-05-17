@@ -1,0 +1,29 @@
+{
+  "research_gaps": [
+    "Robust cross\u2011domain generalization: current self\u2011supervised models still degrade sharply when tested on scenes with different lighting, camera intrinsics, or scene semantics (e.g., sports broadcast vs. driving).",
+    "Dynamic and non\u2011rigid motion modelling: pose networks assume a static scene; moving objects and deformable bodies cause depth leaks and artefacts.",
+    "Unified lightweight architecture that jointly predicts depth, surface normals, and semantic cues while remaining real\u2011time on edge hardware."
+  ],
+  "proposals": [
+    {
+      "name": "Domain\u2011Adaptive Multi\u2011Task Transformer (DA\u2011MTT)",
+      "rationale": "Combine a shared Vision Transformer encoder with three task heads (depth, surface normal, semantic segmentation). Train with self\u2011supervised photometric loss on source domains (KITTI, NYU) and a domain\u2011adversarial loss that aligns feature distributions to target domains (e.g., SoccerNet).",
+      "expected_benefit": "Improves generalization across drastically different visual domains by leveraging shared geometric semantics; the multi\u2011task signals regularize depth predictions on unseen data.",
+      "risk": "Adversarial alignment can be unstable; adding multiple heads increases memory, challenging strict real\u2011time constraints."
+    },
+    {
+      "name": "Dynamic\u2011Mask Pose\u2011Refinement (DM\u2011PR) Module",
+      "rationale": "Introduce a lightweight motion\u2011segmentation branch that predicts per\u2011pixel dynamic masks; use these masks to weight the photometric reprojection loss and to fine\u2011tune the pose network via a residual refinement block trained end\u2011to\u2011end.",
+      "expected_benefit": "Reduces depth errors caused by moving objects and non\u2011rigid bodies, directly addressing the dominant failure mode highlighted by SPIdepth and SoccerNet benchmarks.",
+      "risk": "Accurate dynamic masking may require additional supervision or careful curriculum learning; errors in mask prediction can propagate to pose refinement, hurting overall performance."
+    },
+    {
+      "name": "Efficient Diffusion\u2011Based Depth Prior (EDDP)",
+      "rationale": "Leverage a pre\u2011trained diffusion model to generate a coarse depth prior from a single image, then fuse it with the self\u2011supervised depth estimate using a fast bilateral refinement network.",
+      "expected_benefit": "Provides a global, scene\u2011consistent depth scaffold that helps recover structure in texture\u2011less or reflective regions where photometric loss fails, without adding inference cost beyond a single forward pass of a lightweight diffusion encoder.",
+      "risk": "Diffusion models are typically large; distilling them into an efficient encoder may lose fidelity, and the prior could bias the network toward training\u2011set statistics, limiting adaptability."
+    }
+  ],
+  "recommended_option": "Dynamic\u2011Mask Pose\u2011Refinement (DM\u2011PR) Module",
+  "implementation_focus": ""
+}

@@ -1,0 +1,16 @@
+{
+  "contract_version": "1",
+  "stage": "experiment",
+  "topic": "large model monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-17T14:27:21.739469",
+  "primary_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/experiments/large-model-monocular-depth-estimation-2023-2025_20260517_142721/experiment_summary.json",
+  "auxiliary_paths": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/experiments/large-model-monocular-depth-estimation-2023-2025_20260517_142721/experiment_summary.json",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/experiments/large-model-monocular-depth-estimation-2023-2025_20260517_142721"
+  ],
+  "summary": "Experiment summary stored",
+  "status": "completed",
+  "metadata": {
+    "metrics": 13
+  }
+}

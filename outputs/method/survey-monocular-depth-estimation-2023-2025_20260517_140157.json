@@ -1,0 +1,30 @@
+{
+  "research_gaps": [
+    "Absence of a curated, up\u2011to\u2011date corpus of monocular depth papers (2023\u20112025) with extracted architectural, training, and evaluation details.",
+    "Limited cross\u2011domain generalization of current models; most methods are evaluated on narrow benchmark sets (e.g., KITTI, NYU) and degrade on unseen environments.",
+    "Scarcity of real\u2011time, metric\u2011scale depth estimators that can be directly integrated into SLAM or AR pipelines.",
+    "Under\u2011explored multimodal/self\u2011supervised signals (e.g., inertial, event, audio) that could resolve depth ambiguities without expensive sensors."
+  ],
+  "proposals": [
+    {
+      "name": "Comprehensive 2023\u20112025 Monocular Depth Benchmark (MD\u2011Bench2025)",
+      "rationale": "Collect, standardize, and annotate all monocular depth papers released between 2023\u20112025, extracting model specs, training regimes, and evaluation numbers; supplement with new test suites covering indoor, outdoor, low\u2011light, and synthetic domains.",
+      "expected_benefit": "Provides a reliable reference point for performance comparison, reveals real\u2011world generalization gaps, and accelerates reproducibility.",
+      "risk": "High curation effort; licensing constraints may limit inclusion of certain datasets or code."
+    },
+    {
+      "name": "Vision\u2011Depth Foundation Model (VDFM)",
+      "rationale": "Train a large\u2011scale transformer\u2011based encoder\u2011decoder on diverse, publicly available video streams (e.g., YouTube\u20118M, internet videos) using self\u2011supervised cues (frame warping, photometric loss) and metric supervision from sparse LiDAR/structure\u2011from\u2011motion points.",
+      "expected_benefit": "Learns universal depth priors that generalize across domains, reducing the need for per\u2011dataset fine\u2011tuning and improving zero\u2011shot performance.",
+      "risk": "Requires massive compute and careful handling of noisy self\u2011supervision; risk of bias toward dominant scene types in web video corpus."
+    },
+    {
+      "name": "Multimodal Self\u2011Supervised Depth Fusion (MSDF)",
+      "rationale": "Combine monocular RGB with auxiliary low\u2011cost sensors (inertial measurement units, event cameras) in a joint self\u2011supervised loss that enforces geometric consistency across modalities.",
+      "expected_benefit": "Helps resolve depth ambiguities in texture\u2011less or fast\u2011motion scenes, while keeping runtime suitable for edge devices.",
+      "risk": "Additional hardware integration complexity; sensor calibration drift may introduce systematic errors if not properly compensated."
+    }
+  ],
+  "recommended_option": "Vision\u2011Depth Foundation Model (VDFM)",
+  "implementation_focus": ""
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "index": 0,
+    "title": "Relevant Paper",
+    "source": "arxiv",
+    "relevance_assessment": "relevant",
+    "key_findings": [
+      "finding"
+    ],
+    "limitations": [
+      "limitation"
+    ],
+    "evidence_snippets": [
+      "snippet"
+    ],
+    "summary": "paper summary"
+  }
+]

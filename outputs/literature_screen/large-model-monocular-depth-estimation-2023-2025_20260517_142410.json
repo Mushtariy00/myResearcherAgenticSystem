@@ -1,0 +1,15 @@
+{
+  "selected_indices": [
+    1,
+    3,
+    4,
+    5
+  ],
+  "rejected_indices": [
+    0,
+    2,
+    6,
+    7
+  ],
+  "selection_rationale": "Selected papers directly address large\u2011scale or foundation model approaches to monocular depth estimation published within the 2023\u20112025 window. 'Towards Depth Foundation Model' surveys recent trends and explicitly targets vision foundation models for depth, making it central to the topic. 'G2-MonoDepth' proposes a unified framework that leverages heterogeneous sensor data and is built on large\u2011model backbones, aligning with the theme of generalization across domains. 'Distill Any Depth' demonstrates how massive unlabeled data and distillation can boost monocular depth models, reflecting current large\u2011model training practices. 'Relative Pose Estimation through Affine Corrections of Monocular Depth Priors' discusses the impact of large\u2011scale training and vision foundation models on depth priors, offering insights into model scaling effects. The rejected items either focus on unrelated applications (leaf area estimation), different domains (3D human pose), lack sufficient relevance, or provide no substantive content."
+}

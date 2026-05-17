@@ -1,0 +1,37 @@
+{
+  "topic": "large model monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-17T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Leaf area estimation of tomato plants using a monocular depth estimation model",
+      "source": "Semantic Scholar",
+      "summary": "This study presents a computer vision and machine learning-based approach for estimating the total leaf area of tomato plants. Accurate estimation of plant leaf area is essential for crop monitoring, growth assessment, and precision agriculture. However, traditional measurement approaches, such as manual tracing or the use of depth cameras, are often labor-intensive, destructive, or costly, which limits their scalability in large-scale agricultural applications. Recent advances in computer vision and machine learning have enabled non-destructive estimation of plant traits directly from ordinary RGB images. Monocular depth estimation models, such as MiDaS, can extract relative depth informati",
+      "url": "https://www.semanticscholar.org/paper/5389162a4b2492549ad779c716ef7bc51eacceb7"
+    },
+    {
+      "title": "Towards Depth Foundation Model: Recent Trends in Vision-Based Depth Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Depth estimation is a fundamental task in 3D computer vision, crucial for applications such as 3D reconstruction, free-viewpoint rendering, robotics, autonomous driving, and AR/VR technologies. Traditional methods relying on hardware sensors like LiDAR are often limited by high costs, low resolution, and environmental sensitivity, limiting their applicability in real-world scenarios. Recent advances in vision-based methods offer a promising alternative, yet they face challenges in generalization and stability due to either the low-capacity model architectures or the reliance on domain-specific and small-scale datasets. The emergence of scaling laws and foundation models in other domains has ",
+      "url": "https://www.semanticscholar.org/paper/1c047e6bb2a9bc1079637648cebf6979b345c98a"
+    },
+    {
+      "title": "A Survey of the State of the Art in Monocular 3D Human Pose Estimation: Methods, Benchmarks, and Challenges",
+      "source": "Semantic Scholar",
+      "summary": "Three-dimensional human pose estimation (3D HPE) from monocular RGB cameras is a fundamental yet challenging task in computer vision, forming the basis of a wide range of applications such as action recognition, metaverse, self-driving, and healthcare. Recent advances in deep learning have significantly propelled the field, particularly with the incorporation of state-space models (SSMs) and diffusion models. However, systematic reviews that comprehensively cover these emerging techniques remain limited. This survey contributes to the literature by providing the first comprehensive analysis of recent innovative approaches, featuring diffusion models and SSMs within 3D HPE. It categorizes and",
+      "url": "https://www.semanticscholar.org/paper/be11a82813952b2642d3253b0b3b936ea61eea84"
+    },
+    {
+      "title": "G2-MonoDepth: A General Framework of Generalized Depth Inference From Monocular RGB+X Data",
+      "source": "Semantic Scholar",
+      "summary": "Monocular depth inference is a fundamental problem for scene perception of robots. Specific robots may be equipped with a camera plus an optional depth sensor of any type and located in various scenes of different scales, whereas recent advances derived multiple individual sub-tasks. It leads to additional burdens to fine-tune models for specific robots and thereby high-cost customization in large-scale industrialization. This article investigates a unified task of monocular depth inference, which infers high-quality depth maps from all kinds of input raw data from various robots in unseen scenes. A basic benchmark G2-MonoDepth is developed for this task, which comprises four components: (a)",
+      "url": "https://www.semanticscholar.org/paper/e43a8c142acdd3f7c4498b1ffd8860018d4b7b43"
+    },
+    {
+      "title": "Distill Any Depth: Distillation Creates a Stronger Monocular Depth Estimator",
+      "source": "Semantic Scholar",
+      "summary": "Recent advances in zero-shot monocular depth estimation(MDE) have significantly improved generalization by unifying depth distributions through normalized depth representations and by leveraging large-scale unlabeled data via pseudo-label distillation. However, existing methods that rely on global depth normalization treat all depth values equally, which can amplify noise in pseudo-labels and reduce distillation effectiveness. In this paper, we present a systematic analysis of depth normalization strategies in the context of pseudo-label distillation. Our study shows that, under recent distillation paradigms (e.g., shared-context distillation), normalization is not always necessary, as omitt",
+      "url": "https://www.semanticscholar.org/paper/1c03ea3cc3ecdaa9bdf28af00586a53773afbe31"
+    }
+  ],
+  "synthesis": "The supplied analyses contain no textual evidence from any papers, preventing extraction of concrete findings on large-model monocular depth estimation between 2023 and 2025. Consequently, no recurring methods, performance trends, or benchmark results can be identified. This absence highlights a critical gap: the current dataset lacks curated, accessible summaries of recent large-model approaches, impeding meta\u2011analysis and systematic review. Future work should prioritize the collection and annotation of relevant publications, ensuring that key contributions\u2014such as transformer\u2011based backbones, self\u2011supervised pretraining, multimodal fusion, and distillation strategies\u2014are captured. Establishing a structured repository of evidence will enable researchers to map progress, compare architectures, and pinpoint remaining challenges, such as real\u2011time inference, domain adaptation, and uncertainty quantification in monocular depth estimation."
+}
