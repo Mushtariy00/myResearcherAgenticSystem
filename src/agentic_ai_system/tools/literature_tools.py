@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import socket
 import time
 import urllib.error
 import urllib.parse
@@ -45,9 +46,22 @@ class ArxivSearchTool(BaseTool):
                 with urllib.request.urlopen(request, timeout=30) as response:
                     raw_xml = response.read()
                 break
+            except socket.timeout as exc:
+                if attempt < 3:
+                    time.sleep(attempt * 2)  # Exponential backoff
+                    continue
+                return json.dumps(
+                    {
+                        "query": query,
+                        "source": "arXiv",
+                        "error": f"Socket timeout after {attempt} attempts",
+                        "papers": [],
+                    },
+                    ensure_ascii=True,
+                )
             except urllib.error.HTTPError as exc:
                 if exc.code == 429 and attempt < 3:
-                    time.sleep(attempt)
+                    time.sleep(attempt * 2)
                     continue
                 return json.dumps(
                     {
@@ -60,7 +74,7 @@ class ArxivSearchTool(BaseTool):
                 )
             except urllib.error.URLError as exc:
                 if attempt < 3:
-                    time.sleep(attempt)
+                    time.sleep(attempt * 2)
                     continue
                 return json.dumps(
                     {

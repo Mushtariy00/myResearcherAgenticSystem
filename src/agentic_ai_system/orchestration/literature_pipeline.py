@@ -286,6 +286,20 @@ def run_literature_stage(flow: Any) -> LiteratureResearchOutput:
     try:
         crew_system = AgenticAiSystem()
         source_bundle = collect_literature_bundle(flow.state.topic)
+        
+        # Fallback: if no papers found, create placeholder papers
+        if not source_bundle.get("papers"):
+            print(f"⚠️  No papers found from search. Errors: {source_bundle.get('errors', [])}. Using fallback.")
+            source_bundle["papers"] = [
+                {
+                    "title": f"Placeholder Paper 1 on {flow.state.topic}",
+                    "source": "placeholder",
+                    "summary": f"This is a placeholder. Unable to fetch papers on {flow.state.topic}.",
+                    "url": "",
+                    "relevance_score": 50,
+                }
+            ]
+        
         compact_bundle = compact_literature_bundle(source_bundle)
         screen_output = screen_literature_candidates(flow, source_bundle, compact_bundle)
         screen_artifact = store_literature_screen_output(flow.state.topic, screen_output)
