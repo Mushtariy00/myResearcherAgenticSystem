@@ -183,8 +183,13 @@ class ResearchSupervisorFlow(Flow[SupervisorState]):
         return run_literature_stage(self)
 
     @listen(literature_stage)
-    def pdf_fetch_stage(self, literature_output: LiteratureResearchOutput) -> LiteratureFetchOutput:
-        return run_pdf_fetch_stage(self, literature_output)
+    def pdf_fetch_stage(self, _literature_output: LiteratureResearchOutput) -> LiteratureFetchOutput:
+        # Use the literature_fetch_output from flow.state (populated by run_literature_stage)
+        if hasattr(self.state, 'literature_fetch_output') and self.state.literature_fetch_output:
+            return self.state.literature_fetch_output
+        # Fallback: return empty output if no fetch output available
+        from agentic_ai_system.schemas.fetches import LiteratureFetchOutput
+        return LiteratureFetchOutput(papers=[])
 
     @listen(pdf_fetch_stage)
     def method_stage(self, _fetch_output: LiteratureFetchOutput) -> MethodStageOutput:

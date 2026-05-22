@@ -145,9 +145,22 @@ class SemanticScholarSearchTool(BaseTool):
                 with urllib.request.urlopen(request, timeout=30) as response:
                     payload = json.loads(response.read().decode("utf-8"))
                 break
+            except socket.timeout as exc:
+                if attempt < 3:
+                    time.sleep(attempt * 2)  # Exponential backoff
+                    continue
+                return json.dumps(
+                    {
+                        "query": query,
+                        "source": "Semantic Scholar",
+                        "error": f"Socket timeout after {attempt} attempts",
+                        "papers": [],
+                    },
+                    ensure_ascii=True,
+                )
             except urllib.error.HTTPError as exc:
                 if exc.code == 429 and attempt < 3:
-                    time.sleep(attempt)
+                    time.sleep(attempt * 2)
                     continue
                 return json.dumps(
                     {
@@ -160,7 +173,7 @@ class SemanticScholarSearchTool(BaseTool):
                 )
             except urllib.error.URLError as exc:
                 if attempt < 3:
-                    time.sleep(attempt)
+                    time.sleep(attempt * 2)
                     continue
                 return json.dumps(
                     {
