@@ -66,26 +66,49 @@ def collect_literature_bundle(topic: str) -> dict[str, Any]:
     queries = build_literature_queries(topic)
     aggregated: list[dict[str, Any]] = []
     source_errors: list[dict[str, str]] = []
+    
+    print(f"\n📚 Starting literature search for topic: '{topic}'")
+    print(f"📍 Generated queries: {queries}\n")
+    
     for query in queries:
+        print(f"  🔍 Searching with query: '{query}'")
         for tool in (ArxivSearchTool(), SemanticScholarSearchTool()):
-            raw = tool._run(query, max_results=8)
-            payload = json.loads(raw)
-            if payload.get("error"):
-                source_errors.append(
-                    {
-                        "source": payload.get("source", tool.name),
-                        "query": query,
-                        "error": payload["error"],
-                    }
-                )
-                continue
-            for paper in payload.get("papers", []):
-                item = dict(paper)
-                item["query"] = query
-                if not is_topic_specific_match(item, topic):
+            try:
+                raw = tool._run(query, max_results=8)
+                payload = json.loads(raw)
+                if payload.get("error"):
+                    error_msg = payload["error"]
+                    print(f"    ⚠️  {tool.name}: {error_msg}")
+                    source_errors.append(
+                        {
+                            "source": payload.get("source", tool.name),
+                            "query": query,
+                            "error": error_msg,
+                        }
+                    )
                     continue
-                item["relevance_score"] = paper_relevance_score(item, topic)
-                aggregated.append(item)
+                
+                papers_count = len(payload.get("papers", []))
+                print(f"    ✅ {tool.name}: Found {papers_count} papers")
+                
+                for paper in payload.get("papers", []):
+                    item = dict(paper)
+                    item["query"] = query
+                    if not is_topic_specific_match(item, topic):
+                        print(f"       ❌ Filtered out: {item.get('title', '')[:50]}")
+                        continue
+                    item["relevance_score"] = paper_relevance_score(item, topic)
+                    aggregated.append(item)
+                    print(f"       ✅ Added (score={item['relevance_score']}): {item.get('title', '')[:50]}")
+            except Exception as e:
+                print(f"    ❌ {tool.name}: Exception: {e}")
+                source_errors.append({
+                    "source": tool.name,
+                    "query": query,
+                    "error": str(e),
+                })
+                continue
+    
     deduped: dict[str, dict[str, Any]] = {}
     for paper in aggregated:
         key = (paper.get("url") or "").strip().lower() or (paper.get("title") or "").strip().lower()
@@ -94,12 +117,18 @@ def collect_literature_bundle(topic: str) -> dict[str, Any]:
         existing = deduped.get(key)
         if not existing or paper.get("relevance_score", 0) > existing.get("relevance_score", 0):
             deduped[key] = paper
+    
     ranked_papers = sorted(
         deduped.values(),
         key=lambda item: (item.get("relevance_score", 0), item.get("citation_count", "0")),
         reverse=True,
     )
-    return {"topic": topic, "queries": queries, "errors": source_errors, "papers": ranked_papers[:25]}
+    
+    final_papers = ranked_papers[:25]
+    print(f"\n📊 Literature search complete: {len(final_papers)} unique papers after deduplication")
+    print(f"📊 Total errors: {len(source_errors)}\n")
+    
+    return {"topic": topic, "queries": queries, "errors": source_errors, "papers": final_papers}
 
 
 def compact_literature_bundle(source_bundle: dict[str, Any], max_papers: int = 8) -> dict[str, Any]:
@@ -289,12 +318,15 @@ def run_literature_stage(flow: Any) -> LiteratureResearchOutput:
         
         # Fallback: if no papers found, create placeholder papers
         if not source_bundle.get("papers"):
-            print(f"⚠️  No papers found from search. Errors: {source_bundle.get('errors', [])}. Using fallback.")
+            errors_str = "\n".join([f"- {e['source']}: {e['error']} (query: {e['query']})" for e in source_bundle.get('errors', [])])
+            error_msg = f"⚠️  No papers found from search. Errors:\n{errors_str}" if errors_str else "⚠️  No papers found from search (no errors logged)"
+            print(f"\n{error_msg}\n")
+            print("Using fallback placeholder paper for demonstration.\n")
             source_bundle["papers"] = [
                 {
                     "title": f"Placeholder Paper 1 on {flow.state.topic}",
                     "source": "placeholder",
-                    "summary": f"This is a placeholder. Unable to fetch papers on {flow.state.topic}.",
+                    "summary": f"This is a placeholder. Unable to fetch papers on {flow.state.topic}. Check API connectivity and rate limits.",
                     "url": "",
                     "relevance_score": 50,
                 }
