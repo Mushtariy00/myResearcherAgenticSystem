@@ -8,6 +8,12 @@ from agentic_ai_system.crew import AgenticAiSystem
 from agentic_ai_system.execution.experiment_runner import run_experiment_stage
 from agentic_ai_system.execution.sandbox_executor import execute_coding_stage
 from agentic_ai_system.orchestration.flow_utils import kickoff_with_retry, parse_model_output, run_id
+from agentic_ai_system.orchestration.memory_integration import (
+    recall_relevant_research,
+    save_literature_findings,
+    save_method_decision,
+    save_pdf_fetch_results,
+)
 from agentic_ai_system.schemas.fetches import LiteratureFetchOutput
 from agentic_ai_system.schemas.models import CodingStageOutput, ExperimentStageOutput, LiteratureResearchOutput, MethodStageOutput, WritingStageOutput
 from agentic_ai_system.storage.artifact_contract import store_stage_artifact_manifest
@@ -22,6 +28,8 @@ def run_pdf_fetch_stage(flow: Any, literature_output: LiteratureResearchOutput) 
     """
     Fetch PDFs for screened literature papers using waterfall strategy.
     Strategy: arXiv → Unpaywall → OpenAlex → HTML parsing.
+    
+    Saves fetch results and strategies to agentmemory for recall in future sessions.
     """
     flow._persistence.stage_event(run_id(flow), "pdf_fetch", "running")
     try:
@@ -29,6 +37,7 @@ def run_pdf_fetch_stage(flow: Any, literature_output: LiteratureResearchOutput) 
         
         papers_to_fetch = literature_output.papers[:8] if literature_output.papers else []
         fetch_results = []
+        fetch_strategies = []
         
         for idx, paper in enumerate(papers_to_fetch):
             try:
@@ -53,6 +62,11 @@ def run_pdf_fetch_stage(flow: Any, literature_output: LiteratureResearchOutput) 
                     error=result.get("error", ""),
                 )
                 fetch_results.append(fetch_result)
+                
+                # Track strategies used
+                strategy = result.get("strategy", "unknown")
+                if strategy != "unknown":
+                    fetch_strategies.append(strategy)
             except Exception as e:
                 fetch_result = PaperFetchResult(
                     index=idx,
@@ -88,6 +102,15 @@ def run_pdf_fetch_stage(flow: Any, literature_output: LiteratureResearchOutput) 
             f"  Fetch manifest: {fetch_manifest}"
         )
         
+        # Save fetch results to memory for future reference
+        save_pdf_fetch_results(
+            topic=flow.state.topic,
+            run_id=run_id(flow),
+            total_attempted=len(fetch_results),
+            success_count=success_count,
+            fetch_strategies=list(set(fetch_strategies)),
+        )
+        
         flow._approval_gate("pdf_fetch", preview)
         flow._persistence.stage_event(run_id(flow), "pdf_fetch", "completed")
         ui_update_queue.put({"type": "stage_completed", "stage": "pdf_fetch", "timestamp": datetime.now().isoformat()})
@@ -106,10 +129,20 @@ def run_pdf_fetch_stage(flow: Any, literature_output: LiteratureResearchOutput) 
 
 
 
+def run_method_stage(flow: Any, literature_output: LiteratureResearchOutput) -> MethodStageOutput:
     flow._persistence.stage_event(run_id(flow), "method", "running")
     try:
+        # Recall relevant research context from prior sessions before analyzing
+        prior_context = recall_relevant_research(
+            topic=flow.state.topic,
+            stage="method",
+            limit=3,
+        )
+        
         crew_system = AgenticAiSystem()
-        prompt = (
+        
+        # Build prompt with optional prior context
+        base_prompt = (
             f"Given this literature synthesis for '{flow.state.topic}':\n"
             f"{literature_output.model_dump_json(indent=2)}\n\n"
             "Identify key gaps and propose 2-3 concrete method options with one recommendation.\n"
@@ -120,6 +153,12 @@ def run_pdf_fetch_stage(flow: Any, literature_output: LiteratureResearchOutput) 
             '  "recommended_option": "string"\n'
             "}"
         )
+        
+        if prior_context:
+            prompt = prior_context + "\n\n" + base_prompt
+        else:
+            prompt = base_prompt
+        
         result = kickoff_with_retry(flow, "method", crew_system.method_analyst(), prompt)
         method_output = parse_model_output(result.raw, MethodStageOutput)
         flow.state.method_output = method_output
@@ -141,6 +180,17 @@ def run_pdf_fetch_stage(flow: Any, literature_output: LiteratureResearchOutput) 
             f"Research gaps: {', '.join(method_output.research_gaps[:3]) or 'none'}\n"
             f"Proposals:\n{options or '- no proposals returned'}"
         )
+        
+        # Save method decision to memory for future reference
+        save_method_decision(
+            topic=flow.state.topic,
+            run_id=run_id(flow),
+            research_gaps=method_output.research_gaps,
+            selected_method=method_output.recommended_option,
+            rationale=f"Selected from {len(method_output.proposals)} proposals based on literature analysis",
+            artifact_path=str(method_artifact),
+        )
+        
         flow._approval_gate("method", preview)
         flow._persistence.stage_event(run_id(flow), "method", "completed")
         ui_update_queue.put({"type": "stage_completed", "stage": "method", "timestamp": datetime.now().isoformat()})
