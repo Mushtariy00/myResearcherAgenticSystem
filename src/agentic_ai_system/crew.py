@@ -17,6 +17,13 @@ class AgenticAiSystem():
         )
 
     @agent
+    def pdf_fetcher(self) -> Agent:
+        return Agent(
+            config=self.agents_config['pdf_fetcher'], # type: ignore[index]
+            verbose=True
+        )
+
+    @agent
     def method_analyst(self) -> Agent:
         return Agent(
             config=self.agents_config['method_analyst'], # type: ignore[index]

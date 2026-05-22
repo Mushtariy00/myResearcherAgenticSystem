@@ -8,14 +8,104 @@ from agentic_ai_system.crew import AgenticAiSystem
 from agentic_ai_system.execution.experiment_runner import run_experiment_stage
 from agentic_ai_system.execution.sandbox_executor import execute_coding_stage
 from agentic_ai_system.orchestration.flow_utils import kickoff_with_retry, parse_model_output, run_id
+from agentic_ai_system.schemas.fetches import LiteratureFetchOutput
 from agentic_ai_system.schemas.models import CodingStageOutput, ExperimentStageOutput, LiteratureResearchOutput, MethodStageOutput, WritingStageOutput
 from agentic_ai_system.storage.artifact_contract import store_stage_artifact_manifest
+from agentic_ai_system.storage.literature_fetch_storage import store_literature_fetch_output
 from agentic_ai_system.storage.method_storage import store_method_output
 from agentic_ai_system.storage.writing_storage import store_writing_output
+from agentic_ai_system.tools.paper_fetch_tools import fetch_pdf_with_waterfall
 from agentic_ai_system.ui.bridge import ui_update_queue
 
 
-def run_method_stage(flow: Any, literature_output: LiteratureResearchOutput) -> MethodStageOutput:
+def run_pdf_fetch_stage(flow: Any, literature_output: LiteratureResearchOutput) -> LiteratureFetchOutput:
+    """
+    Fetch PDFs for screened literature papers using waterfall strategy.
+    Strategy: arXiv → Unpaywall → OpenAlex → HTML parsing.
+    """
+    flow._persistence.stage_event(run_id(flow), "pdf_fetch", "running")
+    try:
+        from agentic_ai_system.schemas.fetches import PaperFetchResult
+        
+        papers_to_fetch = literature_output.papers[:8] if literature_output.papers else []
+        fetch_results = []
+        
+        for idx, paper in enumerate(papers_to_fetch):
+            try:
+                result = fetch_pdf_with_waterfall(
+                    source_url=paper.source_url,
+                    doi=paper.doi if hasattr(paper, 'doi') else None,
+                    title=paper.title if hasattr(paper, 'title') else None,
+                    max_pages=None,
+                )
+                
+                fetch_result = PaperFetchResult(
+                    index=idx,
+                    title=paper.title if hasattr(paper, 'title') else result.get("title", ""),
+                    source=paper.source if hasattr(paper, 'source') else "unknown",
+                    source_url=result.get("source_url", ""),
+                    resolved_pdf_url=result.get("resolved_pdf_url", ""),
+                    page_count=result.get("page_count", 0),
+                    text_length=result.get("text_length", 0),
+                    text_chunks=[],
+                    text_path="",
+                    status=result.get("status", "unknown"),
+                    error=result.get("error", ""),
+                )
+                fetch_results.append(fetch_result)
+            except Exception as e:
+                fetch_result = PaperFetchResult(
+                    index=idx,
+                    title=paper.title if hasattr(paper, 'title') else "unknown",
+                    source=paper.source if hasattr(paper, 'source') else "unknown",
+                    source_url=paper.source_url if hasattr(paper, 'source_url') else "",
+                    resolved_pdf_url="",
+                    page_count=0,
+                    text_length=0,
+                    text_chunks=[],
+                    text_path="",
+                    status="error",
+                    error=str(e),
+                )
+                fetch_results.append(fetch_result)
+        
+        fetch_output = LiteratureFetchOutput(papers=fetch_results)
+        flow.state.literature_fetch_output = fetch_output
+        
+        fetch_manifest = store_literature_fetch_output(
+            flow.state.topic,
+            fetch_output,
+        )
+        flow.state.literature_fetch_dir = str(fetch_manifest.parent)
+        flow.state.literature_fetch_manifest_path = str(fetch_manifest)
+        
+        success_count = sum(1 for r in fetch_results if r.status == "ok")
+        preview = (
+            f"PDF Fetch Results:\n"
+            f"  Total papers attempted: {len(fetch_results)}\n"
+            f"  Successfully fetched: {success_count}\n"
+            f"  Failed: {len(fetch_results) - success_count}\n"
+            f"  Fetch manifest: {fetch_manifest}"
+        )
+        
+        flow._approval_gate("pdf_fetch", preview)
+        flow._persistence.stage_event(run_id(flow), "pdf_fetch", "completed")
+        ui_update_queue.put({"type": "stage_completed", "stage": "pdf_fetch", "timestamp": datetime.now().isoformat()})
+        
+        return fetch_output
+    except Exception as exc:
+        from agentic_ai_system.orchestration.exceptions import CheckpointRejected
+        
+        if isinstance(exc, CheckpointRejected):
+            flow._persistence.stage_event(run_id(flow), "pdf_fetch", "stopped", str(exc))
+            flow._persistence.finish_run(run_id(flow), "stopped")
+            raise
+        flow._persistence.stage_event(run_id(flow), "pdf_fetch", "failed", str(exc))
+        flow._persistence.finish_run(run_id(flow), "failed")
+        raise
+
+
+
     flow._persistence.stage_event(run_id(flow), "method", "running")
     try:
         crew_system = AgenticAiSystem()

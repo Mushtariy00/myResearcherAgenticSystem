@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -166,3 +167,230 @@ class PaperFullTextFetchTool(BaseTool):
 
     def _run(self, url: str) -> str:
         return json.dumps(fetch_open_access_full_text(url), ensure_ascii=True)
+
+
+def _fetch_url_with_retry(url: str, max_retries: int = 3, timeout: int = 30) -> bytes | None:
+    """Fetch URL bytes with exponential backoff retry."""
+    for attempt in range(max_retries):
+        try:
+            request = urllib.request.Request(
+                url,
+                headers={"User-Agent": "agentic_ai_system/0.1 pdf-fetcher"},
+            )
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                content_type = response.headers.get("Content-Type", "")
+                if "pdf" not in content_type.lower():
+                    return None
+                return response.read()
+        except (urllib.error.HTTPError, urllib.error.URLError) as e:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt
+                time.sleep(wait_time)
+            else:
+                return None
+        except Exception:
+            return None
+    return None
+
+
+def _get_unpaywall_pdf_url(doi: str) -> str | None:
+    """
+    Query Unpaywall API (unpaywall.org/api/v2/) to find OA PDF URL.
+    Docs: https://unpaywall.org/products/api
+    """
+    if not doi:
+        return None
+    
+    doi_clean = doi.strip().lower()
+    if not doi_clean.startswith("http"):
+        if not doi_clean.startswith("10."):
+            return None
+        url = f"https://api.unpaywall.org/v2/{doi_clean}?email=system@example.com"
+    else:
+        url = doi
+    
+    try:
+        request = urllib.request.Request(
+            url,
+            headers={"User-Agent": "agentic_ai_system/0.1 unpaywall-adapter"},
+        )
+        with urllib.request.urlopen(request, timeout=15) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        
+        if data.get("is_oa"):
+            oa_location = data.get("best_oa_location") or data.get("oa_locations", [{}])[0]
+            if oa_location and oa_location.get("url_for_pdf"):
+                return oa_location["url_for_pdf"]
+            elif oa_location and oa_location.get("url"):
+                return oa_location["url"]
+        return None
+    except Exception:
+        return None
+
+
+def _get_openalex_pdf_url(doi: str | None = None, title: str | None = None) -> str | None:
+    """
+    Query OpenAlex API (openalex.org) to find OA PDF URL or DOI.
+    Docs: https://docs.openalex.org
+    """
+    if not doi and not title:
+        return None
+    
+    if doi:
+        doi_clean = doi.strip().lower()
+        if not doi_clean.startswith("http"):
+            if doi_clean.startswith("10."):
+                query = f'doi:"{doi_clean}"'
+            else:
+                return None
+        else:
+            return None
+    else:
+        query = f'title:"{title}"' if title else None
+    
+    if not query:
+        return None
+    
+    try:
+        encoded_query = urllib.parse.quote(query)
+        url = f"https://api.openalex.org/works?filter={encoded_query}&per-page=1"
+        request = urllib.request.Request(
+            url,
+            headers={"User-Agent": "agentic_ai_system/0.1 openalex-adapter"},
+        )
+        with urllib.request.urlopen(request, timeout=15) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        
+        if data.get("results"):
+            work = data["results"][0]
+            if work.get("open_access", {}).get("oa_url"):
+                return work["open_access"]["oa_url"]
+            if work.get("open_access", {}).get("is_oa"):
+                best_oa = work.get("open_access", {}).get("oa_location")
+                if best_oa and best_oa.get("url_for_pdf"):
+                    return best_oa["url_for_pdf"]
+        return None
+    except Exception:
+        return None
+
+
+def resolve_pdf_url_waterfall(
+    source_url: str,
+    doi: str | None = None,
+    title: str | None = None,
+) -> str | None:
+    """
+    Waterfall PDF URL resolution strategy:
+    1. Try arXiv direct (if source is arXiv)
+    2. Try Unpaywall API (if DOI available)
+    3. Try OpenAlex API (if DOI or title available)
+    4. Try HTML meta tag parsing (any URL)
+    Returns the first successful PDF URL or None.
+    """
+    # Step 1: arXiv direct
+    arxiv_url = _resolve_arxiv_pdf_url(source_url)
+    if arxiv_url:
+        return arxiv_url
+    
+    # Step 2: Unpaywall (DOI required)
+    if doi:
+        unpaywall_url = _get_unpaywall_pdf_url(doi)
+        if unpaywall_url:
+            return unpaywall_url
+    
+    # Step 3: OpenAlex (DOI or title)
+    if doi or title:
+        openalex_url = _get_openalex_pdf_url(doi=doi, title=title)
+        if openalex_url:
+            return openalex_url
+    
+    # Step 4: HTML meta tag parsing
+    html_url = _resolve_html_pdf_url(source_url)
+    if html_url:
+        return html_url
+    
+    return None
+
+
+def fetch_pdf_with_waterfall(
+    source_url: str,
+    doi: str | None = None,
+    title: str | None = None,
+    max_pages: int | None = None,
+) -> dict[str, object]:
+    """
+    Fetch PDF using waterfall strategy. Returns structured result.
+    Tries: arXiv → Unpaywall → OpenAlex → HTML parsing.
+    """
+    resolved_url = resolve_pdf_url_waterfall(source_url, doi=doi, title=title)
+    
+    if not resolved_url:
+        return {
+            "source_url": source_url,
+            "doi": doi or "",
+            "title": title or "",
+            "resolved_pdf_url": "",
+            "status": "unresolved",
+            "strategy": "none",
+            "page_count": 0,
+            "text_length": 0,
+            "text": "",
+            "error": "No PDF URL found via waterfall (arXiv/Unpaywall/OpenAlex/HTML)",
+        }
+    
+    # Determine strategy used
+    strategy = "unknown"
+    if _resolve_arxiv_pdf_url(source_url) == resolved_url:
+        strategy = "arxiv"
+    elif doi and _get_unpaywall_pdf_url(doi) == resolved_url:
+        strategy = "unpaywall"
+    elif _get_openalex_pdf_url(doi=doi, title=title) == resolved_url:
+        strategy = "openalex"
+    elif _resolve_html_pdf_url(source_url) == resolved_url:
+        strategy = "html"
+    
+    # Fetch PDF bytes
+    pdf_bytes = _fetch_url_with_retry(resolved_url, max_retries=3, timeout=45)
+    if not pdf_bytes:
+        return {
+            "source_url": source_url,
+            "doi": doi or "",
+            "title": title or "",
+            "resolved_pdf_url": resolved_url,
+            "status": "fetch_failed",
+            "strategy": strategy,
+            "page_count": 0,
+            "text_length": 0,
+            "text": "",
+            "error": "Failed to fetch PDF from resolved URL",
+        }
+    
+    # Extract text
+    try:
+        text, page_count = extract_pdf_text(pdf_bytes, max_pages=max_pages)
+        return {
+            "source_url": source_url,
+            "doi": doi or "",
+            "title": title or "",
+            "resolved_pdf_url": resolved_url,
+            "status": "ok",
+            "strategy": strategy,
+            "page_count": page_count,
+            "text_length": len(text),
+            "text": text,
+            "error": "",
+        }
+    except Exception as e:
+        return {
+            "source_url": source_url,
+            "doi": doi or "",
+            "title": title or "",
+            "resolved_pdf_url": resolved_url,
+            "status": "extract_error",
+            "strategy": strategy,
+            "page_count": 0,
+            "text_length": 0,
+            "text": "",
+            "error": f"PDF extraction failed: {str(e)}",
+        }
+

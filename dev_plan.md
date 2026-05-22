@@ -1,66 +1,114 @@
 # CrewAI Dev Plan — Agentic Research System (CLI-first)
 
 ## Problem & approach
-Build a semi-autonomous research pipeline in CrewAI that preserves human approval gates while reducing custom orchestration code.  
-Use a **Flow as supervisor** (routing + checkpoints), specialized CrewAI tools for each stage, and start with **CLI approvals** before any UI.
+Build a semi-autonomous research pipeline in CrewAI that preserves human approval gates while reducing custom orchestration code. Use a **Flow as supervisor** (routing + checkpoints), specialized CrewAI tools for each stage, and keep CLI approvals as the default human-in-the-loop interface.
 
-## Assumptions confirmed
-- Phase 1 checkpoint interface: **CLI prompts only**
-- Primary model for now: **OpenRouter `openai/gpt-oss-120b:free`**
-
-## Scope (in)
-- Literature search/summarization
-- Gap analysis and method proposal
-- Sandbox-first code generation
-- Experiment run orchestration with approval before launch
-- Draft writing with section-level approvals
-- End-to-end CLI workflow with persistent state and logs
-
-## Scope (out, initial)
-- Streamlit/web dashboard in Phase 1
-- Full production deployment hardening
-- Multi-tenant auth/access control
+## Updated goals (May 2026)
+- Integrate a persistent memory (agentmemory) via MCP to avoid re-explaining context across sessions
+- Implement a robust literature pipeline with PDF retrieval waterfall and cached storage
+- Make every stage modular (agent per stage) with explicit Flow-state contracts and approval checkpoints
+- Keep sandboxed code generation and experiment execution safe by default
 
 ## Architecture target
-- **Flow layer (supervisor):** stage transitions, routing, approval checkpoints, retry paths
-- **Crew layer:** specialist agents + YAML tasks per stage
-- **Tools layer:** arXiv/Semantic Scholar search, PDF parse, sandbox runner, MLflow adapter, memory adapters
-- **State & memory:** Flow persisted state + SQLite for structured runs + Crew knowledge/memory for retrieval
-- **Model policy:** OpenRouter primary with fallback model chain configured in one place
+- Flow (supervisor): stage transitions, approvals, retry paths, persisted flow state
+- Crew agents: one agent per stage (literature, pdf-fetcher, method, coding, experiment, writing, memory)
+- Tools: search adapters (arXiv, Semantic Scholar), PDF fetcher (Unpaywall/OpenAlex/CORE/PMC), sandbox runner, MLflow adapter, agentmemory MCP
+- Persistence: outputs/ for artifacts, SQLite for flow-run metadata, agentmemory for long-term recall
 
-## Implementation phases
-1. **Phase 0 — Baseline & validation**
-   - Confirm installed CrewAI version, compare with latest, read changelog, pin compatible patterns.
-   - Define provider config for OpenRouter and test a minimal kickoff call.
-2. **Phase 1 — Foundation (CLI-first)**
-   - Create Flow skeleton with checkpoint gates and CLI approval prompts.
-   - Implement Literature pipeline (search → parse → summarize → persist).
-   - Add structured state models and persistent flow state.
-3. **Phase 2 — Core reasoning/build**
-   - Implement Method stage (gap analysis + 2–3 proposals).
-   - Implement Coding stage with sandbox-only writes and diff preview approval.
-4. **Phase 3 — Experiment + writing**
-   - Implement Experiment stage with run config confirmation and metrics capture.
-   - Implement Writing stage with per-section approve/regenerate loop.
-5. **Phase 4 — Reliability**
-   - Add robust retries, fallback model logic, logging/audit, and failure recovery paths.
-   - Add end-to-end and component tests for major flows.
-6. **Phase 5 — Optional UX**
-   - Add Streamlit UI reusing existing Flow/crew interfaces.
+## Overall integration roadmap
+Phases and deliverables with checkpoints and approximate effort (working days):
 
-## Todos
-- Define OpenRouter/CrewAI model config and fallback policy.
-- Build Flow supervisor with explicit approval gates.
-- Implement Literature tools and storage.
-- Implement Method proposal stage with selectable options.
-- Implement sandboxed Coding stage with diff approval.
-- Implement Experiment stage with MLflow + metrics schema.
-- Implement Writing stage with section-by-section review.
-- Add persistence, logging, retries, and error strategy.
-- Add test suite for phase gates and end-to-end pipeline.
-- Prepare optional Streamlit integration after CLI baseline is stable.
+Phase 0 — Validation & baseline (0.5–1d)
+- Verify installed CrewAI & tools, read changelog (AGENTS.md guidance)
+- Confirm MODEL, .env keys, and OpenRouter connectivity
+- Smoke test crew kickoff and supervisor Flow
 
-## Notes
-- Keep agent boundaries strict; all inter-stage coordination goes through Flow state.
-- Keep dangerous actions gated (code writes to real repo, GPU launches).
-- Prefer structured outputs (`output_pydantic`) between stages to reduce parsing fragility.
+Phase 1 — Core foundation (2–3d)
+- Finalize Literature agent (search + normalized metadata)
+- Add PDF-Fetcher agent (arXiv direct + Unpaywall/OpenAlex MVP)
+- Integrate agentmemory MCP (hooks and explicit save/recall usage)
+- Write unit tests for search & fetch
+
+Phase 2 — Method + Sandbox (3–4d)
+- Implement Method agent producing structured proposals
+- Implement Coding/Sandbox agent with diff preview and sandbox runner
+- Approval gates for publishing sandbox artifacts to repo
+
+Phase 3 — Experiments + Writing (2–3d)
+- Experiment agent (run configs, dry-run, metrics capture)
+- Writing agent (section drafts, per-section approvals)
+- Post-stage summarizers and export utilities
+
+Phase 4 — Reliability & QA (2–3d)
+- Add retries, fallback models, logging, guardrails, and tests
+- E2E dry-run and a manual approval walkthrough
+
+Phase 5 — Optional UI & Deployment (2–4d)
+- Streamlit UI reusing Flow/crew interfaces (optional)
+- Deployment packaging and docs
+
+## Per-agent plans (goal, inputs, outputs, steps, tests, estimate)
+
+1) Literature Agent (0.5–1d)
+- Goal: discover candidate papers and produce normalized metadata
+- Inputs: topic query; Outputs: list of papers saved under outputs/literature/
+- Steps: finalize arXiv and Semantic Scholar tools, normalize schema, unit tests
+- Tests: mock API responses, schema validation
+
+2) PDF-Fetcher Agent (MVP 1d; full 2–3d)
+- Goal: waterfall PDF retrieval and caching per literature_sources_plan
+- Inputs: paper metadata (arXiv ID / DOI / url); Outputs: cached PDF + provenance
+- Steps (MVP): arXiv direct PDF builder + Unpaywall/OpenAlex calls; validation (Content-Type, size); caching by DOI/ID
+- Full: CORE, PMC, bioRxiv adapters, robust retry/backoff and rate-limiting
+- Tests: adapter unit tests and waterfall integration test
+
+3) Memory Agent (configuration + wiring 0.5–1d)
+- Goal: persist session observations and provide recall/smart_search
+- Inputs: stage outputs, approvals, important decisions; Outputs: memory entries
+- Steps: ensure MCP entry, add explicit save calls at stage checkpoints, implement recall usage in literature/method agents
+- Tests: write/save/recall roundtrip tests
+
+4) Method Agent (1d)
+- Goal: analyze literature to produce gap analysis and 2–3 method proposals
+- Inputs: literature outputs + memory context; Outputs: structured proposals saved to outputs/method/
+- Steps: define Pydantic model, implement agent prompt + guardrails, approval checkpoint
+- Tests: model validation and integration test
+
+5) Coding / Sandbox Agent (2–4d)
+- Goal: generate sandboxed code artifacts and diffs for approval
+- Inputs: chosen method + task spec; Outputs: sandbox/<topic>_<ts>/ with diffs and logs
+- Steps: sandbox runner, diff preview tool, approvals to apply changes
+- Tests: run generated unit tests in isolated venv
+
+6) Experiment Agent (1–2d)
+- Goal: orchestrate experiments (dry runs first), capture metrics
+- Inputs: sandbox artifacts; Outputs: outputs/experiments/<topic>_<ts>/ metrics + summaries
+- Steps: experiment schema, MLflow/simple adapter, approval before launch
+- Tests: dry-run metadata generation
+
+7) Writing Agent (1–2d)
+- Goal: synthesize drafts from stage outputs with section-level approvals
+- Inputs: prior stage outputs; Outputs: outputs/writing/<topic>_<ts>/ versioned sections
+- Steps: structured section model, regenerate on feedback, export MD/JSON
+- Tests: guardrail checks (length, references)
+
+## Cross-cutting items
+- Centralize config (.env) for MODEL, API keys, email parameters, CORE key
+- Enforce PII redaction in memory and outputs; never store API secrets in memory
+- Add guardrails and unit/integration tests per agent
+- Supervisor Flow: wire each agent as a Crew task and add approval checkpoints
+
+## Immediate next steps (first sprint)
+1. Implement PDF-Fetcher MVP (arXiv direct + Unpaywall/OpenAlex) and unit tests
+2. Finalize agentmemory wiring (explicit save/recall at literature/method)
+3. Update supervisor Flow to call PDF-Fetcher after literature search and persist results
+
+## Risks & mitigation
+- Missing API keys → mock adapters and graceful fallbacks
+- PDF fetch fails → abstract-only fallback, do not block pipeline
+- Unsafe code writes → sandbox-only by default; require explicit repo-apply approval
+
+---
+
+Updated: May 2026 — integrated per-agent plans and MVP-first roadmap.  
+Use this as the single source of truth for sprint planning and Flow checkpoints.

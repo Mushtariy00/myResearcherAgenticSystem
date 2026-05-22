@@ -30,6 +30,7 @@ from agentic_ai_system.orchestration.research_pipeline import (
     run_coding_stage,
     run_experiment_stage_flow,
     run_method_stage,
+    run_pdf_fetch_stage,
     run_writing_stage,
 )
 from agentic_ai_system.schemas.fetches import LiteratureFetchOutput, PaperAnalysisOutput, PaperFetchResult
@@ -182,8 +183,12 @@ class ResearchSupervisorFlow(Flow[SupervisorState]):
         return run_literature_stage(self)
 
     @listen(literature_stage)
-    def method_stage(self, literature_output: LiteratureResearchOutput) -> MethodStageOutput:
-        return run_method_stage(self, literature_output)
+    def pdf_fetch_stage(self, literature_output: LiteratureResearchOutput) -> LiteratureFetchOutput:
+        return run_pdf_fetch_stage(self, literature_output)
+
+    @listen(pdf_fetch_stage)
+    def method_stage(self, _fetch_output: LiteratureFetchOutput) -> MethodStageOutput:
+        return run_method_stage(self, self.state.literature_output)
 
     @listen(method_stage)
     def coding_stage(self, method_output: MethodStageOutput) -> CodingStageOutput:
