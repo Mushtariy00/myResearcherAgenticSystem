@@ -29,8 +29,17 @@ class ArxivSearchTool(BaseTool):
     args_schema: Type[BaseModel] = LiteratureSearchInput
 
     def _run(self, query: str, max_results: int = 5) -> str:
-        quoted_query = '"' + query.replace('"', "") + '"'
-        encoded_query = urllib.parse.quote(quoted_query)
+        # Use keyword search instead of exact phrase matching
+        # ArXiv works better with AND of individual terms: "monocular AND depth AND estimation"
+        keywords = query.split()
+        # Filter out short words like "2023-2025", "and", etc., keep only meaningful terms
+        keywords = [kw for kw in keywords if len(kw) > 2 and not kw.isdigit()]
+        if not keywords:
+            keywords = query.split()[:3]  # Fallback: use first 3 words
+        
+        # Build query: connect keywords with AND for better results
+        search_query = " AND ".join(keywords)
+        encoded_query = urllib.parse.quote(search_query)
         url = (
             "http://export.arxiv.org/api/query"
             f"?search_query=all:{encoded_query}&start=0&max_results={max_results}"

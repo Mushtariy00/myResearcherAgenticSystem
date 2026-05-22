@@ -70,26 +70,29 @@ def collect_literature_bundle(topic: str) -> dict[str, Any]:
     print(f"\n📚 Starting literature search for topic: '{topic}'")
     print(f"📍 Generated queries: {queries}\n")
     
-    for query in queries:
+    semantic_scholar_exhausted = False  # Track if rate-limited
+    
+    for idx, query in enumerate(queries):
         print(f"  🔍 Searching with query: '{query}'")
-        for tool in (ArxivSearchTool(), SemanticScholarSearchTool()):
-            try:
-                raw = tool._run(query, max_results=8)
-                payload = json.loads(raw)
-                if payload.get("error"):
-                    error_msg = payload["error"]
-                    print(f"    ⚠️  {tool.name}: {error_msg}")
-                    source_errors.append(
-                        {
-                            "source": payload.get("source", tool.name),
-                            "query": query,
-                            "error": error_msg,
-                        }
-                    )
-                    continue
-                
+        
+        # Always try ArXiv
+        arxiv_tool = ArxivSearchTool()
+        try:
+            raw = arxiv_tool._run(query, max_results=8)
+            payload = json.loads(raw)
+            if payload.get("error"):
+                error_msg = payload["error"]
+                print(f"    ⚠️  {arxiv_tool.name}: {error_msg}")
+                source_errors.append(
+                    {
+                        "source": payload.get("source", arxiv_tool.name),
+                        "query": query,
+                        "error": error_msg,
+                    }
+                )
+            else:
                 papers_count = len(payload.get("papers", []))
-                print(f"    ✅ {tool.name}: Found {papers_count} papers")
+                print(f"    ✅ {arxiv_tool.name}: Found {papers_count} papers")
                 
                 for paper in payload.get("papers", []):
                     item = dict(paper)
@@ -100,14 +103,59 @@ def collect_literature_bundle(topic: str) -> dict[str, Any]:
                     item["relevance_score"] = paper_relevance_score(item, topic)
                     aggregated.append(item)
                     print(f"       ✅ Added (score={item['relevance_score']}): {item.get('title', '')[:50]}")
+        except Exception as e:
+            print(f"    ❌ {arxiv_tool.name}: Exception: {e}")
+            source_errors.append({
+                "source": arxiv_tool.name,
+                "query": query,
+                "error": str(e),
+            })
+        
+        # Try Semantic Scholar only if not rate-limited
+        if not semantic_scholar_exhausted:
+            ss_tool = SemanticScholarSearchTool()
+            try:
+                raw = ss_tool._run(query, max_results=8)
+                payload = json.loads(raw)
+                if payload.get("error"):
+                    error_msg = payload["error"]
+                    print(f"    ⚠️  {ss_tool.name}: {error_msg}")
+                    source_errors.append(
+                        {
+                            "source": payload.get("source", ss_tool.name),
+                            "query": query,
+                            "error": error_msg,
+                        }
+                    )
+                    # If rate-limited, don't try for remaining queries
+                    if "429" in error_msg or "rate" in error_msg.lower():
+                        semantic_scholar_exhausted = True
+                        print(f"    📌 Semantic Scholar rate-limited. Skipping for remaining queries.")
+                else:
+                    papers_count = len(payload.get("papers", []))
+                    print(f"    ✅ {ss_tool.name}: Found {papers_count} papers")
+                    
+                    for paper in payload.get("papers", []):
+                        item = dict(paper)
+                        item["query"] = query
+                        if not is_topic_specific_match(item, topic):
+                            print(f"       ❌ Filtered out: {item.get('title', '')[:50]}")
+                            continue
+                        item["relevance_score"] = paper_relevance_score(item, topic)
+                        aggregated.append(item)
+                        print(f"       ✅ Added (score={item['relevance_score']}): {item.get('title', '')[:50]}")
             except Exception as e:
-                print(f"    ❌ {tool.name}: Exception: {e}")
+                print(f"    ❌ {ss_tool.name}: Exception: {e}")
                 source_errors.append({
-                    "source": tool.name,
+                    "source": ss_tool.name,
                     "query": query,
                     "error": str(e),
                 })
-                continue
+        
+        # Add delay between queries to avoid rate limiting
+        if idx < len(queries) - 1:
+            import time
+            time.sleep(1)
     
     deduped: dict[str, dict[str, Any]] = {}
     for paper in aggregated:
