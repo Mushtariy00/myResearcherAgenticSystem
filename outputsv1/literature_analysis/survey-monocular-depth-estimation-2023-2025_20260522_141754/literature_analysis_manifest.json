@@ -1,0 +1,92 @@
+[
+  {
+    "index": 0,
+    "title": "On the Synergies between Machine Learning and Binocular Stereo for Depth Estimation from Images: a Survey",
+    "source": "Full text provided",
+    "relevance_assessment": "Highly relevant. The paper includes a dedicated section (Section\u202f7) on monocular depth estimation that discusses how stereo\u2011supervised deep learning has enabled self\u2011supervised single\u2011image depth prediction, summarises key methods (Geometry to the Rescue, MonoDepth, AsiANet, 3Net, SuperDepth, SVS, Cross\u2011domain distillation, MonoResMatch, Refine\u202f&\u202fDistill, Depth\u2011Hints, MonoGAN, StrAT, CRF\u2011DGAN, PyDNet, Semi\u2011Supervised Monocular Depth, Semantic MonoDepth, Deep Feature Reconstruction, Monodepth2, DVSO, VOMonodepth) and presents quantitative results on KITTI (Table\u202f6). This directly addresses the survey topic of monocular depth estimation literature up to 2025.",
+    "key_findings": [
+      "Stereo\u2011supervised training (view synthesis loss) allows monocular networks to learn depth without ground\u2011truth metric labels, removing scale ambiguity present in video\u2011only methods.",
+      "Encoder\u2011decoder designs (U\u2011Net\u2011style) dominate the architecture space; multi\u2011task extensions (semantic segmentation, edge detection, odometry) improve accuracy.",
+      "Distillation from high\u2011performance stereo networks (Cross\u2011domain, MonoResMatch) yields dense supervision and narrows the gap to fully supervised methods.",
+      "Self\u2011supervised losses (photometric, left\u2011right consistency, minimum reprojection, auto\u2011masking) are crucial for handling occlusions and non\u2011rigid motion.",
+      "High\u2011resolution inputs and super\u2011resolution modules (SuperDepth) significantly boost depth quality, but at increased computational cost.",
+      "Lightweight models (PyDNet, MADNet\u2011style adaptations) enable real\u2011time monocular depth on CPUs/embedded devices, albeit with reduced accuracy.",
+      "Incorporating external cues (semantic hints, sparse LiDAR/VO, depth hints from classic stereo) consistently improves robustness across domains."
+    ],
+    "limitations": [
+      "Generalization remains limited: performance drops on high\u2011resolution indoor benchmarks (Middlebury 2014) and under domain shift despite adaptation techniques.",
+      "Self\u2011supervised photometric losses are vulnerable to lighting changes, specularities, and moving objects, leading to artifacts in occluded regions.",
+      "Most state\u2011of\u2011the\u2011art models still rely on KITTI\u2011style outdoor scenes; few works evaluate on diverse indoor or outdoor datasets.",
+      "High\u2011resolution models (e.g., SuperDepth) incur high memory and runtime costs, restricting deployment on mobile platforms.",
+      "Distillation pipelines require a two\u2011stage training process and a strong teacher stereo network, complicating the training pipeline."
+    ],
+    "evidence_snippets": [
+      "Section\u202f7 discusses depth estimation from a single image, highlighting that \u201cself\u2011supervised strategies cast depth estimation as a view\u2011synthesis problem by introducing a photometric reconstruction loss to avoid the need for expensive ground truth depth annotations.\u201d",
+      "The paper lists numerous monocular methods (Geometry to the Rescue [3], MonoDepth [127], AsiANet [129], 3Net [130], SuperDepth [138], SVS [145], Cross\u2011domain [146], MonoResMatch [113], Refine\u202fand\u202fDistill [139], Depth\u2011Hints [143], MonoGAN [134], StrAT [136], CRF\u2011DGAN [135], PyDNet [137], Semi\u2011Supervised Monocular Depth [144], Semantic MonoDepth [152], Deep Feature Reconstruction [140], Monodepth2 [133], EPC++ [141], DVSO [142], VOMonodepth [148]) and their training cues (S, V, P, A, GT, etc.).",
+      "Table\u202f6 reports quantitative KITTI results, e.g., Monodepth2 (S\u202f+\u202fV) achieving Abs\u202fRel\u202f0.106, RMSE\u202flog\u202f0.193, \u03b4\u202f<\u202f1.25\u202f0.876, demonstrating the effectiveness of stereo\u2011supervised self\u2011supervision.",
+      "The authors note that \u201ccurrent results on Middlebury\u202f2014 highlight the open problems of generalization across different domains and applicability on high\u2011resolution images.\u201d",
+      "SuperDepth achieves better accuracy by \u201cincorporating sub\u2011pixel convolutional layers to super\u2011resolve inverse depth maps\u2026 and a differentiable flip\u2011augmentation layer, in order to mitigate occlusion artifacts.\u201d",
+      "PyDNet is described as \u201cthe first attempt to make monocular depth estimation feasible on standard CPUs and embedded devices with limited memory capacity,\u201d emphasizing real\u2011time constraints.",
+      "Cross\u2011domain distillation is summarized: \u201cGuo et al. generate distilled depth labels, employing stereo networks trained on large synthetic datasets\u2026 Such distilled knowledge provides dense supervision for a monocular network, resulting much more effective than warping strategies.\u201d"
+    ],
+    "summary": "The survey provides a comprehensive overview of monocular depth estimation up to 2025, emphasizing the pivotal role of stereo\u2011supervised self\u2011supervision. By reformulating depth prediction as view synthesis, methods such as MonoDepth and its successors eliminate the need for metric ground truth, leveraging photometric, left\u2011right, and minimum reprojection losses. Encoder\u2011decoder architectures dominate, with multi\u2011task extensions (semantic segmentation, edge detection, odometry) and distillation from high\u2011performance stereo teachers further narrowing the gap to fully supervised approaches. High\u2011resolution techniques (SuperDepth) boost accuracy but increase computational demands, while lightweight networks (PyDNet) enable real\u2011time inference on embedded hardware. Despite these advances, challenges persist: domain generalization, handling occlusions and illumination changes, and scalability to high\u2011resolution indoor scenes remain open problems, as highlighted by performance drops on Middlebury datasets. The paper\u2019s detailed method catalog, quantitative KITTI benchmark (Table\u202f6), and discussion of limitations constitute valuable evidence for a 2023\u20112025 survey of monocular depth estimation."
+  },
+  {
+    "index": 0,
+    "title": "Manydepth2: Motion-Aware Self-Supervised Monocular Depth Estimation in Dynamic Scenes",
+    "source": "Manydepth2 paper (arXiv:2312.15268v9, 2025)",
+    "relevance_assessment": "Highly relevant. The paper directly addresses recent advances (2023\u20112025) in self\u2011supervised monocular depth estimation, focusing on dynamic scenes\u2014a key challenge identified in surveys of the period. It introduces novel methodological components (pseudo\u2011static reference frame, motion\u2011aware cost volume, attention\u2011based HRNet) and provides extensive quantitative comparisons with state\u2011of\u2011the\u2011art methods on KITTI and Cityscapes.",
+    "key_findings": [
+      "Manydepth2 reduces RMSE by ~5\u202f% on KITTI\u20112015 compared to similar\u2011cost methods, achieving the lowest Abs Rel (0.091) among listed monocular approaches.",
+      "Integrating optical flow and coarse depth to build a pseudo\u2011static reference frame mitigates dynamic\u2011object interference in the cost volume.",
+      "A motion\u2011aware cost volume combined with channel and non\u2011local attention yields a 4.1\u202f% improvement over ManyDepth and 7.2\u202f% over ManyDepth in Abs Rel.",
+      "On Cityscapes, Manydepth2 improves Abs Rel by ~15\u202f% over ManyDepth, demonstrating strong performance on highly dynamic data.",
+      "Ablation studies confirm that both the motion\u2011guided volume and attention\u2011enhanced HRNet are essential for peak accuracy."
+    ],
+    "limitations": [
+      "Reliance on a pretrained optical\u2011flow network (Gmflow) adds external dependency and slight computational overhead.",
+      "The method still assumes accurate pose estimation; errors in the pose net could affect the pseudo\u2011static frame construction.",
+      "Evaluations are limited to KITTI, Cityscapes, and odometry sequences; broader benchmarks (e.g., indoor or aerial) are not presented.",
+      "Dynamic\u2011object handling is based on flow\u2011derived masks, which may be unstable under severe illumination changes or motion blur."
+    ],
+    "evidence_snippets": [
+      "\u201cWe utilize estimated optical flow alongside prior depth information to generate a pseudo-static reference frame. This reference frame effectively neutralizes the influence of dynamic elements within the original frame.\u201d",
+      "\u201cBy incorporating the pseudo-static reference frame, the target frame, and the initial reference frame, we construct a novel motion-aware volume that captures the dynamics of moving objects.\u201d",
+      "\u201cWe propose a novel depth estimation architecture that combines non-local and channel attention, enabling the integration of multi\u2011scale features for accurate pixel\u2011wise dense predictions.\u201d",
+      "Table I shows Manydepth2 achieving Abs Rel 0.091, outperforming ManyDepth (0.098) and DynamicDepth (0.096) on KITTI\u20112015.",
+      "Table II shows Manydepth2 achieving Abs Rel 0.097 on Cityscapes, a 15\u202f% improvement over ManyDepth (0.114).",
+      "Ablation (Table V) demonstrates that removing the attention for the volume raises Abs Rel from 0.091 to 0.100, and removing motion\u2011guided volume raises it to 0.105.",
+      "\u201cManydepth2 outperforms other learning\u2011based techniques that use more computational resources, such as FeatDepth, reducing translational RMSE by ~24\u202f% on KITTI odometry Seq.\u202f10.\u201d"
+    ],
+    "summary": "Manydepth2 (2025) advances self\u2011supervised monocular depth estimation by explicitly modeling motion in dynamic scenes. It constructs a pseudo\u2011static reference frame from optical flow and coarse depth, then builds a motion\u2011aware cost volume that feeds an attention\u2011enhanced HRNet decoder. Empirical results on KITTI\u20112015 and Cityscapes show state\u2011of\u2011the\u2011art performance, with notable reductions in absolute relative error (0.091 on KITTI, 0.097 on Cityscapes) and improvements in odometry drift. Ablation studies confirm the necessity of both the motion\u2011guided volume and attention mechanisms. Limitations include dependence on pretrained flow networks, pose estimation sensitivity, and evaluation confined to outdoor driving datasets. Overall, the paper provides a clear, recent methodological contribution valuable for surveys covering 2023\u20112025 monocular depth estimation trends."
+  },
+  {
+    "index": 0,
+    "title": "MonoIndoor++: Towards Better Practice of Self-Supervised Monocular Depth Estimation for Indoor Environments",
+    "source": "arXiv preprint arXiv:2207.08951 (2022)",
+    "relevance_assessment": "Highly relevant \u2013 the paper proposes several novel modules (depth factorization with transformer\u2011based scale regression, residual pose estimation, and coordinate\u2011convolutional encoding) that directly address challenges of indoor self\u2011supervised monocular depth estimation, a topic that continues to be active in 2023\u20112025 surveys.",
+    "key_findings": [
+      "A depth factorization module separates global depth scale (estimated via a transformer\u2011based scale regression network) from relative depth, improving adaptability to large indoor depth\u2011range variations.",
+      "A residual pose estimation module iteratively refines camera poses, mitigating large rotational motions common in handheld indoor video sequences.",
+      "Coordinate convolutional encoding (CoordConv) augments pose network inputs with explicit (x, y) image coordinates, providing additional geometric cues.",
+      "State\u2011of\u2011the\u2011art performance on indoor benchmarks (NYUv2, EuRoC MAV, ScanNet, 7\u2011Scenes), e.g., AbsRel reduced from 16.0% to 13.2% on NYUv2 and ATE improved from 0.068\u202fm to 0.055\u202fm on EuRoC MAV V1\u201103.",
+      "Ablation studies confirm each module\u2019s contribution: residual pose reduces AbsRel by ~1.6% on NYUv2; depth factorization adds ~0.8% gain; coordinate encoding adds further ~0.3% gain."
+    ],
+    "limitations": [
+      "The method still relies on monocular video with sufficient overlap; extreme motion blur or rapid scale changes may degrade performance.",
+      "Scale regression is learned in a supervised\u2011like manner (probabilistic classification) and requires a maximum depth bound, limiting applicability to scenes with unknown extreme ranges.",
+      "Training complexity increases due to multiple modules (transformer, residual pose iterations, CoordConv), leading to longer training times and higher memory usage.",
+      "Evaluation is limited to a few indoor datasets; cross\u2011domain generalization to completely unseen indoor environments (e.g., cluttered warehouses) is not exhaustively tested."
+    ],
+    "evidence_snippets": [
+      "\"we propose a novel framework\u2011MonoIndoor++ by giving special considerations to those challenges and consolidating a set of good practices for improving the performance of self\u2011supervised monocular depth estimation for indoor environments\"",
+      "\"depth factorization module with transformer\u2011based scale regression network is proposed to estimate a global depth scale factor explicitly\"",
+      "\"residual pose estimation module to estimate relative camera poses across consecutive frames iteratively\"",
+      "\"coordinates convolutional encoding module... encode the coordinates information (x, y) explicitly and incorporate them with color information in the residual pose estimation module\"",
+      "\"Quantitative Results Table I presents the quantitative results\u2026 our model outperforms previous self\u2011supervised SOTA methods\u2026 reducing AbsRel from 16.0% to 13.2% and increasing \u03b41 from 76.7% to 83.4%\"",
+      "\"Table III\u2026 ATE decreased from 0.0681\u202fm to 0.0557\u202fm and RPE(\u00b0) reduced from 1.3237\u00b0 to 0.5599\u00b0\"",
+      "\"Ablation results\u2026 adding our residual pose module reduces the AbsRel from 15.7% to 14.1% and increases \u03b41 to 81.5% on EuRoC MAV V2\u202f01\""
+    ],
+    "summary": "MonoIndoor++ (2022) introduces three key innovations for self\u2011supervised monocular depth in indoor scenes: a depth factorization module that learns a global scale via a transformer\u2011based regressor, a residual pose estimator that iteratively refines camera motion to handle prevalent rotations, and coordinate\u2011convolutional encoding that injects explicit (x, y) cues into pose prediction. These components together achieve state\u2011of\u2011the\u2011art results on NYUv2, EuRoC MAV, ScanNet, and 7\u2011Scenes, notably cutting absolute relative error by up to 2.8% and improving pose accuracy substantially. Ablation studies validate each module's impact. Limitations include reliance on adequate video overlap, bounded scale assumptions, increased training complexity, and limited cross\u2011domain testing, suggesting avenues for future work in more robust, scalable indoor depth learning."
+  }
+]

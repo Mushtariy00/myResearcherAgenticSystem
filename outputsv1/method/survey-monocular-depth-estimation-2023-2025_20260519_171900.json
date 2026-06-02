@@ -1,0 +1,29 @@
+{
+  "research_gaps": [
+    "Lack of lightweight, real\u2011time monocular depth models that retain transformer\u2011level accuracy for edge devices.",
+    "Insufficient evaluation on diverse, large\u2011scale, in\u2011the\u2011wild datasets (e.g., TartanAir, Waymo Open) and under realistic runtime constraints.",
+    "Limited integration of test\u2011time adaptation with self\u2011supervised pre\u2011training for continual domain shift handling on deployment hardware."
+  ],
+  "proposals": [
+    {
+      "name": "Hybrid Conv\u2011Transformer Lite (HCT\u2011Lite)",
+      "rationale": "Combine a shallow CNN stem for low\u2011level feature extraction with a token\u2011lite transformer encoder (e.g., MobileViT or Swin\u2011Tiny) to preserve global context while dramatically reducing FLOPs.",
+      "expected_benefit": "Achieve <30\u202fms inference on a mid\u2011range mobile GPU (e.g., Snapdragon 8\u2011Gen 2) with <5% drop in depth\u2011error relative to full\u2011size DPT, enabling on\u2011device AR/robotics.",
+      "risk": "Token\u2011lite designs may struggle with long\u2011range scene geometry, requiring careful positional encoding and multi\u2011scale fusion."
+    },
+    {
+      "name": "Self\u2011Supervised Multi\u2011Task Pre\u2011Training on Large\u2011Scale Video (SS\u2011MTP\u2011LTV)",
+      "rationale": "Train a unified encoder on uncurated video streams (e.g., Waymo Open Motion, TartanAir) using self\u2011supervised photometric loss plus auxiliary heads for semantics and surface normals, then fine\u2011tune lightweight decoder for depth.",
+      "expected_benefit": "Improves generalisation across domains and reduces the need for task\u2011specific data collection; multi\u2011task signals act as regularisers, boosting accuracy of the lightweight decoder.",
+      "risk": "Training on massive video data demands substantial compute and careful curriculum design to avoid degenerate photometric minima."
+    },
+    {
+      "name": "Test\u2011Time Adaptive Token Pruning (TT\u2011ATP)",
+      "rationale": "During inference, estimate domain shift via a lightweight statistic (e.g., feature covariance) and dynamically prune transformer tokens or adapt layer\u2011norm parameters, leveraging the self\u2011supervised pre\u2011trained backbone.",
+      "expected_benefit": "Maintains high accuracy under unseen lighting or weather conditions while keeping average latency within real\u2011time bounds, providing a practical deployment\u2011time domain\u2011generalisation hook.",
+      "risk": "Dynamic token pruning introduces variability in latency and may require hardware\u2011friendly implementation; effectiveness depends on reliable shift detection."
+    }
+  ],
+  "recommended_option": "Hybrid Conv-Transformer Lite (HCT-Lite) combined with the Self-Supervised Multi-Task Pre-Training on Large-Scale Video (SS-MTP-LTV) \u2013 this dual approach first builds a compute\u2011efficient backbone and then endows it with robust, multi-domain representations, directly addressing the foremost gap of edge\u2011friendly high\u2011accuracy depth estimation.",
+  "implementation_focus": ""
+}

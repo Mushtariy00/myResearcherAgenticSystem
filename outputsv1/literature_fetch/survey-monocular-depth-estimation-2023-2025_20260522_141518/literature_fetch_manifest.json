@@ -1,0 +1,32 @@
+[
+  {
+    "index": 1,
+    "source_url": "https://arxiv.org/abs/2004.08566v2",
+    "resolved_pdf_url": "https://arxiv.org/pdf/2004.08566v2.pdf",
+    "status": "ok",
+    "page_count": 20,
+    "text_length": 127570,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/survey-monocular-depth-estimation-2023-2025_20260522_141518/paper_01.txt",
+    "error": ""
+  },
+  {
+    "index": 2,
+    "source_url": "https://arxiv.org/abs/2312.15268v9",
+    "resolved_pdf_url": "https://arxiv.org/pdf/2312.15268v9.pdf",
+    "status": "ok",
+    "page_count": 7,
+    "text_length": 38177,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/survey-monocular-depth-estimation-2023-2025_20260522_141518/paper_02.txt",
+    "error": ""
+  },
+  {
+    "index": 3,
+    "source_url": "https://arxiv.org/abs/2207.08951v1",
+    "resolved_pdf_url": "https://arxiv.org/pdf/2207.08951v1.pdf",
+    "status": "ok",
+    "page_count": 14,
+    "text_length": 75213,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/survey-monocular-depth-estimation-2023-2025_20260522_141518/paper_03.txt",
+    "error": ""
+  }
+]

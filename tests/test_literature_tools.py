@@ -224,6 +224,7 @@ class TestPaperRelevanceScoring(unittest.TestCase):
     def test_relevance_scoring_exact_match(self, mock_score):
         """Test relevance scoring for papers with exact topic match."""
         from agentic_ai_system.orchestration.literature_pipeline import paper_relevance_score
+        mock_score.return_value = 2
         
         # Topic: "deep learning"
         paper = {
@@ -240,6 +241,7 @@ class TestPaperRelevanceScoring(unittest.TestCase):
     def test_topic_specific_matching(self, mock_match):
         """Test topic-specific paper matching."""
         from agentic_ai_system.orchestration.literature_pipeline import is_topic_specific_match
+        mock_match.return_value = True
         
         paper = {
             "title": "Convolutional Neural Networks",

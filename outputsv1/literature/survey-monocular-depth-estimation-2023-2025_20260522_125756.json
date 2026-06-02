@@ -1,0 +1,37 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-22T10:15:30Z",
+  "key_findings": [
+    {
+      "title": "A survey on deep 3D human pose estimation",
+      "source": "Semantic Scholar",
+      "summary": "3D Human Pose Estimation (3D-HPE) is a highly active and evolving research area in computer vision with numerous applications such as extended reality, action recognition, and video surveillance. The field has significantly advanced with deep learning, public datasets, and enhanced computational power, addressing challenges like depth ambiguity, occlusion, and data scarcity. Researchers confront scenario-specific issues such as ill-posed problems in monocular setups, cross-view aggregation with camera synchronizations in multi-view systems, and inter-person occlusion in multi-person scenarios. This survey comprehensively reviews contemporary strategies covering a technological spectrum inclu",
+      "url": "https://www.semanticscholar.org/paper/54df29e9339f34fcc3d1f86ef70b07438addfabf"
+    },
+    {
+      "title": "Multi-task learning with cross-task consistency for improved depth estimation in colonoscopy",
+      "source": "Semantic Scholar",
+      "summary": "Colonoscopy screening is the gold standard procedure for assessing abnormalities in the colon and rectum, such as ulcers and cancerous polyps. Measuring the abnormal mucosal area and its 3D reconstruction can help quantify the surveyed area and objectively evaluate disease burden. However, due to the complex topology of these organs and variable physical conditions, for example, lighting, large homogeneous texture, and image modality estimating distance from the camera (aka depth) is highly challenging. Moreover, most colonoscopic video acquisition is monocular, making the depth estimation a non-trivial problem. While methods in computer vision for depth estimation have been proposed and adv",
+      "url": "https://www.semanticscholar.org/paper/79fa42f7befddf42b740c66f099a0de1f7eef1db"
+    },
+    {
+      "title": "A Survey of the State of the Art in Monocular 3D Human Pose Estimation: Methods, Benchmarks, and Challenges",
+      "source": "Semantic Scholar",
+      "summary": "Three-dimensional human pose estimation (3D HPE) from monocular RGB cameras is a fundamental yet challenging task in computer vision, forming the basis of a wide range of applications such as action recognition, metaverse, self-driving, and healthcare. Recent advances in deep learning have significantly propelled the field, particularly with the incorporation of state-space models (SSMs) and diffusion models. However, systematic reviews that comprehensively cover these emerging techniques remain limited. This survey contributes to the literature by providing the first comprehensive analysis of recent innovative approaches, featuring diffusion models and SSMs within 3D HPE. It categorizes and",
+      "url": "https://www.semanticscholar.org/paper/be11a82813952b2642d3253b0b3b936ea61eea84"
+    },
+    {
+      "title": "Multi-task learning with cross-task consistency for improved depth estimation in colonoscopy",
+      "source": "Semantic Scholar",
+      "summary": "Colonoscopy screening is the gold standard procedure for assessing abnormalities in the colon and rectum, such as ulcers and cancerous polyps. Measuring the abnormal mucosal area and its 3D reconstruction can help quantify the surveyed area and objectively evaluate disease burden. However, due to the complex topology of these organs and variable physical conditions, for example, lighting, large homogeneous texture, and image modality estimating distance from the camera aka depth) is highly challenging. Moreover, most colonoscopic video acquisition is monocular, making the depth estimation a non-trivial problem. While methods in computer vision for depth estimation have been proposed and adva",
+      "url": "https://www.semanticscholar.org/paper/e8560f326e5ef325005feeae2a14078dc871f4e3"
+    },
+    {
+      "title": "Monocular Depth Estimation: A Survey",
+      "source": "Semantic Scholar",
+      "summary": "Monocular depth estimation is an ill-posed task in computer vision, which holds great significance in the fields such as artificial intelligence, virtual reality, augmented reality, path planning, unmanned driving, and navigation guidance. The primary objective of monocular depth estimation is to predict the depth value of each pixel or infer depth information, given just a single red-green-blue (RGB) image as input. Traditional monocular depth estimation methods rely on limited depth cues, such as strict scene conditions. With the significant advancements in computer vision and artificial intelligence, monocular depth estimation using deep learning has been extensively researched and has yi",
+      "url": "https://www.semanticscholar.org/paper/4c8f65922158e31ec67825f535fb77db9298fe7c"
+    }
+  ],
+  "synthesis": "The provided corpus contains a single entry that offers no textual content, excerpts, or extracted findings from the referenced survey on monocular depth estimation. Consequently, no concrete evidence regarding methodological trends, performance benchmarks, dataset usage, or identified research gaps between 2023 and 2025 can be synthesized. Without substantive source material, it is not possible to delineate prevailing themes, compare competing approaches, or highlight open challenges that are commonly reported across recent literature. A meaningful synthesis therefore requires access to full-text analyses or additional papers that discuss advances such as transformer\u2011based encoders, self\u2011supervised learning paradigms, cross\u2011modal supervision, or domain\u2011generalization techniques that have been prominent in the field during the specified period. In the absence of such information, the current state of knowledge remains indeterminate, and any articulation of research gaps would be speculative rather than evidence\u2011based."
+}

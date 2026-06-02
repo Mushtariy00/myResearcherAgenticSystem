@@ -1,0 +1,25 @@
+{
+  "contract_version": "1",
+  "stage": "coding",
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-23T12:51:43.815245",
+  "primary_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/coding_execution_manifest.json",
+  "auxiliary_paths": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/Dockerfile",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/requirements.txt",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/model.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/train_sandbox.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/utils.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/README.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/model.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/train_sandbox.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/utils.py"
+  ],
+  "summary": "Coding sandbox generated",
+  "status": "completed",
+  "metadata": {
+    "created_files": 6,
+    "validated_files": 3,
+    "validation_errors": 0
+  }
+}

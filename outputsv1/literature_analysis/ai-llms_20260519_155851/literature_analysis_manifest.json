@@ -1,0 +1,64 @@
+[
+  {
+    "index": 0,
+    "title": "",
+    "source": "",
+    "relevance_assessment": "No text provided; cannot assess relevance to AI LLMs.",
+    "key_findings": [],
+    "limitations": [],
+    "evidence_snippets": [],
+    "summary": "The request referenced a paper titled 'From Human Memory to AI Memory: A Survey on Memory Mechanisms in the Era of LLMs', but no textual content was supplied. Consequently, no analysis of methods, findings, or limitations can be performed."
+  },
+  {
+    "index": 0,
+    "title": "How Johnny Can Persuade LLMs to Jailbreak Them: Rethinking Persuasion to Challenge AI Safety by Humanizing LLMs",
+    "source": "",
+    "relevance_assessment": "Insufficient data: no text provided to assess relevance to AI LLMs.",
+    "key_findings": [],
+    "limitations": [],
+    "evidence_snippets": [],
+    "summary": "The provided input contains no textual content from the paper, making it impossible to extract methods, findings, or limitations. Consequently, relevance cannot be judged and no evidence can be cited."
+  },
+  {
+    "index": 0,
+    "title": "",
+    "source": "",
+    "relevance_assessment": "No text provided; cannot assess relevance to AI LLMs.",
+    "key_findings": [],
+    "limitations": [],
+    "evidence_snippets": [],
+    "summary": "The input does not contain any excerpts from the paper \u201cDeepSeek\u2011R1 incentivizes reasoning in LLMs through reinforcement learning,\u201d so no methods, findings, or limitations can be extracted or summarized."
+  },
+  {
+    "index": 0,
+    "title": "Bias is a Math Problem, AI Bias is a Technical Problem: 10-year Literature Review of AI/LLM Bias Research Reveals Narrow [Gender-Centric] Conceptions of \u2018Bias\u2019, and Academia-Industry Gap",
+    "source": "arXiv:2508.11067v1 (2025)",
+    "relevance_assessment": "Highly relevant \u2013 the paper systematically reviews AI/LLM bias literature over the past decade, directly addressing methods, findings, and limitations of bias research in LLMs, which aligns with the requested analysis of AI LLM bias trends.",
+    "key_findings": [
+      "82% (155/189) of surveyed papers did not define \u201cbias\u201d, relying on implicit or purely mathematical definitions (Abstract; \u00a74.1).",
+      "79.9% (151/189) of papers focused on gender bias, especially gender\u2011occupation associations; other axes (race/ethnicity, age, religion, nationality) were far less represented (Abstract; \u00a74.2).",
+      "Only 10.6% (20/189) of papers offered actionable implementation recommendations for real\u2011world systems, highlighting a substantial academia\u2011industry \u201clast\u2011mile\u201d gap (Abstract; \u00a74.3).",
+      "When definitions were provided, many framed bias as inherently negative; a minority noted that bias can be neutral or even beneficial, cautioning against equating bias with harm (\u00a74.1).",
+      "Binary gender constructions dominate; 138 of the gender\u2011bias papers used binary categories, with 114 explicitly noting this as a limitation (\u00a74.2).",
+      "A few studies expanded beyond Western contexts (e.g., caste bias in India, dialect bias in Arabic/German, bias against stutterers), but these are outliers (\u00a74.2)."
+    ],
+    "limitations": [
+      "Corpus limited to four premier venues (*ACL, FAccT, NeurIPS, AAAI) and to papers passing title/abstract screening; relevant work in other venues (e.g., CHI) or on arXiv may be omitted (\u00a77).",
+      "Reliance on keyword search (\"bias\" OR \"harm\" OR \"stereotype\") may miss papers that discuss bias using different terminology (\u00a77).",
+      "Binary gender focus reflects dataset availability rather than intentional design, limiting applicability to non\u2011binary or intersectional identities (\u00a74.2).",
+      "The review does not evaluate the actual effectiveness of the debiasing methods reported; it only notes their presence (\u00a74.3).",
+      "Implementation recommendations are sparse, and the paper does not assess barriers such as venue page limits or industry confidentiality that may cause this gap (\u00a74.3)."
+    ],
+    "evidence_snippets": [
+      "\u201c82% (155/189) papers did not provide a definition of \u2018bias\u2019, opting instead to simply state that biases and stereotypes exist\u2026 94 of these 155 papers have been published in the past 5 years\u2026\" (Abstract).",
+      "\u201c79.9% (151/189) papers focus on gender bias (mostly gender and occupation bias)\u2026 race/ethnicity (30.2%; 57/189), age (20.6%; 39/189), religion (19.1%; 36/189), nationality (13.2%; 25/189)\" (Abstract).",
+      "\u201cOnly 10.6% (20/189) include recommendations for how to implement their findings or contributions in real\u2011world AI systems\u2026 This indicates a concerning academia\u2011industry gap\u201d (Abstract).",
+      "\u201cWithin the remaining 94/155 papers, \u2018bias\u2019 is either evaluated or defined purely mathematically\u2026\" (\u00a74.1).",
+      "\u201cWhen bias is defined, researchers often attach a negative sentiment\u2026 examples: \u2018Social bias can be defined as the manifestation\u2026\u2019 \u201d (\u00a74.1).",
+      "\u201c138 consider exclusively binary constructions of gender and 114 of these mention such a binary focus as a limitation\u2026 \u2018Due to practical reasons and existing lack of datasets, we limited our research to only the binary genders.\u2019\u201d (\u00a74.2).",
+      "\u201c89.4% (169/189) papers do not include ways to operationalize their proposed mitigation strategies\u2026\u201d (\u00a74.3).",
+      "\u201cThe search did not cover the CHI Conference\u2026 only 6 of 313 CHI papers would have passed manual screening, so relevant papers may have been missed.\u201d (\u00a77)."
+    ],
+    "summary": "The review of 189 papers from top AI/LLM venues shows that most bias research lacks a clear conceptual definition of bias, treating it as a purely technical issue to be eliminated. Gender bias dominates the field, with nearly 80% of studies focusing on binary gender\u2011occupation stereotypes, while other identity axes receive far less attention. Only a tiny fraction of work (\u224810%) provides practical guidance for deploying debiasing methods in real\u2011world systems, revealing a pronounced academia\u2011industry gap. The authors note methodological limits, such as venue\u2011centric sampling, keyword\u2011driven screening, and binary gender assumptions driven by dataset availability. These findings call for broader, more inclusive definitions of bias, expanded study of under\u2011represented populations, and stronger emphasis on implementation pathways to bridge research and practice in AI/LLM fairness."
+  }
+]

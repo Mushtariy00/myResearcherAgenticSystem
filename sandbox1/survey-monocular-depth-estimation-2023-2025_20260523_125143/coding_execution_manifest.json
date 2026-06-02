@@ -1,0 +1,25 @@
+{
+  "sandbox_plan": "1. **Environment Setup**\n   - Create an isolated Docker container based on `nvidia/cuda:12.2-cudnn8-runtime-ubuntu22.04` with Python 3.11, PyTorch 2.3, and required libraries (torchvision, timm, einops, transformers, opencv-python, hydra-core).\n   - Install sparse\u2011attention libraries (LongFormer `longformer` or Performer `fast_transformers`) and the Adaptive Binning implementation from the BinsFormer repo (as a submodule).\n\n2. **Data Staging**\n   - Mount three read\u2011only datasets into the container:\n     * KITTI\u2011Depth (metric LiDAR ground\u2011truth)\n     * NYU\u2011Depth\u2011V2 (indoor metric)\n     * RelDepth (crowd\u2011sourced relative depth) for cross\u2011task validation.\n   - Add a small synthetic subset (e.g., Habitat\u2011Sim renders) for quick sanity checks.\n\n3. **Prototype Model Skeleton**\n   - Create `model.py` defining `SparseABTransformer`:\n     * Encoder: hierarchical Swin\u2011like backbone (downsample 4\u00d7, 8\u00d7, 16\u00d7).\n     * Sparse global attention layers inserted after each stage using LongFormer\u2019s sliding\u2011window + global tokens.\n     * Adaptive Binning head: token\u2011wise quantiser as described in BinsFormer, outputting a probability distribution over K bins per pixel.\n     * Edge\u2011aware attention fusion module that upsamples and refines high\u2011gradient regions (computed via Sobel on the input image).\n   - Provide a minimal forward pass that returns a depth map (continuous after expectation over bins).\n\n4. **Training Script (sandbox)**\n   - `train_sandbox.py` uses a reduced\u2011size dataset (200 images from KITTI) and a dummy loss: L1 between predicted depth and downsampled LiDAR depth + binning KL regulariser.\n   - Run for 2 epochs on a single GPU to verify shape compatibility, memory footprint (<4\u202fGB), and that sparse attention reduces FLOPs (~30% vs dense).\n   - Log runtime per batch with `torch.cuda.synchronize()` and `time.perf_counter()` to confirm sub\u201130\u202fms inference on 1080p (use torchscript to warm\u2011up).\n\n5. **Iterative Debug Loop**\n   - If inference exceeds 30\u202fms, adjust LongFormer window size or reduce number of global tokens; rerun the sandbox script.\n   - Verify that adaptive binning gradients flow by checking `loss.backward()` does not produce NaNs.\n\n6. **Checkpoint & Export**\n   - Serialize the trained weights with `torch.save` and export a TorchScript module (`model.trace(input)`) for later integration.\n\n7. **Documentation**\n   - Auto\u2011generate a README inside the sandbox summarising environment specs, command\u2011line arguments, and observed latency/accuracy numbers.\n\nThe sandbox thus proves feasibility of the SA\u2011ABT architecture, validates memory and latency constraints, and produces a reusable artefact for full\u2011scale training.\n",
+  "validation_steps": [
+    "Launch the Docker container and run `python -c \"import torch; print(torch.cuda.is_available())\"` to ensure GPU access.",
+    "Execute `python train_sandbox.py --epochs 2 --batch-size 4` and confirm that training completes without errors.",
+    "Measure per\u2011frame inference time on a 1080p dummy image; assert that the median latency < 30\u202fms.",
+    "Check GPU memory consumption stays below 4\u202fGB using `nvidia-smi` during training and inference.",
+    "Validate that gradients flow through the Adaptive Binning head by printing `model.adaptive_binning.weight.grad.norm()` after a backward pass and asserting it is > 0.",
+    "Run a sanity\u2011check forward pass on all three mounted datasets and compute a quick L1 loss; ensure the loss is reasonable (e.g., < 0.5 on the reduced KITTI subset)."
+  ],
+  "created_files": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/Dockerfile",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/requirements.txt",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/model.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/train_sandbox.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/utils.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/README.md"
+  ],
+  "validated_files": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/model.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/train_sandbox.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143/utils.py"
+  ],
+  "validation_errors": []
+}

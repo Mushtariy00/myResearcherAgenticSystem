@@ -1,0 +1,26 @@
+{
+  "contract_version": "1",
+  "stage": "writing",
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-23T12:52:26.971479",
+  "primary_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/00_summary.md",
+  "auxiliary_paths": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/00_summary.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/01_abstract.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/02_1-introduction.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/03_2-background-preliminaries.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/04_3-taxonomy-of-2023-2025-methods.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/05_4-sparse-adaptive-binning-transformer-sa-abt.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/06_5-experimental-protocol.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/07_6-results-benchmarking.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/08_7-discussion.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/09_8-limitations-future-directions.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/10_9-conclusion.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260523_125226/11_references.md"
+  ],
+  "summary": "Writing plan stored",
+  "status": "completed",
+  "metadata": {
+    "sections": 11
+  }
+}

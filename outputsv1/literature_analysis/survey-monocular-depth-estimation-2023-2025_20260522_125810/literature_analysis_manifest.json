@@ -1,0 +1,24 @@
+[
+  {
+    "index": 0,
+    "title": "",
+    "source": "",
+    "relevance_assessment": "No text content was provided for analysis; therefore relevance to the survey of monocular depth estimation (2023\u20112025) cannot be evaluated.",
+    "key_findings": [],
+    "limitations": [
+      "Unable to extract any findings or limitations because the paper content is missing."
+    ],
+    "evidence_snippets": [],
+    "summary": "The request could not be fulfilled as the full text of the paper was not supplied. Please provide the paper's content to enable relevance assessment, extraction of key findings, limitations, and supporting evidence."
+  },
+  {
+    "index": 0,
+    "title": "Survey on Monocular Metric Depth Estimation",
+    "source": "",
+    "relevance_assessment": "Insufficient data: No paper text was provided, so relevance to the topic 'Survey monocular depth estimation 2023-2025' cannot be evaluated.",
+    "key_findings": [],
+    "limitations": [],
+    "evidence_snippets": [],
+    "summary": "The requested analysis cannot be performed because the full text of the paper was not supplied. Provide the paper's text chunks to enable extraction of methods, findings, and limitations."
+  }
+]

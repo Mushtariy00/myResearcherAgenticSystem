@@ -1,0 +1,11 @@
+{
+  "python_version": "3.11.0",
+  "cuda_version": "12.6",
+  "gpu_available": true,
+  "key_packages": {
+    "numpy": "2.4.5",
+    "torch": "2.12.0+cu126"
+  },
+  "platform": "linux",
+  "verified_at": "2026-05-30T16:09:02.197035"
+}

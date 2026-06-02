@@ -7,7 +7,7 @@ from pathlib import Path
 import streamlit as st
 
 from agentic_ai_system.ui.bridge import approval_decision, approval_event
-from agentic_ai_system.ui.runtime import start_flow
+from agentic_ai_system.ui.runtime import resume_from_stage, start_flow
 from agentic_ai_system.ui.state import STAGE_NAMES, STAGE_ORDER, advance_stage, reset_session_state
 
 
@@ -207,14 +207,68 @@ def render_results_section() -> None:
 def render_flow_controls() -> None:
     st.divider()
     st.subheader("Flow Control")
+    flow_running = st.session_state.flow_running
+    flow_state = st.session_state.flow_state
+    approved_stages = set()
+    if flow_state is not None and hasattr(flow_state, "state"):
+        approved_stages = {
+            stage for stage, approved in flow_state.state.approvals.items() if approved
+        }
+    completed_stages = set(st.session_state.last_completed_stages)
+    if approved_stages:
+        completed_stages = completed_stages.union(approved_stages)
+    if flow_state is not None and hasattr(flow_state, "state"):
+        state = flow_state.state
+        if state.literature_output:
+            completed_stages.add("literature")
+        if state.method_output:
+            completed_stages.add("method")
+        if state.coding_output:
+            completed_stages.add("coding")
+        if state.experiment_output:
+            completed_stages.add("experiment")
+        if state.writing_output:
+            completed_stages.add("writing")
+    last_completed_index = max(
+        (STAGE_ORDER.index(stage) for stage in completed_stages if stage in STAGE_ORDER),
+        default=-1,
+    )
+    resume_options = (
+        STAGE_ORDER[last_completed_index + 1 :] if last_completed_index + 1 < len(STAGE_ORDER) else []
+    )
+    show_resume_controls = (
+        flow_state is not None
+        and (
+            st.session_state.current_stage in {"rejected", "failed"}
+            or (not flow_running and completed_stages)
+            or (not flow_running and st.session_state.flow_error)
+            or (
+                st.session_state.current_stage == "completed"
+                and st.session_state.flow_auto_mode
+            )
+        )
+    )
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("⏸️ Pause Flow", use_container_width=True):
-            st.session_state.flow_running = False
-            approval_decision["approved"] = False
-            approval_event.set()
-            st.info("Flow paused.")
-            st.rerun()
+        if flow_running:
+            if st.button("⏸️ Pause Flow", use_container_width=True):
+                st.session_state.flow_running = False
+                approval_decision["approved"] = False
+                approval_event.set()
+                st.info("Flow paused.")
+                st.rerun()
+        elif show_resume_controls and resume_options:
+            resume_disabled = st.session_state.approval_needed
+            resume_choice = st.selectbox(
+                "Resume from",
+                options=resume_options,
+                format_func=lambda stage: STAGE_NAMES.get(stage, stage),
+                disabled=resume_disabled,
+                key="resume_stage",
+            )
+            if st.button("▶️ Resume", use_container_width=True, disabled=resume_disabled):
+                resume_from_stage(resume_choice, auto_mode=st.session_state.flow_auto_mode)
+                st.rerun()
     with col2:
         if st.button("🔄 Restart Flow", use_container_width=True):
             approval_decision["approved"] = False
@@ -271,4 +325,10 @@ def render_footer() -> None:
     with col2:
         st.caption("🟡 Waiting for Approval" if st.session_state.approval_needed else "🟢 Ready")
     with col3:
-        st.caption(f"Updated: {datetime.now().strftime('%H:%M:%S')}")
+        st.caption(
+            "Student: ABDURAKHMONOVA MUSHTARIY MAVLONBERDI KIZI | "
+            "Class: Cloud Computing (09170_001) [이영호] | "
+            "ID: 202640379 | "
+            "Email: dil1977@gachon.ac.kr"
+        )
+    st.caption(f"Updated: {datetime.now().strftime('%H:%M:%S')}")

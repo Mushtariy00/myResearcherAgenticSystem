@@ -51,6 +51,7 @@ A “Research Operating System” for academia and R&D teams:
 ## 4. Future Reference Architecture (Slide 4)
 
 ```text
+
 User / API / UI
     |
     v

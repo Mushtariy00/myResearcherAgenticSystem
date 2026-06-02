@@ -1,0 +1,29 @@
+{
+  "research_gaps": [
+    "Trade\u2011off between fine\u2011grained detail preservation (adaptive binning + attention) and real\u2011time latency for high\u2011resolution inputs.",
+    "Lack of a unified evaluation framework that jointly measures metric accuracy, relative ordering, and cross\u2011domain robustness, making fair comparison of zero\u2011shot vs fine\u2011tuned models difficult.",
+    "Degradation of geometric fidelity on out\u2011of\u2011distribution or extremely high\u2011resolution scenes despite large semi\u2011supervised pre\u2011training."
+  ],
+  "proposals": [
+    {
+      "name": "Sparse\u2011Attention Adaptive Binning Transformer (SA\u2011ABT)",
+      "rationale": "Combine a lightweight hierarchical transformer with sparse\u2011global attention (e.g., LongFormer or Performer) to keep per\u2011pixel cost low, and embed Adaptive Binning as a differentiable token\u2011wise quantiser. Multi\u2011scale feature maps are fused via edge\u2011aware attention modules that focus computation on high\u2011gradient regions.",
+      "expected_benefit": "Achieves sub\u201130\u202fms inference on 1080p while retaining the fine\u2011grained depth discretisation of BinsFormer, reducing blur on thin structures.",
+      "risk": "Sparse attention patterns may miss subtle texture cues in low\u2011contrast areas, requiring careful tuning of sparsity schedules."
+    },
+    {
+      "name": "Unified Metric\u2011Relative Benchmark Suite (UMR\u2011Bench)",
+      "rationale": "Design a comprehensive benchmark that includes (a) metric depth tests on calibrated LiDAR datasets, (b) relative depth ranking on crowd\u2011sourced datasets, and (c) cross\u2011domain zero\u2011shot splits using synthetic\u2011real mixtures. Provide standardized protocols for latency, memory, and FLOPs reporting.",
+      "expected_benefit": "Enables reproducible, apples\u2011to\u2011apples comparison of methods that output metric vs relative depths, drives community convergence on evaluation best\u2011practices, and highlights true generalisation gaps.",
+      "risk": "Collecting high\u2011quality metric ground truth for diverse domains is costly; the suite may initially rely on imperfect proxy labels."
+    },
+    {
+      "name": "Hybrid Real\u2011Synthetic Curriculum Training (HRSC\u2011Curriculum)",
+      "rationale": "Introduce a curriculum that gradually increases scene complexity and resolution, mixing synthetic data (perfect metric depth) with real semi\u2011supervised samples. The model learns to align metric scales early on and later adapts to domain variations, using a consistency loss across resolutions.",
+      "expected_benefit": "Improves geometric fidelity on ultra\u2011high\u2011resolution and OOD images without sacrificing zero\u2011shot performance, leveraging the existing 62\u202fM Depth Anything corpus more effectively.",
+      "risk": "Curriculum design adds training overhead and hyper\u2011parameter complexity; improper scheduling may lead to over\u2011fitting to synthetic patterns."
+    }
+  ],
+  "recommended_option": "Sparse\u2011Attention Adaptive Binning Transformer (SA\u2011ABT)",
+  "implementation_focus": ""
+}

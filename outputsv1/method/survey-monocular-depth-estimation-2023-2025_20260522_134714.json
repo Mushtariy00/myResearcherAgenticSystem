@@ -1,0 +1,29 @@
+{
+  "research_gaps": [
+    "Absence of a comprehensive, up\u2011to\u2011date survey that systematically reviews monocular depth estimation advances (2023\u20112025).",
+    "No standardized benchmark suite that jointly evaluates accuracy, real\u2011time performance, domain adaptation, and robustness to adverse conditions.",
+    "Limited exploration of multimodal fusion (e.g., RGB+event, RGB+LiDAR) and uncertainty estimation within a unified depth prediction framework."
+  ],
+  "proposals": [
+    {
+      "name": "Automated Living Survey Platform",
+      "rationale": "Use NLP crawling, citation graph analysis, and summarisation models to continuously ingest new papers, extract architecture/training details, and produce a structured, searchable survey.",
+      "expected_benefit": "Keeps the community informed with minimal manual effort; provides a single source of truth for trends, datasets, and performance tables.",
+      "risk": "Potential extraction errors for complex methodological nuances; requires maintenance of crawling pipelines and handling paywalled content."
+    },
+    {
+      "name": "Unified Benchmark Suite for Monocular Depth",
+      "rationale": "Define a common evaluation protocol across KITTI, NYU\u2011Depth V2, SYNTHIA\u2011Depth, and emerging synthetic corpora, including metrics for latency, domain shift, and robustness (e.g., rain, fog, night).",
+      "expected_benefit": "Enables fair comparison of self\u2011supervised vs. supervised methods, drives progress on edge\u2011friendly models, and highlights gaps in real\u2011world deployment.",
+      "risk": "Benchmark could become overly prescriptive; community adoption may be slow without incentives from major conferences or journals."
+    },
+    {
+      "name": "Multimodal Self\u2011Supervised Depth Framework with Uncertainty",
+      "rationale": "Design a modular architecture that fuses RGB images with complementary sensors (events, sparse LiDAR) using self\u2011supervised photometric and cross\u2011modal consistency losses, while learning per\u2011pixel confidence via Bayesian or Monte\u2011Carlo dropout heads.",
+      "expected_benefit": "Improves depth accuracy under challenging lighting, provides calibrated uncertainty for downstream planning, and offers a baseline for multimodal research.",
+      "risk": "Increased system complexity may hinder reproducibility; training stability can be sensitive to loss weighting and sensor synchronization."
+    }
+  ],
+  "recommended_option": "Unified Benchmark Suite for Monocular Depth",
+  "implementation_focus": ""
+}

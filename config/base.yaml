@@ -1,0 +1,56 @@
+# Universal Base Config Template
+# All fields are optional with documented defaults
+# Extend this for task-specific experiments
+
+# Task type: routes to task-specific modules (depth_losses.py, segmentation_metrics.py, etc.)
+task_type: "generic"  # Options: generic, depth_estimation, semantic_segmentation, object_detection
+
+# Model configuration
+model:
+  architecture: "dummy"  # Must be registered in model/registry.py
+  kwargs: {}  # Architecture-specific kwargs
+  # Examples:
+  # resnet18: {pretrained: false, num_classes: 10}
+  # monodepth2: {min_depth: 0.1, max_depth: 100}
+
+# Data configuration
+data:
+  batch_size: 32
+  num_workers: 0
+  synthetic: true  # Use synthetic data for smoke testing
+  input_shape: [3, 224, 224]  # [C, H, W]
+  output_shape: [1, 224, 224]  # [C, H, W]
+  # Task-specific fields:
+  # depth: depth_range: [0, 100]
+  # segmentation: num_classes: 10
+
+# Training configuration
+training:
+  epochs: 10
+  optimizer_type: "adam"  # Options: adam, sgd, adamw
+  learning_rate: 0.001
+  weight_decay: 0.0
+  momentum: 0.9  # For SGD
+  loss: "mse"  # Task-specific losses defined in {task_type}_losses.py
+  
+  # Optional: learning rate scheduling
+  scheduler_type: null  # Options: cosine, step, null
+  scheduler_step_size: 10  # For step scheduler
+  scheduler_gamma: 0.1  # For step scheduler
+
+  # Optional: gradient clipping (safety)
+  clip_gradients: false
+  grad_clip_value: 1.0
+
+# Evaluation configuration
+evaluation:
+  metric: "mse"  # Task-specific metrics defined in {task_type}_metrics.py
+  # evaluation_splits: [val, test]
+
+# Output configuration
+output:
+  experiment_dir: "outputs/experiments"
+  save_checkpoints: true
+  save_every_n_epochs: 1
+  keep_best_only: true
+  tensorboard_log_dir: "outputs/logs"

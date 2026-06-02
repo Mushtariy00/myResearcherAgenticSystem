@@ -1,0 +1,15 @@
+{
+  "selected_indices": [
+    4
+  ],
+  "rejected_indices": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6,
+    7
+  ],
+  "selection_rationale": "Only the paper titled 'Monocular Depth Estimation: A Survey' directly addresses the requested survey of monocular depth estimation covering the 2023-2025 period. All other entries focus on unrelated domains (human pose, colonoscopy) or present specific methods rather than a comprehensive survey."
+}

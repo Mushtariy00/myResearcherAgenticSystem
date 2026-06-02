@@ -1,0 +1,29 @@
+{
+  "research_gaps": [
+    "Absence of a systematic, up\u2011to\u2011date survey covering 2023\u20112025 advances (e.g., transformer encoders, self\u2011supervised multi\u2011task learning, domain adaptation).",
+    "No consolidated benchmark that quantifies trade\u2011offs among accuracy, latency, and robustness across recent datasets and hardware platforms.",
+    "Lack of taxonomy linking methodological innovations to practical deployment challenges such as adverse lighting, edge\u2011device inference, and cross\u2011modal integration."
+  ],
+  "proposals": [
+    {
+      "name": "Comprehensive Meta\u2011Survey with Structured Benchmark Repository",
+      "rationale": "Collect all monocular depth papers 2023\u20112025, extract key metrics, and organize them into a searchable database with standardized evaluation protocols (different datasets, real\u2011time constraints, lighting conditions).",
+      "expected_benefit": "Provides a one\u2011stop reference that quantifies performance trends, enables reproducible comparisons, and highlights under\u2011explored problem settings.",
+      "risk": "High initial curation effort; risk of incomplete coverage if papers are behind paywalls or in non\u2011English venues."
+    },
+    {
+      "name": "Automated Literature Mining + Taxonomy Generation via LLM\u2011Assisted Extraction",
+      "rationale": "Leverage large language models to parse PDFs, extract architecture components, training regimes, and results, then automatically generate a hierarchical taxonomy and visual maps.",
+      "expected_benefit": "Reduces manual labor, keeps the survey up\u2011datable with minimal effort, and can surface hidden patterns (e.g., prevalence of transformer blocks vs. CNN hybrids).",
+      "risk": "Extraction errors for tables/figures; requires validation pipeline to ensure data quality."
+    },
+    {
+      "name": "Living Survey Platform with Community Contributions and Continuous Evaluation",
+      "rationale": "Build an open\u2011source web platform where researchers submit new papers, benchmarks, and code; integrate CI pipelines that re\u2011run evaluations on a common suite of datasets and hardware targets.",
+      "expected_benefit": "Ensures the survey remains current, promotes community ownership, and directly ties methodological claims to reproducible results.",
+      "risk": "Sustaining community engagement and managing version control of benchmarks; potential for inconsistent reporting standards."
+    }
+  ],
+  "recommended_option": "Automated Literature Mining + Taxonomy Generation via LLM\u2011Assisted Extraction",
+  "implementation_focus": ""
+}

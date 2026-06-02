@@ -15,100 +15,77 @@ Build a semi-autonomous research pipeline in CrewAI that preserves human approva
 - Tools: search adapters (arXiv, Semantic Scholar), PDF fetcher (Unpaywall/OpenAlex/CORE/PMC), sandbox runner, MLflow adapter, agentmemory MCP
 - Persistence: outputs/ for artifacts, SQLite for flow-run metadata, agentmemory for long-term recall
 
-## Overall integration roadmap
-Phases and deliverables with checkpoints and approximate effort (working days):
+## Per-stage plans (goal, inputs, outputs, implementation status)
 
-Phase 0 — Validation & baseline (0.5–1d)
-- Verify installed CrewAI & tools, read changelog (AGENTS.md guidance)
-- Confirm MODEL, .env keys, and OpenRouter connectivity
-- Smoke test crew kickoff and supervisor Flow
+1) Literature Stage
+- Goal: discover candidate papers and produce normalized metadata + synthesis.
+- Inputs: topic query; Outputs: outputs/literature/* (sources, abstracts, synthesis).
+- Implementation status: implemented search → screen → fetch open-access text → analyze → synthesize.
+- Gaps: full PDF waterfall; tests; richer metadata normalization and caching.
+- Next steps: wire Unpaywall/OpenAlex/CORE/PMC waterfall; add unit/integration tests.
 
-Phase 1 — Core foundation (2–3d)
-- Finalize Literature agent (search + normalized metadata)
-- Add PDF-Fetcher agent (arXiv direct + Unpaywall/OpenAlex MVP)
-- Integrate agentmemory MCP (hooks and explicit save/recall usage)
-- Write unit tests for search & fetch
+2) PDF Fetch Stage
+- Goal: retrieve PDFs with provenance and cache them for downstream stages.
+- Inputs: paper metadata (arXiv ID / DOI / url); Outputs: cached PDF + provenance records.
+- Implementation status: open-access fetch exists; no waterfall or robust retry/backoff.
+- Gaps: full adapter set, content validation, rate limiting, reliability tests.
+- Next steps: add waterfall adapters and retries; validate content type/size and cache by DOI/ID.
 
-Phase 2 — Method + Sandbox (3–4d)
-- Implement Method agent producing structured proposals
-- Implement Coding/Sandbox agent with diff preview and sandbox runner
-- Approval gates for publishing sandbox artifacts to repo
+3) Memory Stage
+- Goal: persist session observations and provide recall/smart_search to later stages.
+- Inputs: stage outputs, approvals, decisions; Outputs: memory entries.
+- Implementation status: save/recall hooks are stubbed.
+- Gaps: MCP-backed persistence and active recall in literature/method.
+- Next steps: wire MCP client, add explicit save/recall calls, add roundtrip tests.
 
-Phase 3 — Experiments + Writing (2–3d)
-- Experiment agent (run configs, dry-run, metrics capture)
-- Writing agent (section drafts, per-section approvals)
-- Post-stage summarizers and export utilities
+4) Method Stage
+- Goal: analyze literature to produce gap analysis and 2–3 method proposals.
+- Inputs: literature outputs + memory context; Outputs: structured proposals in outputs/method/.
+- Implementation status: implemented with approval gate and structured JSON output.
+- Gaps: memory recall not active; tighter guardrails for structured outputs.
+- Next steps: enable memory recall and add schema validation tests.
 
-Phase 4 — Reliability & QA (2–3d)
-- Add retries, fallback models, logging, guardrails, and tests
-- E2E dry-run and a manual approval walkthrough
+5) Coding Stage
+- Goal: turn approved method into runnable code via a sandboxed, diff-only workflow.
+- Inputs: chosen method + task spec; Outputs: sandbox/<topic>_<ts>/, diffs, logs.
+- Implementation status: universal train scaffold is generated in the sandbox; env/data gates exist; LLM is restricted to task-specific modules only.
+- Gaps: diff-only enforcement, data integration layer (data_report.json), and stricter validation of task-specific modules.
+- Next steps: add data_report.json + parity checks, enforce diff-only patch application, expand smoke tests to cover task-specific wiring.
 
-Phase 5 — Optional UI & Deployment (2–4d)
-- Streamlit UI reusing Flow/crew interfaces (optional)
-- Deployment packaging and docs
+6) Experiment Stage
+- Goal: orchestrate experiments (dry-run first), capture metrics and reports.
+- Inputs: sandbox artifacts; Outputs: outputs/experiments/<topic>_<ts>/ metrics + summaries.
+- Implementation status: summary-only (no real training/eval); approvals + persistence exist.
+- Gaps: real execution hooks, meaningful metrics capture, report generation.
+- Next steps: wire training/eval execution, capture metrics, generate eval reports.
 
-## Per-agent plans (goal, inputs, outputs, steps, tests, estimate)
+7) Writing Stage
+- Goal: synthesize drafts from stage outputs with section-level approvals.
+- Inputs: prior stage outputs; Outputs: outputs/writing/<topic>_<ts>/ sections and exports.
+- Implementation status: outline and section stubs only; approvals + persistence exist.
+- Gaps: full prose generation with evidence linking and citations.
+- Next steps: expand section drafting, add reference linking and style guardrails.
 
-1) Literature Agent (0.5–1d)
-- Goal: discover candidate papers and produce normalized metadata
-- Inputs: topic query; Outputs: list of papers saved under outputs/literature/
-- Steps: finalize arXiv and Semantic Scholar tools, normalize schema, unit tests
-- Tests: mock API responses, schema validation
+8) Supervisor Flow (Orchestration)
+- Goal: manage stage transitions, approvals, retries, persisted flow state.
+- Inputs: stage outputs; Outputs: flow state + run metadata in outputs/flow_runs.db.
+- Implementation status: end-to-end flow exists; approvals integrated; UI resume support exists.
+- Gaps: stage-specific resume from persisted checkpoints (beyond UI), richer failure diagnostics.
+- Next steps: add stage resume from persisted checkpoints and enhance error reporting.
 
-2) PDF-Fetcher Agent (MVP 1d; full 2–3d)
-- Goal: waterfall PDF retrieval and caching per literature_sources_plan
-- Inputs: paper metadata (arXiv ID / DOI / url); Outputs: cached PDF + provenance
-- Steps (MVP): arXiv direct PDF builder + Unpaywall/OpenAlex calls; validation (Content-Type, size); caching by DOI/ID
-- Full: CORE, PMC, bioRxiv adapters, robust retry/backoff and rate-limiting
-- Tests: adapter unit tests and waterfall integration test
-
-3) Memory Agent (configuration + wiring 0.5–1d)
-- Goal: persist session observations and provide recall/smart_search
-- Inputs: stage outputs, approvals, important decisions; Outputs: memory entries
-- Steps: ensure MCP entry, add explicit save calls at stage checkpoints, implement recall usage in literature/method agents
-- Tests: write/save/recall roundtrip tests
-
-4) Method Agent (1d)
-- Goal: analyze literature to produce gap analysis and 2–3 method proposals
-- Inputs: literature outputs + memory context; Outputs: structured proposals saved to outputs/method/
-- Steps: define Pydantic model, implement agent prompt + guardrails, approval checkpoint
-- Tests: model validation and integration test
-
-5) Coding / Sandbox Agent (2–4d)
-- Goal: generate sandboxed code artifacts and diffs for approval
-- Inputs: chosen method + task spec; Outputs: sandbox/<topic>_<ts>/ with diffs and logs
-- Steps: sandbox runner, diff preview tool, approvals to apply changes
-- Tests: run generated unit tests in isolated venv
-
-6) Experiment Agent (1–2d)
-- Goal: orchestrate experiments (dry runs first), capture metrics
-- Inputs: sandbox artifacts; Outputs: outputs/experiments/<topic>_<ts>/ metrics + summaries
-- Steps: experiment schema, MLflow/simple adapter, approval before launch
-- Tests: dry-run metadata generation
-
-7) Writing Agent (1–2d)
-- Goal: synthesize drafts from stage outputs with section-level approvals
-- Inputs: prior stage outputs; Outputs: outputs/writing/<topic>_<ts>/ versioned sections
-- Steps: structured section model, regenerate on feedback, export MD/JSON
-- Tests: guardrail checks (length, references)
+9) UI (Streamlit)
+- Goal: provide approval gates, logs, and resume controls without CLI.
+- Inputs: flow state + approvals; Outputs: UI state + interaction logs.
+- Implementation status: UI exists with approvals and resume selection.
+- Gaps: clearer gating messages + validation feedback, better run history visualization.
+- Next steps: improve validation UX and stage resume messaging.
 
 ## Cross-cutting items
-- Centralize config (.env) for MODEL, API keys, email parameters, CORE key
-- Enforce PII redaction in memory and outputs; never store API secrets in memory
-- Add guardrails and unit/integration tests per agent
-- Supervisor Flow: wire each agent as a Crew task and add approval checkpoints
-
-## Immediate next steps (first sprint)
-1. Implement PDF-Fetcher MVP (arXiv direct + Unpaywall/OpenAlex) and unit tests
-2. Finalize agentmemory wiring (explicit save/recall at literature/method)
-3. Update supervisor Flow to call PDF-Fetcher after literature search and persist results
-
-## Risks & mitigation
-- Missing API keys → mock adapters and graceful fallbacks
-- PDF fetch fails → abstract-only fallback, do not block pipeline
-- Unsafe code writes → sandbox-only by default; require explicit repo-apply approval
+- Centralize config (.env) for MODEL, API keys, and external service keys.
+- Enforce PII redaction in memory and outputs; never store API secrets in memory.
+- Add guardrails and unit/integration tests per stage.
 
 ---
 
-Updated: May 2026 — integrated per-agent plans and MVP-first roadmap.  
+Updated: May 2026 — per-stage plan with status and gaps.  
 Use this as the single source of truth for sprint planning and Flow checkpoints.

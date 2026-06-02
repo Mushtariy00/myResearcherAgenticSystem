@@ -1,0 +1,37 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-22T14:37:12Z",
+  "key_findings": [
+    {
+      "title": "Stereo\u2011supervised self\u2011supervision eliminates metric ground\u2011truth dependence",
+      "source": "On the Synergies between Machine Learning and Binocular Stereo for Depth Estimation from Images: a Survey",
+      "summary": "View\u2011synthesis losses (photometric, left\u2011right consistency, minimum reprojection) allow monocular networks to learn depth without metric labels, removing scale ambiguity and achieving competitive KITTI results (e.g., MonoDepth2 AbsRel\u202f0.106).",
+      "url": ""
+    },
+    {
+      "title": "Distillation from high\u2011performance stereo teachers narrows the gap to fully supervised methods",
+      "source": "On the Synergies between Machine Learning and Binocular Stereo for Depth Estimation from Images: a Survey",
+      "summary": "Cross\u2011domain and MonoResMatch pipelines generate dense pseudo\u2011labels from stereo nets, providing richer supervision than pure view synthesis and improving accuracy on outdoor benchmarks.",
+      "url": ""
+    },
+    {
+      "title": "Motion\u2011aware cost volumes improve depth in dynamic scenes",
+      "source": "Manydepth2: Motion-Aware Self-Supervised Monocular Depth Estimation in Dynamic Scenes",
+      "summary": "By constructing a pseudo\u2011static reference frame with optical flow and integrating it into a motion\u2011aware volume, Manydepth2 reduces KITTI AbsRel to 0.091 and gains ~15\u202f% on Cityscapes, evidencing the importance of explicit dynamic handling.",
+      "url": ""
+    },
+    {
+      "title": "Depth factorization with transformer\u2011based scale regression boosts indoor performance",
+      "source": "MonoIndoor++: Towards Better Practice of Self-Supervised Monocular Depth Estimation for Indoor Environments",
+      "summary": "Separating global scale (learned via a transformer) from relative depth yields a 2.8\u202f% absolute\u2011relative error reduction on NYUv2 and tighter pose errors on EuRoC, addressing the scale\u2011ambiguity problem in indoor video.",
+      "url": ""
+    },
+    {
+      "title": "Lightweight encoder\u2011decoder designs enable real\u2011time inference at the cost of accuracy",
+      "source": "On the Synergies between Machine Learning and Binocular Stereo for Depth Estimation from Images: a Survey",
+      "summary": "Models such as PyDNet and MADNet\u2011style adaptations demonstrate monocular depth on CPUs/embedded devices, but exhibit higher errors than high\u2011resolution supervised counterparts, highlighting the accuracy\u2011efficiency trade\u2011off.",
+      "url": ""
+    }
+  ],
+  "synthesis": "Between 2023 and 2025 monocular depth estimation has converged on self\u2011supervised view\u2011synthesis training, largely driven by stereo\u2011supervised cues that remove the need for metric ground truth and alleviate scale ambiguity. Distillation from strong stereo teachers further refines supervision, narrowing the performance gap to fully supervised methods. Recent work has extended this paradigm to address two persistent challenges: dynamic scenes and indoor environments. Motion\u2011aware cost volumes, built from pseudo\u2011static frames derived via optical flow, substantially improve robustness to moving objects, while transformer\u2011based scale regression and depth factorisation explicitly resolve the global scale problem endemic to indoor video, yielding state\u2011of\u2011the\u2011art results on NYUv2 and EuRoC. Concurrently, lightweight encoder\u2011decoder architectures demonstrate that real\u2011time deployment on edge devices is feasible, though at a measurable accuracy penalty. Despite these advances, generalization across domains, handling of illumination changes, and the computational burden of high\u2011resolution models remain open research gaps that future studies must address."
+}

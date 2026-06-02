@@ -1,0 +1,29 @@
+{
+  "research_gaps": [
+    "High computational/memory cost of Vision\u2011Transformer and hybrid CNN\u2011ViT backbones limits real\u2011time deployment on edge devices.",
+    "Domain adaptation is still fragile; existing fine\u2011tuning or style\u2011transfer methods cannot fully close the gap for extreme illumination changes, synthetic\u2011real texture shifts, and night\u2011day transitions.",
+    "Persistent loss of fine\u2011grained detail on thin, distant, specular or transparent objects, especially when using lightweight or real\u2011time models."
+  ],
+  "proposals": [
+    {
+      "name": "Efficient Sparse\u2011Attention ViT with Dynamic Token Pruning (ESA\u2011ViT)",
+      "rationale": "Replace dense self\u2011attention with a hierarchical sparse\u2011attention scheme that prunes low\u2011information tokens early, and incorporate a lightweight CNN stem for early\u2011level geometry cues.",
+      "expected_benefit": "Near\u2011Transformer accuracy on global context while reducing FLOPs\u202f\u00d7\u202f4\u20136 and memory\u202f\u00d7\u202f3, enabling >30\u202ffps on a 2023\u2011class mobile GPU.",
+      "risk": "Token pruning may discard subtle cues needed for thin structures, requiring careful scheduling and retraining."
+    },
+    {
+      "name": "Self\u2011Supervised Domain\u2011Invariant Feature Normalization (DIS\u2011Norm)",
+      "rationale": "Introduce a dual\u2011branch normalization that aligns feature statistics across source and target domains using an unsupervised contrastive loss on synthetic\u2011real and day\u2011night image pairs, without explicit style\u2011transfer GANs.",
+      "expected_benefit": "Improves zero\u2011shot cross\u2011domain depth error by ~12\u202f% on night\u2011time and synthetic\u2011real benchmarks, with negligible extra parameters and no per\u2011target fine\u2011tuning.",
+      "risk": "Requires a modest amount of unlabelled target images for the contrastive pairing; performance may degrade if domain shift is extreme (e.g., underwater)."
+    },
+    {
+      "name": "Edge\u2011Guided Multi\u2011Scale Diffusion Refinement (EG\u2011DiffRefine)",
+      "rationale": "Apply a lightweight diffusion module only on edge\u2011aware regions detected by a fast gradient mask; the diffusion operates on low\u2011resolution patches and upscales via guided interpolation, preserving high\u2011frequency depth at critical structures.",
+      "expected_benefit": "Recovers sharp depth edges on thin/reflective objects while adding <8\u202fms latency on 1080p inputs, achieving a 20\u202f% reduction in edge RMSE compared to baseline real\u2011time models.",
+      "risk": "Edge detection may miss low\u2011contrast thin structures; the extra module introduces implementation complexity and can be sensitive to mask thresholds."
+    }
+  ],
+  "recommended_option": "Efficient Sparse\u2011Attention ViT with Dynamic Token Pruning (ESA\u2011ViT)",
+  "implementation_focus": ""
+}

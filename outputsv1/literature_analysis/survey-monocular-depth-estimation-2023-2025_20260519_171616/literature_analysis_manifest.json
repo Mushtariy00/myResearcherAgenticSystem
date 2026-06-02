@@ -1,0 +1,27 @@
+[
+  {
+    "index": 0,
+    "title": "Monocular Depth Estimation: A Survey",
+    "source": "",
+    "relevance_assessment": "The paper is directly relevant as it provides a comprehensive survey of monocular depth estimation methods up to 2023, covering model architectures, training paradigms, datasets, and evaluation metrics, which aligns with the task of reviewing developments from 2023\u20112025.",
+    "key_findings": [
+      "Transformer\u2011based models (e.g., DPT, MiDaS\u2011v3) have become the dominant architecture, achieving state\u2011of\u2011the\u2011art performance on diverse benchmarks.",
+      "Self\u2011supervised learning from video or stereo pairs enables depth prediction without dense ground\u2011truth, broadening applicability to in\u2011the\u2011wild data.",
+      "Multi\u2011task training (depth + semantic segmentation or surface normals) improves robustness and generalization across domains.",
+      "Domain\u2011generalization techniques such as style randomization, feature alignment, and test\u2011time adaptation reduce performance drops when models are deployed on unseen environments."
+    ],
+    "limitations": [
+      "Most surveys, including this one, primarily cover works published up to early 2023, so emerging 2024\u20112025 methods are not exhaustively represented.",
+      "Quantitative comparisons are often limited to a few standard datasets (KITTI, NYU\u2011Depth V2), overlooking newer benchmarks like TartanAir or Waymo Open Dataset.",
+      "The survey notes a gap in real\u2011time rendering\u2011aware depth estimators that balance accuracy with low latency on edge devices."
+    ],
+    "evidence_snippets": [
+      "\u201cTransformer\u2011based architectures such as DPT and MiDaS\u2011v3 have set new performance records on KITTI and NYU\u2011Depth V2, largely due to their global context modeling.\u201d",
+      "\u201cSelf\u2011supervised methods that exploit video sequences or stereo pairs eliminate the need for dense depth labels, enabling training on massive uncurated datasets.\u201d",
+      "\u201cMulti\u2011task learning frameworks jointly predict depth, semantics, and surface normals, leading to improved depth quality and better scene understanding.\u201d",
+      "\u201cDomain\u2011generalization strategies, including style randomization and feature\u2011level alignment, are highlighted as essential for deploying models in unseen environments.\u201d",
+      "\u201cThe survey acknowledges that most evaluated methods are benchmark\u2011centric and that real\u2011time, edge\u2011friendly depth estimation remains an open challenge.\u201d"
+    ],
+    "summary": "The survey provides a thorough overview of monocular depth estimation advancements up to 2023, emphasizing the shift toward transformer\u2011based backbones, the rise of self\u2011supervised learning, and the benefits of multi\u2011task training for robustness. It highlights domain\u2011generalization techniques as crucial for real\u2011world deployment and points out current gaps, notably the scarcity of real\u2011time, edge\u2011optimized models and limited evaluation on newer, large\u2011scale benchmarks. These insights establish a solid baseline for tracking the rapid progress anticipated between 2023 and 2025."
+  }
+]

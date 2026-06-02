@@ -1,0 +1,42 @@
+[
+  {
+    "index": 1,
+    "source_url": "https://www.semanticscholar.org/paper/727d9e59259a3245a552c757e7615df1fd084874",
+    "resolved_pdf_url": "",
+    "status": "unresolved",
+    "page_count": 0,
+    "text_length": 0,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/survey-monocular-depth-estimation-2023-2025_20260522_140015/paper_01.txt",
+    "error": "Could not resolve an open-access PDF URL."
+  },
+  {
+    "index": 2,
+    "source_url": "https://www.semanticscholar.org/paper/ab664b3b6e73d67a0c1d86bbc1efe9454f79af88",
+    "resolved_pdf_url": "",
+    "status": "unresolved",
+    "page_count": 0,
+    "text_length": 0,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/survey-monocular-depth-estimation-2023-2025_20260522_140015/paper_02.txt",
+    "error": "Could not resolve an open-access PDF URL."
+  },
+  {
+    "index": 3,
+    "source_url": "https://www.semanticscholar.org/paper/a8781b1e1b4c24a600bceca7557768aeea75f20c",
+    "resolved_pdf_url": "",
+    "status": "unresolved",
+    "page_count": 0,
+    "text_length": 0,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/survey-monocular-depth-estimation-2023-2025_20260522_140015/paper_03.txt",
+    "error": "Could not resolve an open-access PDF URL."
+  },
+  {
+    "index": 4,
+    "source_url": "https://www.semanticscholar.org/paper/472fddb1d16637e4baa0872a7abefb7d657a05f5",
+    "resolved_pdf_url": "",
+    "status": "unresolved",
+    "page_count": 0,
+    "text_length": 0,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/survey-monocular-depth-estimation-2023-2025_20260522_140015/paper_04.txt",
+    "error": "Could not resolve an open-access PDF URL."
+  }
+]

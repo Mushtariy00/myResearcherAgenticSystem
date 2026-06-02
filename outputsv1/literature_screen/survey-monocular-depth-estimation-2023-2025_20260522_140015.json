@@ -1,0 +1,15 @@
+{
+  "selected_indices": [
+    0,
+    1,
+    3,
+    4,
+    6
+  ],
+  "rejected_indices": [
+    2,
+    5,
+    7
+  ],
+  "selection_rationale": "Indices 0, 1, 3, 4, and 6 are all explicit surveys of monocular depth estimation, covering general methods, metric depth, self\u2011supervised approaches, dynamic scenes, and a broad overview respectively. They directly match the target topic and are likely to contain comprehensive literature reviews and benchmark discussions needed for a synthesis. The remaining papers focus on unrelated domains (human pose, binocular stereo) or lack sufficient relevance."
+}

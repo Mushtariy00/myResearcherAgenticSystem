@@ -1,0 +1,27 @@
+{
+  "goal": "Create a sandbox\u2011confined, reproducible pipeline that automatically ingests PDFs of monocular depth estimation papers (2023\u20112025), extracts structured attributes (architecture, training regime, performance metrics, datasets, hardware) via LLM prompting, stores them in a SQLite taxonomy, and generates a hierarchical taxonomy visualisation. The experiment validates that the end\u2011to\u2011end workflow runs reliably and achieves \u2265\u202f90\u202f% extraction precision on a sampled review set.",
+  "config": {
+    "environment_name": "depth_survey_sandbox",
+    "python_version": "3.11",
+    "dependencies_file": "sandbox/requirements.txt",
+    "sample_pdf_count": "10",
+    "llm_provider": "openai_gpt4o (or compatible Open\u2011Source model via LangChain)",
+    "sqlite_db_path": "sandbox/taxonomy.db",
+    "taxonomy_output": "sandbox/depth_taxonomy.json",
+    "ci_workflow": ".github/workflows/sandbox_ci.yml"
+  },
+  "metrics": {
+    "sandbox_created_files": 8.0,
+    "sandbox_validated_python_files": 4.0,
+    "sandbox_validation_rate": 0.5,
+    "runner_latency_ms": 0.006,
+    "extraction_precision_percentage": 0.0,
+    "schema_validation_success_rate": 0.0,
+    "taxonomy_generation_success": 0.0,
+    "ci_pipeline_pass_rate": 0.0,
+    "pipeline_runtime_seconds": 0.0,
+    "manual_spotcheck_accuracy": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_135403",
+  "validation_errors": []
+}

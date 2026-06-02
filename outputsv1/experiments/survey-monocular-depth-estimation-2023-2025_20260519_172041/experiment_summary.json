@@ -1,0 +1,96 @@
+{
+  "goal": "Benchmark a lightweight self\u2011supervised monocular depth estimator (HCT\u2011Lite) on public video datasets (Waymo Open Motion and TartanAir) to achieve \u22640.12 AbsRel error while keeping average inference latency \u226435\u202fms on a GPU proxying Snapdragon\u202f8\u2011Gen\u202f2, and validate optional test\u2011time adaptive token pruning.",
+  "config": {
+    "docker_image": "depth_sandbox:latest",
+    "python_version": "3.11",
+    "cuda_version": "12.0",
+    "pytorch_version": "2.3.0",
+    "datasets": {
+      "waymo": {
+        "path": "/data/waymo_open_motion",
+        "split": "val",
+        "sample_rate": "30k sequences"
+      },
+      "tartanair": {
+        "path": "/data/tartanair",
+        "split": "val",
+        "sample_rate": "full"
+      }
+    },
+    "model": {
+      "type": "HCTLite",
+      "input_resolution": "384x384",
+      "batch_size": 1,
+      "precision": "fp16"
+    },
+    "training": {
+      "steps": 2000,
+      "learning_rate": 0.0001,
+      "optimizer": "AdamW",
+      "losses": {
+        "photometric": 1.0,
+        "semantic_aux": 0.2,
+        "normal_aux": 0.2
+      },
+      "curriculum": {
+        "photometric_only_until_step": 5000,
+        "aux_heads_introduction_step": 5000,
+        "resolution_ramp_start_step": 5000
+      },
+      "logging": {
+        "wandb_project": "mono-depth-2023-2025",
+        "log_interval_steps": 100
+      },
+      "checkpoint": {
+        "save_every_steps": 2000,
+        "output_dir": "/output/checkpoints"
+      }
+    },
+    "export": {
+      "format": "ONNX",
+      "dynamic_batch": true,
+      "benchmark_tool": "onnxruntime",
+      "latency_tolerance_ms": 5
+    },
+    "evaluation": {
+      "metrics": [
+        "AbsRel",
+        "SqRel",
+        "RMSE",
+        "Delta1.25"
+      ],
+      "latency_threshold_ms": 35,
+      "tt_atp": {
+        "enabled": false,
+        "max_latency_variance_percent": 10,
+        "max_metric_degradation_percent": 1
+      }
+    },
+    "ci_pipeline": {
+      "script": "ci/run.sh",
+      "fail_conditions": {
+        "latency_ms": 35,
+        "abs_rel": 0.12
+      }
+    }
+  },
+  "metrics": {
+    "sandbox_created_files": 9.0,
+    "sandbox_validated_python_files": 5.0,
+    "sandbox_validation_rate": 0.5556,
+    "runner_latency_ms": 0.003,
+    "inference_latency_ms": 0.0,
+    "absrel": 0.0,
+    "sqrel": 0.0,
+    "rmse": 0.0,
+    "delta_1_25": 0.0,
+    "training_photometric_loss": 0.0,
+    "auxiliary_semantic_loss": 0.0,
+    "auxiliary_normal_loss": 0.0,
+    "gpu_memory_usage_mib": 0.0,
+    "training_step_throughput_frames_s": 0.0,
+    "onnx_export_latency_difference_ms": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260519_172002",
+  "validation_errors": []
+}

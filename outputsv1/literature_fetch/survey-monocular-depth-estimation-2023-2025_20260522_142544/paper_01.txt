@@ -1,0 +1,1393 @@
+Survey on Monocular Metric Depth Estimation
+Jiuling Zhang
+University of Chinese Academy of Sciences
+zhangjiuling19@mails.ucas.edu.cn
+Abstract
+Monocular Depth Estimation (MDE) enables spatial understanding, 3D reconstruc-
+tion, and autonomous navigation, yet deep learning approaches often predict only
+relative depth without a consistent metric scale. This limitation reduces reliability
+in applications such as visual SLAM, precise 3D modeling, and view synthesis.
+Monocular Metric Depth Estimation (MMDE) overcomes this challenge by produc-
+ing depth maps with absolute scale, ensuring geometric consistency and enabling
+deployment without additional calibration. This survey reviews the evolution
+of MMDE, from geometry-based methods to state-of-the-art deep models, with
+emphasis on the datasets that drive progress. Key benchmarks, including KITTI,
+NYU-D, ApolloScape, and TartanAir, are examined in terms of modality, scene
+type, and application domain. Methodological advances are analyzed, covering
+domain generalization, boundary preservation, and the integration of synthetic and
+real data. Techniques such as unsupervised and semi-supervised learning, patch-
+based inference, architectural innovations, and generative modeling are evaluated
+for their strengths and limitations. By synthesizing current progress, highlight-
+ing the importance of high-quality datasets, and identifying open challenges, this
+survey provides a structured reference for advancing MMDE and supporting its
+adoption in real-world computer vision systems.
+1
+Preliminary
+Depth estimation reconstructs 3D scene structure from images and underpins numerous applications,
+including 3D reconstruction (Mildenhall et al., 2021; Kerbl et al., 2023; Ye et al., 2024), autonomous
+navigation (Szeliski, 2022), self-driving vehicles (Zheng et al., 2024), and video understanding (Leduc
+et al., 2024). It also supports emerging areas such as AI-generated content (AIGC), which spans
+image synthesis (Zhang et al., 2023; Khan et al., 2023), video generation (Liew et al., 2023), and 3D
+scene reconstruction (Xu et al., 2023; Shahbazi et al., 2024; Shriram et al., 2024).
+Classical approaches relied on parallax, stereo vision, and multi-camera systems. With advances
+in deep learning, monocular depth estimation (MDE) emerged as a cost-effective alternative that
+predicts depth from a single image. The field’s growing significance is reflected in the Monocular
+Depth Estimation Challenge (MDEC), hosted at CVPR in 2023 and 2024 and scheduled to return in
+20251.
+Recent work has shifted toward Monocular Metric Depth Estimation (MMDE), which provides
+absolute depth values rather than scale-inconsistent maps. This shift is driven by practical require-
+ments for accurate, generalizable, and detail-preserving predictions in real-world tasks. Industry
+leaders, including Intel (Bhat et al., 2023), Apple (Bochkovskii et al., 2024), DeepMind (Saxena et al.,
+2023), TikTok (Yang et al., 2024a,b), and Bosch (Guo et al., 2025), have advanced MMDE through
+1https://jspenmar.github.io/MDEC/
+Preprint. Under review.
+arXiv:2501.11841v4  [cs.CV]  26 Aug 2025
+
+large-scale datasets, high-performance computing, and novel architectures, enabling improvements in
+zero-shot generalization and reconstruction fidelity.
+However, survey literature remains limited. Most comprehensive reviews predate 2020 (Bhoi, 2019;
+Khan et al., 2020; Zhao et al., 2020; Xiaogang et al., 2020), and recent work often focuses on domain-
+specific settings (Lahiri et al., 2024; Tosi et al., 2024; Vyas et al., 2022; Dong et al., 2022) or relative
+depth (Masoumian et al., 2022; Arampatzakis et al., 2023; Rajapaksha et al., 2024). Meanwhile,
+leading venues such as CVPR 2024, ECCV 2024, and NeurIPS 2024 highlight emerging trends
+in zero-shot MMDE and generative model integration. This paper fills a critical gap by offering a
+comprehensive review of MMDE, addressing datasets, methodological advances, open challenges,
+and future directions.
+2
+Depth Estimation
+The goal of depth estimation is to compute a depth map D := (R)H×W from a given 2D image
+I := (R)H×W ×3, where each depth value di,j ∈D represents the physical distance between pixel
+ii,j ∈I and the camera (Bhat et al., 2021). This task is inherently ill-posed because 2D images are
+projections of the 3D world, which discard geometric information. Monocular depth estimation is
+particularly challenging due to the absence of parallax and auxiliary cues (Miangoleh et al., 2021).
+Despite these challenges, depth estimation plays a critical role in computer vision (Jampani et al.,
+2021). Accurate depth maps enhance scene understanding and object localization, which benefit a
+wide range of applications. In autonomous driving and robotics, they improve obstacle detection, path
+planning, and environmental awareness. In AR/VR, reliable depth predictions enable realistic 3D
+reconstruction and immersive interaction. In computational photography, depth supports multi-focus
+imaging, background segmentation, and 3D video synthesis (Eigen et al., 2014).
+By providing dense, pixel-wise distance predictions, depth estimation equips intelligent systems with
+geometric awareness of the environment. This capability remains a cornerstone of visual perception
+research with substantial real-world impact across established and emerging domains.
+2.1
+Traditional Methods
+Before the rise of deep learning, depth estimation primarily relied on geometric models and specialized
+sensors. These approaches achieved accuracy in controlled conditions but often required additional
+hardware and struggled in complex real-world environments (Singh et al., 2023).
+2.1.1
+Sensors
+Early sensor-based systems directly captured spatial information. Structured-light devices, such as
+Microsoft Kinect v1, projected predefined patterns to infer depth, while Time-of-Flight (ToF) sensors
+measured light travel time. Although accurate in laboratory settings, these methods were expensive
+and highly sensitive to ambient light and surface properties, limiting their use in dynamic or portable
+applications.
+2.1.2
+Stereo Vision
+Stereo vision, inspired by human binocular perception, estimated depth from disparities between
+two calibrated cameras. While effective, performance degraded in low-texture regions, poor lighting,
+and dynamic scenes, where reliable pixel correspondence was difficult. The hardware complexity of
+stereo rigs further restricted widespread deployment.
+2.1.3
+Geometric Multi-Frame Methods
+Techniques such as Structure-from-Motion (SfM) and Simultaneous Localization and Mapping
+(SLAM) inferred depth from multi-frame parallax by estimating camera poses and reconstructing
+3D point clouds. Indirect methods minimized reprojection error from feature correspondences,
+while direct methods exploited photometric consistency (Wofk et al., 2023). Despite enabling depth
+estimation without extra sensors, these methods were sensitive to illumination changes and texture
+inconsistencies, reducing robustness in unconstrained environments.
+2
+
+Traditional approaches provided a strong foundation but were limited by hardware demands, envi-
+ronmental constraints, and computational complexity. The shift to deep learning introduced more
+scalable, flexible, and robust solutions, which now dominate depth estimation research.
+2.2
+Deep Learning
+Deep learning has fundamentally reshaped depth estimation, replacing geometry-based methods
+with learning-driven approaches. Unlike stereo or LiDAR-based systems, neural networks predict
+depth directly from a single image, reducing hardware cost and enabling lightweight deployment in
+applications such as mobile AR and drone navigation (Garg et al., 2016).
+A major advantage of deep learning is its ability to leverage large-scale datasets to capture scene
+priors that resolve the inherent ambiguity of monocular input. Neural networks learn both local
+textures and global semantics, allowing inference of spatial relationships and geometric structure. For
+example, sky regions are recognized as distant, while ground-plane textures provide depth gradients,
+leading to more reliable predictions even in ill-posed regions.
+Feature representation is central to modern models. Convolution Neural Networks (CNNs) extract
+multi-scale information, integrating fine textures with high-level semantics to improve precision and
+robustness in structured environments. This feature-driven paradigm surpasses pixel-based geometric
+methods by achieving reliable performance across sparse-texture, cluttered, and dynamic scenes.
+Deep learning thus enables scalable, cost-efficient, and robust monocular depth estimation, expanding
+its impact on domains such as autonomous driving, robotics, and immersive AR/VR systems.
+3
+Monocular Depth Estimation
+Monocular Depth Estimation (MDE) predicts scene depth from a single RGB image, eliminating
+the need for multi-view setups or specialized sensors. Neural networks extract visual cues directly,
+thereby reducing system complexity and cost compared to traditional geometry-based methods.
+Early supervised approaches demonstrated the feasibility of learning depth from labeled datasets.
+Eigen et al. introduced a multi-scale CNN that jointly predicted global and local depth, significantly
+improving accuracy (Eigen et al., 2014). Their subsequent work incorporated surface normals and
+semantic labels in a multi-task framework, further enhancing robustness (Eigen & Fergus, 2015).
+Modern architectures largely adopt encoder–decoder designs, where encoders capture global context
+and decoders reconstruct fine-grained depth. Multi-scale feature fusion strengthens the balance
+between structure and detail. To mitigate the intrinsic ambiguity of monocular cues, several works
+integrate geometric priors such as perspective constraints and object size, improving plausibility and
+generalization.
+Although early models often struggled with cross-domain transfer, advances in universal feature
+extraction and domain-invariant learning have expanded MDE’s applicability in real-world scenarios.
+These developments establish MDE as a practical and scalable solution for tasks requiring dense
+depth perception.
+4
+Zero-shot Monocular Depth Estimation
+Zero-shot MDE addresses the poor transferability of supervised models, which often rely on dataset-
+specific scales and camera intrinsics. Early solutions reformulated the task as Relative Depth Estima-
+tion (RDE), predicting ordinal pixel relationships rather than absolute distances. This scale-agnostic
+formulation, coupled with scale-invariant and scale-and-shift-invariant loss functions, improved
+generalization across heterogeneous datasets (Fu et al., 2018).
+A major milestone was MiDaS (Birkl et al., 2023), which unified multi-dataset training under scale-
+invariant objectives. By evolving from CNN-based designs to Vision Transformers (Han et al., 2022),
+MiDaS demonstrated strong cross-domain performance, establishing a foundation for zero-shot depth
+prediction. However, RDE inherently trades metric precision for generalization: while robust across
+domains, it cannot provide absolute scale, limiting applications such as SLAM, AR, and autonomous
+driving where metric consistency and temporal coherence are critical.
+3
+
+Recent research aims to bridge relative and metric estimation within unified frameworks, seeking to
+balance robustness with scale fidelity. These efforts mark a shift toward zero-shot models that can
+generalize across domains while remaining suitable for real-world deployment.
+5
+Monocular Metric Depth Estimation
+Monocular Metric Depth Estimation (MMDE) has gained prominence due to its ability to predict
+absolute depth in physical units, enabling consistent 3D perception for applications such as recon-
+struction, novel view synthesis, and SLAM. Unlike relative methods, MMDE ensures geometric
+stability and temporal coherence across frames, making it more practical for real-world deployment.
+Early approaches assumed known camera intrinsics. Metric3D mapped images to a canonical
+space with focal length corrections (Yin et al., 2023), while ZeroDepth leveraged variational in-
+ference with camera-specific embeddings (Guizilini et al., 2023). More recent work removes this
+dependency by estimating intrinsics through auxiliary networks or predicting depth in spherical
+representations (Spencer et al., 2024a).
+Advances in adaptive binning have further improved accuracy. AdaBins introduced dynamic depth
+bin allocation (Bhat et al., 2021), refined by LocalBins through spatial partitioning (Bhat et al.,
+2022), while BinsFormer integrated Transformers for global-local bin optimization (Li et al., 2024c).
+NeW CRFs combined neural networks with conditional random fields to enforce pixel-wise consis-
+tency (Yuan et al., 2022).
+A breakthrough in zero-shot MMDE was ZoeDepth (Bhat et al., 2023), which extended MiDaS
+with adaptive metric binning and scene-aware routing, achieving strong cross-domain generalization
+across indoor and outdoor datasets. This unified design has established a benchmark for scalable and
+robust metric depth estimation.
+6
+Challenges and Improvements
+Although MMDE has advanced significantly, generalization to unseen domains remains a primary
+challenge (Spencer et al., 2024b). Models often suffer from geometric blurring, loss of fine details, and
+degraded performance in high-resolution or cross-domain scenarios, limiting reliability in real-world
+applications.
+Recent improvements target these issues through architectural refinements, such as multi-scale feature
+fusion and transformer-based designs, which better preserve structure and context. Enhanced training
+strategies, including domain-invariant learning and large-scale multi-dataset supervision, improve
+robustness across diverse environments. At inference, patch-based and adaptive mechanisms mitigate
+resolution constraints while maintaining geometric consistency. Collectively, these advances have
+boosted prediction accuracy and stability, yet achieving both high precision and strong generalization
+in dynamic settings remains an open challenge for MMDE.
+6.1
+Generalizability
+Improving the generalization of zero-shot MMDE relies on large-scale data augmentation, robust
+architectures, and novel training paradigms.
+Dataset Augmentation: Depth Anything employs a semi-supervised framework generating 62M
+self-annotated images, enabling strong cross-domain adaptation through semantic priors and large-
+scale supervision (Yang et al., 2024a; Marsal et al., 2024; Haji-Esmaeili & Montazer, 2024; Shao
+et al., 2024; Wang et al., 2024). Depth Any Camera (DAC) further extends depth estimation to fisheye
+and 360° imagery using ERP, pitch-aware conversion, and field-of-view alignment, achieving robust
+omnidirectional prediction (Guo et al., 2025).
+Model Improvements: UniDepth predicts metric 3D point clouds without camera intrinsics via a
+self-promptable camera module, pseudo-spherical outputs, and geometric invariance loss, enhancing
+robustness to camera variations and domain shifts (Piccinelli et al., 2024).
+4
+
+Table 1: Timeline of key advancements in monocular metric depth estimation (MMDE). While most
+generative approaches focus on relative depth, Diffusion for Metric Depth (DMD) remains the only
+reported method producing absolute metric predictions (Saxena et al., 2023). However, the absence
+of public release limits independent validation, leaving the role of generative models in MMDE an
+open avenue for future exploration.
+Method
+Publication
+Category
+Inference
+Dataset
+Output
+Source
+Zoedepth (Bhat et al., 2023)
+Arxiv
+discriminative
+single
+real
+metric
+open
+Depth Anything (Yang et al., 2024a)
+CVPR ’24
+discriminative
+single
+real
+metric
+open
+Patch Fusion (Li et al., 2024a)
+CVPR ’24
+discriminative
+multiple
+real
+metric
+open
+Unidepth (Piccinelli et al., 2024)
+CVPR ’24
+discriminative
+single
+real
+metric
+open
+Marigold (Ke et al., 2024)
+CVPR ’24
+generative
+multiple
+synthetic
+relative
+open
+DMD (Saxena et al., 2023)
+Arxiv
+generative
+multiple
+real
+metric
+close
+Depth Anything v2 (Yang et al., 2024b)
+NeurIPS ’24
+discriminative
+single
+real+synthetic
+metric
+open
+GeoWizard (Fu et al., 2024)
+ECCV ’24
+generative
+multiple
+real+synthetic
+relative
+open
+Patch Refiner (Li et al., 2024b)
+ECCV ’24
+discriminative
+multiple
+real+synthetic
+metric
+open
+Depth pro (Bochkovskii et al., 2024)
+Arxiv
+discriminative
+multiple
+real+synthetic
+metric
+open
+DAC (Guo et al., 2025)
+Arxiv
+discriminative
+single
+real+synthetic
+metric
+open
+Depth Anything AC (Sun et al., 2025)
+Arxiv
+discriminative
+multiple (patching)
+real+synthetic
+metric
+open
+Loss and Training Paradigms: DepthAnything-AC introduces unsupervised consistency regular-
+ization and a Spatial Distance Constraint, reducing noise sensitivity and improving fine-structure
+preservation in degraded conditions (Sun et al., 2025).
+6.2
+Blurriness
+Depth estimation models often suffer from blurred edges and loss of fine details, particularly around
+object boundaries, occlusions, and high-frequency textures. This degradation reduces structural
+accuracy and limits applicability in high-precision tasks.
+Patch-based methods improve detail by combining local and global cues. BoostingDepth and
+PatchFusion use multi-resolution fusion to enhance sharpness, though at high computational cost (Mi-
+angoleh et al., 2021; Li et al., 2024a). PatchRefiner introduces Detail and Scale Disentangling
+(DSD) loss and pseudo-labeling to sharpen boundaries while improving efficiency (Li et al., 2024b).
+DepthPro further balances detail and speed through a multi-scale Vision Transformer with patch
+slicing, though with reduced accuracy in distant regions (Bochkovskii et al., 2024).
+Synthetic datasets provide pixel-accurate labels for training, reducing boundary artifacts. Depth
+Anything V2 leverages synthetic supervision with pseudo-labeling and gradient-matching loss to
+bridge domain gaps, enhancing fine detail and robustness (Yang et al., 2024b; Li et al., 2024b).
+Generative diffusion methods restore structural fidelity through progressive refinement. Marigold
+achieves sharper predictions in reflective and transparent regions (Ke et al., 2024), while GeoWizard
+introduces scene-aware decoupling and normal map integration for improved 3D geometry (Fu et al.,
+2024). DeepMind’s DMD applies logarithmic depth parameterization and FOV conditioning to
+resolve scale ambiguities and accelerate inference (Saxena et al., 2023).
+6.3
+Incremental Sensor Assistance
+Lightweight sensor cues have been explored as auxiliary signals to improve monocular metric depth
+estimation. Lin et al. (Lin et al., 2025) propose incorporating sparse LiDAR data as incremental
+prompts within a depth decoder, guiding pre-trained foundation models toward more accurate and
+high-resolution metric predictions. This hybrid strategy leverages minimal sensor input while
+retaining the scalability of purely vision-based approaches.
+6.4
+Analysis and Comparison
+Single-inference methods dominate monocular depth estimation due to their efficiency, producing
+depth in a single forward pass suitable for real-time tasks such as navigation and view synthesis.
+However, these models often lose fine structural details and rely heavily on large-scale, high-quality
+annotations, limiting generalization in noisy real-world datasets.
+5
+
+Table 2: Comparative evaluation of monocular metric depth estimation (MMDE) models. ZeroDepth
+is limited by storage, Metric3D depends on camera parameters, and Depth Anything underperforms
+in zero-shot generalization. Results across six zero-shot (higher-is-better) and two non-zero-shot
+(AbsRel, lower-is-better) benchmarks, reported by DepthPro (Bochkovskii et al., 2024), reveal
+substantial performance variation. The absence of standardized datasets, training protocols, and
+model settings continues to hinder fair cross-model comparison.
+Method
+Dataset
+Booster↑
+ETH3D↑
+Middlebury↑
+NuScenes↑
+Sintel↑
+Sun-RGBD↑
+NYU v2↓
+KITTI↓
+indoor
+outdoor
+outdoor
+outdoor
+outdoor
+indoor
+indoor
+outdoor
+DepthAnything (Yang et al., 2024a)
+52.3
+9.3
+39.3
+35.4
+6.9
+85.0
+4.3
+7.6
+DepthAnything V2 (Yang et al., 2024b)
+59.5
+36.3
+37.2
+17.7
+5.9
+72.4
+4.4
+7.4
+Metric3D (Yin et al., 2023)
+4.7
+34.2
+13.6
+64.4
+17.3
+16.9
+8.3
+5.8
+Metric3D v2 (Hu et al., 2024)
+39.4
+87.7
+29.9
+82.6
+38.3
+75.6
+4.5
+3.9
+PatchFusion (Li et al., 2024a)
+22.6
+51.8
+49.9
+20.4
+14.0
+53.6
+-
+-
+UniDepth (Piccinelli et al., 2024)
+27.6
+25.3
+31.9
+83.6
+16.5
+95.8
+5.78
+4.2
+ZeroDepth (Bhat et al., 2023)
+-
+-
+46.5
+64.3
+12.9
+-
+8.4
+10.5
+ZoeDepth (Bhat et al., 2023)
+21.6
+34.2
+53.8
+28.1
+7.8
+85.7
+7.7
+5.7
+Depth Pro (Bochkovskii et al., 2024)
+46.6
+41.5
+60.5
+49.1
+40.0
+89.0
+-
+-
+Patch-based strategies improve resolution by processing local regions independently and fusing
+results, enabling finer structural recovery. Methods like PatchFusion enhance accuracy via optimized
+patch weighting, but inference scales with patch count, causing latency that restricts deployment in
+high-resolution or time-critical scenarios (Li et al., 2024a).
+Generative diffusion models offer an alternative by progressively refining depth predictions, capturing
+complex geometries with strong structural consistency (Ke et al., 2024). While effective in detail
+preservation and less reliant on labeled data, their multi-step denoising introduces computational
+overhead and variability. Most focus on relative depth, with limited exploration of monocular metric
+depth estimation (MMDE). Notably, DMD incorporates field-of-view conditioning and log-scale
+parameterization to achieve accurate zero-shot MMDE (Saxena et al., 2023), though inference
+inefficiency remains a bottleneck.
+In summary, single-inference methods trade detail for speed, patch-based methods improve accuracy
+at high cost, and generative models offer superior fidelity but face scalability challenges.
+7
+Datasets for MMDE
+A wide range of datasets, as shown in Table 3, supports monocular metric depth estimation (MMDE),
+with outdoor collections dominating due to their relevance to autonomous driving. Benchmarks such
+as KITTI, Waymo Open Dataset, and nuScenes provide rich multi-sensor data—including RGB,
+LiDAR, and radar—offering reliable metric depth for training and evaluation (Geiger et al., 2013;
+Caesar et al., 2020; Sun et al., 2020).
+Indoor datasets, though fewer, are vital for robotics and AR applications. Notable examples include
+ScanNet, NYU Depth V2, and SUN RGB-D, which supply high-quality RGB-D imagery and accurate
+ground truth (Dai et al., 2017; Silberman et al., 2012; Song et al., 2015).
+Synthetic datasets such as TartanAir, Hypersim, and vKITTI provide pixel-perfect, noise-free depth
+maps, complementing real-world datasets by enabling large-scale, diverse, and controlled training
+scenarios (Wang et al., 2020; Roberts et al., 2021; Gaidon et al., 2016). These resources are
+increasingly leveraged to mitigate annotation errors and domain gaps in real-world data.
+Dataset diversity also extends to sensor configurations, from RGB-only captures to multi-modal
+setups integrating LiDAR, GPS, and IMU. Crucially, most reviewed datasets (32 of 38) provide true
+metric depth, while a smaller subset offers only relative depth, which remains useful in scale-agnostic
+applications.
+In summary, real-world driving datasets dominate current MMDE research, indoor datasets provide
+indispensable complementary supervision, and synthetic datasets enhance diversity and precision,
+together forming the backbone of benchmarking and training.
+6
+
+outdoor
+indoor
+nature
+Zoedepth
+input
+Depth Anything
+Depth Anything V2
+Unidepth
+PatchFusion
+Marigold
+GeoWizard
+Single-pass inference
+Patching
+Generative method
+Figure 1: Performance comparison of MMDE models across diverse scenarios (indoor/outdoor,
+urban/natural, large/small scale, varying illumination). Colors indicate scene types and method
+categories. Generative methods predict relative depth, while others yield absolute depth (Bochkovskii
+et al., 2024).
+102
+103
+104
+time(s)
+MiDAS v3.1
+Depth Anything V1
+Marigold
+PatchFusion(p=64)
+method
+category
+single infer
+diffusion model
+patch infer
+memory cost(GB)
+5.6
+8.7
+20.0
+23.7
+Figure 2: Inference time and memory usage for different model types are shown on a logarithmic
+scale in seconds.
+7
+
+8
+Summary and Outlook
+MMDE has evolved from traditional architectures toward generative modeling and domain-
+generalizable frameworks. Tables 1 and 2 highlight art methods and performance benchmarks,
+illustrating progress in both architectural design and data utilization. These advances have broadened
+the applicability to 3D reconstruction, navigation, and interactive perception. Nonetheless, challenges
+remain, including fine-detail preservation, geometric consistency in complex scenes, and the trade-off
+between accuracy and efficiency (Spencer et al., 2024b; Yang et al., 2024a).
+Loss design continues to play a critical role, with edge-aware and gradient-based formulations
+improving structural fidelity, while generative supervision further enhances robustness (Sun et al.,
+2025). Data strategies combining real-world and synthetic datasets (Wang et al., 2020; Roberts et al.,
+2021) mitigate annotation scarcity and domain gaps, offering a scalable foundation for generalization.
+Generative diffusion models, such as Marigold and GeoWizard, show strong potential in recovering
+high-frequency details and complex geometries, while DMD introduces field-of-view conditioning
+and log-scale parameterization for improved adaptability (Bochkovskii et al., 2024). Although diffu-
+sion methods remain computationally demanding, optimization of multi-step inference is advancing
+toward practical deployment.
+A clear research trend is zero-shot generalization across unseen domains. Approaches like ZoeDepth
+and UniDepth (Piccinelli et al., 2024) demonstrate promising transferability through architectural
+innovations and large-scale training. Looking forward, priorities include improving computational
+efficiency, enforcing geometric consistency in multi-view settings, and advancing domain adaptation.
+MMDE is moving toward becoming a cornerstone of spatial perception, with ongoing innovations
+in loss functions, hybrid data pipelines, and generative modeling steadily pushing the field toward
+universal, accurate, and efficient depth estimation.
+Table 3: Overview of depth estimation datasets commonly used in computer vision. Datasets
+providing metric depth (e.g., NYU-D, KITTI, ApolloScape) supply RGB–depth pairs for supervised
+MMDE, while relative depth datasets (e.g., DIW, Movies, WSVD) support ordinal depth prediction.
+Synthetic and hybrid datasets (e.g., BlendedMVS, TartanAir (Wang et al., 2020)) augment real-world
+data and aid domain adaptation. Columns summarize dataset name, scene type (indoor/outdoor),
+driving relevance, synthetic/real origin, supported tasks, available modalities, supervision type, and
+key features, facilitating selection for applications ranging from autonomous driving to indoor scene
+understanding.
+Name
+Indoor
+Outdoor
+Driving
+Data
+Synthetic
+Real
+Tasks
+Categories
+Relative
+Metric
+Description
+Argoverse2
+Outdoor
+Yes
+Real
+Trajectory Prediction,
+Object
+Detection,
+Depth Estimation, Se-
+mantic Segmentation,
+SLAM
+RGB, LiDAR,
+GPS,
+IMU,
+3D
+BBoxes,
+Labels
+Metric
+An autonomous driving dataset
+with
+360-degree
+LiDAR
+and
+stereo data, focusing on long-term
+tracking and forecasting.
+Waymo
+Outdoor
+Yes
+Real
+Object
+Detection,
+Depth Estimation, Se-
+mantic Segmentation,
+Trajectory Prediction,
+SLAM
+RGB, LiDAR,
+GPS,
+IMU,
+3D
+BBoxes,
+Labels
+Metric
+A large-scale autonomous driving
+dataset from urban and highway
+environments with multi-sensor
+data.
+DrivingStereo
+Outdoor
+No
+Real
+Stereo
+Matching,
+Depth Estimation
+High-
+Resolution
+Stereo Images,
+Depth Maps
+Metric
+High-resolution binocular images
+and ground truth depth maps for
+stereo vision tasks.
+Cityscapes
+Outdoor
+No
+Real
+Semantic
+Segmen-
+tation,
+Instance
+Segmentation, Depth
+Estimation
+RGB Images,
+Semantic La-
+bels
+Metric
+A dataset of urban street scenes
+for semantic and instance segmen-
+tation. Depth data is typically de-
+rived.
+BDD100K
+Outdoor
+Yes
+Real
+Object Detection, Se-
+mantic Segmentation,
+Driving Behavior Pre-
+diction, Depth Estima-
+tion
+RGB, Seman-
+tic
+Labels,
+Videos, GPS,
+IMU
+Relative
+A large-scale driving dataset with
+diverse scenes and tasks, includ-
+ing object detection and behav-
+ioral prediction.
+Mapillary
+Vistas
+Outdoor
+No
+Real
+Semantic
+Segmen-
+tation,
+Instance
+Segmentation, Depth
+Estimation
+RGB Images,
+Semantic
+Labels, Depth
+Maps
+Relative
+A massive street-level imagery
+dataset with rich semantic annota-
+tions for segmentation and depth
+estimation.
+8
+
+A2D2
+Indoor
+Outdoor
+Yes
+Real
+Semantic
+Segmenta-
+tion, Object Detection,
+Depth
+Estimation,
+SLAM
+RGB, Seman-
+tic
+Labels,
+LiDAR, IMU,
+GPS,
+3D
+BBoxes
+Metric
+An autonomous driving dataset
+with multi-sensor data and de-
+tailed annotations, including both
+indoor and outdoor scenes.
+ScanNet
+Indoor
+No
+Real
+3D Reconstruction, Se-
+mantic Segmentation,
+Depth Estimation
+RGB-D,
+Point Clouds,
+Semantic
+Labels
+Metric
+A large-scale indoor dataset with
+RGB-D images and 3D point
+clouds for 3D reconstruction and
+semantic understanding.
+Taskonomy
+Indoor
+Outdoor
+No
+Real
+Multi-Task Learning,
+Depth Estimation, Se-
+mantic Segmentation
+RGB,
+Depth
+Maps,
+Nor-
+mals,
+Point
+Clouds
+Metric
+A dataset designed for multi-task
+learning, providing a wide range
+of visual tasks and their ground
+truth.
+SUN-
+RGBD
+Indoor
+No
+Real
+3D Reconstruction, Se-
+mantic Segmentation,
+Depth Estimation
+RGB-D,
+Point Clouds,
+Semantic
+Labels
+Metric
+A dataset of indoor scenes pro-
+viding RGB-D images for 3D re-
+construction and depth estimation
+tasks.
+Diode
+Indoor
+Indoor
+No
+Real
+Depth Estimation, 3D
+Reconstruction
+RGB, LiDAR
+Depth Maps,
+Point Clouds
+Metric
+A high-precision dataset with Li-
+DAR and RGB data for indoor
+depth estimation and 3D model-
+ing.
+IBims-1
+Indoor
+No
+Real
+3D
+Reconstruction,
+Depth Estimation
+RGB-D,
+3D
+Reconstruc-
+tion
+Metric
+A dataset providing RGB-D im-
+ages and 3D reconstructions of in-
+door building environments.
+VOID
+Indoor
+No
+Real
+3D
+Reconstruction,
+Depth
+Estimation,
+SLAM
+RGB-D, Point
+Clouds
+Metric
+An RGB-D dataset of indoor
+scenes for 3D reconstruction, with
+a focus on occlusions.
+HAMMER
+Indoor
+Outdoor
+No
+Real
+Depth Estimation, 3D
+Reconstruction,
+Se-
+mantic Segmentation,
+SLAM
+RGB-D,
+Point Clouds,
+Semantic
+Labels
+Metric
+A high-precision dataset for depth
+estimation and 3D reconstruction,
+covering both indoor and outdoor
+scenes.
+ETH-3D
+Indoor
+Outdoor
+No
+Real
+Multi-View
+Stereo,
+Depth Estimation, 3D
+Reconstruction
+High-Res
+RGB,
+Depth
+Maps,
+Point
+Clouds
+Metric
+A benchmark for multi-view
+stereo and 3D reconstruction with
+high-resolution images from in-
+door and outdoor scenes.
+nuScenes
+Outdoor
+Yes
+Real
+Object
+Detection,
+Trajectory Prediction,
+Depth
+Estimation,
+SLAM
+RGB,
+Li-
+DAR, Radar,
+GPS,
+IMU,
+3D
+BBoxes,
+Labels
+Metric
+An autonomous driving dataset
+with a full sensor suite, including
+RGB, LiDAR, and radar data.
+DDAD
+Outdoor
+Yes
+Real
+Depth Estimation, Ob-
+ject Detection, 3D Re-
+construction, SLAM
+RGB-D, Point
+Clouds
+Metric
+An autonomous driving dataset
+with rich sensor data and annota-
+tions, focused on dense depth and
+3D reconstruction.
+BlendedMVS
+Indoor
+Outdoor
+No
+Synthetic
+Real
+Multi-View
+Stereo,
+Depth Estimation, 3D
+Reconstruction
+RGB,
+Depth
+Maps, 3D Re-
+construction
+Metric
+A multi-view stereo dataset that
+blends real and synthetic data for
+depth estimation and 3D recon-
+struction.
+DIML
+Indoor
+No
+Real
+Stereo
+Matching,
+Depth Estimation
+RGB Images,
+Depth Maps
+Metric
+A multi-view dataset of indoor
+scenes designed for depth estima-
+tion and stereo matching.
+HRWSI
+Outdoor
+No
+Real
+Stereo
+Matching,
+Depth Estimation
+High-
+Resolution
+RGB,
+Depth
+Maps
+Metric
+A high-resolution dataset for
+stereo matching, providing RGB
+images and depth maps of outdoor
+scenes.
+IRS
+Indoor
+No
+Real
+3D
+Reconstruction,
+Depth
+Estimation,
+SLAM
+RGB-D, Point
+Clouds
+Metric
+An indoor RGB-D dataset for
+depth estimation and 3D recon-
+struction tasks.
+MegaDepth
+Outdoor
+No
+Real
+3D
+Reconstruction,
+Depth Estimation
+High-Res
+RGB,
+Depth
+Maps
+Relative
+A large-scale outdoor dataset for
+monocular depth estimation, pro-
+viding high-resolution images and
+relative depth maps.
+TartanAir
+Indoor
+Outdoor
+No
+Synthetic
+SLAM, Depth Estima-
+tion, 3D Reconstruc-
+tion,
+Semantic Seg-
+mentation
+RGB,
+Depth
+Maps,
+Point
+Clouds,
+Labels
+Metric
+A synthetic dataset for visual
+SLAM and depth estimation, of-
+fering diverse indoor and outdoor
+scenes.
+Hypersim
+Indoor
+Outdoor
+No
+Synthetic
+3D
+Reconstruction,
+Scene Understanding,
+Semantic
+Segmenta-
+tion
+RGB,
+Depth
+Maps,
+Point
+Clouds,
+Labels
+Metric
+A high-precision synthetic dataset
+of indoor and outdoor scenes for
+3D reconstruction and scene un-
+derstanding.
+vKITTI
+Outdoor
+Yes
+Synthetic
+Object Detection, Se-
+mantic Segmentation,
+Depth
+Estimation,
+SLAM
+Synthetic
+RGB, Labels,
+Depth Maps,
+3D BBoxes
+Metric
+A virtual driving dataset offering
+synthetic scenes with full ground
+truth for tasks like object detec-
+tion and depth estimation.
+KITTI
+Outdoor
+Yes
+Real
+Object
+Detection,
+Stereo
+Matching,
+Depth
+Estimation,
+SLAM
+RGB, LiDAR,
+Depth Maps,
+Semantic La-
+bels
+Metric
+A foundational autonomous driv-
+ing dataset with multi-sensor data
+for a wide range of computer vi-
+sion tasks.
+NYU-D
+Indoor
+No
+Real
+Semantic
+Segmenta-
+tion, Depth Estimation,
+3D Reconstruction
+RGB-D,
+Se-
+mantic Labels,
+Point Clouds
+Metric
+A large-scale indoor RGB-D
+dataset widely used for depth es-
+timation and semantic segmenta-
+tion.
+9
+
+Sintel
+Outdoor
+No
+Synthetic
+Optical Flow, Depth
+Estimation, Semantic
+Segmentation
+RGB,
+Depth
+Maps, Labels,
+Optical Flow
+Metric
+A synthetic movie-like dataset for
+optical flow, depth estimation, and
+other visual tasks.
+ReDWeb
+Outdoor
+No
+Real
+Monocular Depth Esti-
+mation
+RGB Images
+Relative
+A dataset for monocular depth es-
+timation, using web videos to su-
+pervise relative depth prediction.
+Movies
+Indoor
+Outdoor
+No
+Synthetic
+Real
+Monocular
+Depth
+Estimation, Zero-Shot
+Learning
+RGB Images
+Relative
+A blended dataset used for zero-
+shot monocular depth estimation
+from various sources.
+ApolloScape
+Outdoor
+Yes
+Real
+Object Detection, Se-
+mantic Segmentation,
+Depth Estimation
+RGB, LiDAR
+Metric
+A large-scale autonomous driving
+dataset with extensive annotations
+for segmentation and depth esti-
+mation.
+WSVD
+Indoor
+Outdoor
+No
+Real
+Monocular Depth Esti-
+mation
+RGB Images
+Metric
+A web video-supervised dataset
+for dynamic scene depth predic-
+tion, emphasizing moving ob-
+jects.
+DIW
+Outdoor
+No
+Real
+Monocular Depth Esti-
+mation
+RGB Images
+Relative
+A dataset providing relative depth
+supervision for a wide range of
+outdoor scenes.
+ETH3D
+Indoor
+Outdoor
+No
+Real
+Multi-View
+Stereo,
+Depth Estimation
+High-Res
+RGB, Videos
+Metric
+A benchmark for multi-view
+stereo and depth estimation with
+high-resolution images.
+TUM
+Indoor
+No
+Real
+RGB-D SLAM
+RGB-D
+Metric
+A dataset for evaluating RGB-D
+SLAM algorithms and depth esti-
+mation in indoor environments.
+3D
+Ken
+Burns
+Indoor
+No
+Synthetic
+Depth Estimation, Im-
+age Animation
+Static Images,
+Depth Maps
+Metric
+A dataset for generating animated
+videos with a "Ken Burns" effect
+using depth information.
+Objaverse
+Indoor
+Outdoor
+No
+Synthetic
+Real
+3D Object Detection,
+Classification
+3D Models
+Relative
+A vast dataset of 3D objects for
+recognition, understanding, and
+generation tasks.
+OmniObject3D Indoor
+No
+Synthetic
+3D Object Detection,
+Recognition,
+Recon-
+struction
+3D
+Models,
+RGB-D
+Metric
+A synthetic dataset with multi-
+view images and corresponding
+depth information for 3D object
+tasks.
+References
+Arampatzakis, V., Pavlidis, G., Mitianoudis, N., and Papamarkos, N. Monocular depth estimation:
+A thorough review. IEEE Transactions on Pattern Analysis and Machine Intelligence, 46(4):
+2396–2414, 2023.
+Bhat, S. F., Alhashim, I., and Wonka, P. Adabins: Depth estimation using adaptive bins. In
+Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pp. 4009–
+4018, 2021.
+Bhat, S. F., Alhashim, I., and Wonka, P. Localbins: Improving depth estimation by learning local
+distributions. In European Conference on Computer Vision, pp. 480–496. Springer, 2022.
+Bhat, S. F., Birkl, R., Wofk, D., Wonka, P., and Müller, M. Zoedepth: Zero-shot transfer by combining
+relative and metric depth. arXiv preprint arXiv:2302.12288, 2023.
+Bhoi, A. Monocular depth estimation: A survey. arXiv preprint arXiv:1901.09402, 2019.
+Birkl, R., Wofk, D., and Müller, M. Midas v3. 1–a model zoo for robust monocular relative depth
+estimation. arXiv preprint arXiv:2307.14460, 2023.
+Bochkovskii, A., Delaunoy, A., Germain, H., Santos, M., Zhou, Y., Richter, S. R., and Koltun, V.
+Depth pro: Sharp monocular metric depth in less than a second. arXiv preprint arXiv:2410.02073,
+2024.
+Caesar, H., Bankiti, V., Lang, A. H., Vora, S., Liong, V. E., Xu, Q., Krishnan, A., Pan, Y., Baldan, G.,
+and Beijbom, O. nuscenes: A multimodal dataset for autonomous driving. In Proceedings of the
+IEEE/CVF conference on computer vision and pattern recognition, pp. 11621–11631, 2020.
+Dai, A., Chang, A. X., Savva, M., Halber, M., Funkhouser, T., and Nießner, M. Scannet: Richly-
+annotated 3d reconstructions of indoor scenes. In Proceedings of the IEEE conference on computer
+vision and pattern recognition, pp. 5828–5839, 2017.
+Dong, X., Garratt, M. A., Anavatti, S. G., and Abbass, H. A. Towards real-time monocular depth
+estimation for robotics: A survey. IEEE Transactions on Intelligent Transportation Systems, 23
+(10):16940–16961, 2022.
+10
+
+Eigen, D. and Fergus, R. Predicting depth, surface normals and semantic labels with a common
+multi-scale convolutional architecture. In Proceedings of the IEEE international conference on
+computer vision, pp. 2650–2658, 2015.
+Eigen, D., Puhrsch, C., and Fergus, R. Depth map prediction from a single image using a multi-scale
+deep network. Advances in neural information processing systems, 27, 2014.
+Fu, H., Gong, M., Wang, C., Batmanghelich, K., and Tao, D. Deep ordinal regression network
+for monocular depth estimation. In Proceedings of the IEEE conference on computer vision and
+pattern recognition, pp. 2002–2011, 2018.
+Fu, X., Yin, W., Hu, M., Wang, K., Ma, Y., Tan, P., Shen, S., Lin, D., and Long, X. Geowizard:
+Unleashing the diffusion priors for 3d geometry estimation from a single image. In European
+Conference on Computer Vision, pp. 241–258. Springer, 2024.
+Gaidon, A., Wang, Q., Cabon, Y., and Vig, E. Virtual worlds as proxy for multi-object tracking
+analysis. In Proceedings of the IEEE conference on computer vision and pattern recognition, pp.
+4340–4349, 2016.
+Garg, R., Bg, V. K., Carneiro, G., and Reid, I. Unsupervised cnn for single view depth estimation:
+Geometry to the rescue. In Computer Vision–ECCV 2016: 14th European Conference, Amsterdam,
+The Netherlands, October 11-14, 2016, Proceedings, Part VIII 14, pp. 740–756. Springer, 2016.
+Geiger, A., Lenz, P., Stiller, C., and Urtasun, R. Vision meets robotics: The kitti dataset. The
+international journal of robotics research, 32(11):1231–1237, 2013.
+Guizilini, V., Vasiljevic, I., Chen, D., Ambrus,, R., and Gaidon, A. Towards zero-shot scale-aware
+monocular depth estimation. In Proceedings of the IEEE/CVF International Conference on
+Computer Vision, pp. 9233–9243, 2023.
+Guo, Y., Garg, S., Miangoleh, S. M. H., Huang, X., and Ren, L. Depth any camera: Zero-shot metric
+depth estimation from any camera. arXiv preprint arXiv:2501.02464, 2025.
+Haji-Esmaeili, M. M. and Montazer, G. Large-scale monocular depth estimation in the wild. Engi-
+neering Applications of Artificial Intelligence, 127:107189, 2024.
+Han, K., Wang, Y., Chen, H., Chen, X., Guo, J., Liu, Z., Tang, Y., Xiao, A., Xu, C., Xu, Y., et al. A
+survey on vision transformer. IEEE transactions on pattern analysis and machine intelligence, 45
+(1):87–110, 2022.
+Hu, M., Yin, W., Zhang, C., Cai, Z., Long, X., Chen, H., Wang, K., Yu, G., Shen, C., and Shen,
+S. Metric3d v2: A versatile monocular geometric foundation model for zero-shot metric depth
+and surface normal estimation. IEEE Transactions on Pattern Analysis and Machine Intelligence,
+2024.
+Jampani, V., Chang, H., Sargent, K., Kar, A., Tucker, R., Krainin, M., Kaeser, D., Freeman, W. T.,
+Salesin, D., Curless, B., et al. Slide: Single image 3d photography with soft layering and depth-
+aware inpainting. In Proceedings of the IEEE/CVF International Conference on Computer Vision,
+pp. 12518–12527, 2021.
+Ke, B., Obukhov, A., Huang, S., Metzger, N., Daudt, R. C., and Schindler, K.
+Repurposing
+diffusion-based image generators for monocular depth estimation. In Proceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern Recognition, pp. 9492–9502, 2024.
+Kerbl, B., Kopanas, G., Leimkühler, T., and Drettakis, G. 3d gaussian splatting for real-time radiance
+field rendering. ACM Trans. Graph., 42(4):139–1, 2023.
+Khan, F., Salahuddin, S., and Javidnia, H. Deep learning-based monocular depth estimation meth-
+ods—a state-of-the-art review. Sensors, 20(8):2272, 2020.
+Khan, N., Xiao, L., and Lanman, D. Tiled multiplane images for practical 3d photography. In
+Proceedings of the IEEE/CVF International Conference on Computer Vision, pp. 10454–10464,
+2023.
+11
+
+Lahiri, S., Ren, J., and Lin, X. Deep learning-based stereopsis and monocular depth estimation
+techniques: a review. Vehicles, 6(1):305–351, 2024.
+Leduc, A., Cioppa, A., Giancola, S., Ghanem, B., and Van Droogenbroeck, M. Soccernet-depth: a
+scalable dataset for monocular depth estimation in sports videos. In Proceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern Recognition, pp. 3280–3292, 2024.
+Li, Z., Bhat, S. F., and Wonka, P. Patchfusion: An end-to-end tile-based framework for high-resolution
+monocular metric depth estimation. In Proceedings of the IEEE/CVF Conference on Computer
+Vision and Pattern Recognition, pp. 10016–10025, 2024a.
+Li, Z., Bhat, S. F., and Wonka, P. Patchrefiner: Leveraging synthetic data for real-domain high-
+resolution monocular metric depth estimation. In European Conference on Computer Vision, pp.
+250–267. Springer, 2024b.
+Li, Z., Wang, X., Liu, X., and Jiang, J. Binsformer: Revisiting adaptive bins for monocular depth
+estimation. IEEE Transactions on Image Processing, 2024c.
+Liew, J. H., Yan, H., Zhang, J., Xu, Z., and Feng, J. Magicedit: High-fidelity and temporally coherent
+video editing. arXiv preprint arXiv:2308.14749, 2023.
+Lin, H., Peng, S., Chen, J., Peng, S., Sun, J., Liu, M., Bao, H., Feng, J., Zhou, X., and Kang, B.
+Prompting depth anything for 4k resolution accurate metric depth estimation. In Proceedings of
+the Computer Vision and Pattern Recognition Conference, pp. 17070–17080, 2025.
+Marsal, R., Chabot, F., Loesch, A., Grolleau, W., and Sahbi, H. Monoprob: self-supervised monocular
+depth estimation with interpretable uncertainty. In Proceedings of the IEEE/CVF Winter Conference
+on Applications of Computer Vision, pp. 3637–3646, 2024.
+Masoumian, A., Rashwan, H. A., Cristiano, J., Asif, M. S., and Puig, D. Monocular depth estimation
+using deep learning: A review. Sensors, 22(14):5353, 2022.
+Miangoleh, S. M. H., Dille, S., Mai, L., Paris, S., and Aksoy, Y. Boosting monocular depth estimation
+models to high-resolution via content-adaptive multi-resolution merging. In Proceedings of the
+IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 9685–9694, 2021.
+Mildenhall, B., Srinivasan, P. P., Tancik, M., Barron, J. T., Ramamoorthi, R., and Ng, R. Nerf:
+Representing scenes as neural radiance fields for view synthesis. Communications of the ACM, 65
+(1):99–106, 2021.
+Piccinelli, L., Yang, Y.-H., Sakaridis, C., Segu, M., Li, S., Van Gool, L., and Yu, F. Unidepth:
+Universal monocular metric depth estimation. In Proceedings of the IEEE/CVF Conference on
+Computer Vision and Pattern Recognition, pp. 10106–10116, 2024.
+Rajapaksha, U., Sohel, F., Laga, H., Diepeveen, D., and Bennamoun, M. Deep learning-based depth
+estimation methods from monocular image and videos: A comprehensive survey. ACM Computing
+Surveys, 56(12):1–51, 2024.
+Roberts, M., Ramapuram, J., Ranjan, A., Kumar, A., Bautista, M. A., Paczan, N., Webb, R.,
+and Susskind, J. M. Hypersim: A photorealistic synthetic dataset for holistic indoor scene
+understanding. In Proceedings of the IEEE/CVF international conference on computer vision, pp.
+10912–10922, 2021.
+Saxena, S., Hur, J., Herrmann, C., Sun, D., and Fleet, D. J. Zero-shot metric depth with a field-of-view
+conditioned diffusion model. arXiv preprint arXiv:2312.13252, 2023.
+Shahbazi, M., Claessens, L., Niemeyer, M., Collins, E., Tonioni, A., Van Gool, L., and Tombari, F.
+Inserf: text-driven generative object insertion in neural 3d scenes. arXiv preprint arXiv:2401.05335,
+2024.
+Shao, S., Pei, Z., Chen, W., Sun, D., Chen, P. C., and Li, Z. Monodiffusion: self-supervised monocular
+depth estimation using diffusion model. IEEE Transactions on Circuits and Systems for Video
+Technology, 2024.
+12
+
+Shriram, J., Trevithick, A., Liu, L., and Ramamoorthi, R. Realmdreamer: Text-driven 3d scene
+generation with inpainting and depth diffusion. arXiv preprint arXiv:2404.07199, 2024.
+Silberman, N., Hoiem, D., Kohli, P., and Fergus, R. Indoor segmentation and support inference from
+rgbd images. In European conference on computer vision, pp. 746–760. Springer, 2012.
+Singh, A. D., Ba, Y., Sarker, A., Zhang, H., Kadambi, A., Soatto, S., Srivastava, M., and Wong,
+A. Depth estimation from camera image and mmwave radar point cloud. In Proceedings of the
+IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 9275–9285, 2023.
+Song, S., Lichtenberg, S. P., and Xiao, J. Sun rgb-d: A rgb-d scene understanding benchmark suite.
+In Proceedings of the IEEE conference on computer vision and pattern recognition, pp. 567–576,
+2015.
+Spencer, J., Russell, C., Hadfield, S., and Bowden, R. Kick back & relax++: Scaling beyond
+ground-truth depth with slowtv & cribstv. arXiv preprint arXiv:2403.01569, 2024a.
+Spencer, J., Tosi, F., Poggi, M., Arora, R. S., Russell, C., Hadfield, S., Bowden, R., Zhou, G., Li, Z.,
+Rao, Q., et al. The third monocular depth estimation challenge. In Proceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern Recognition, pp. 1–14, 2024b.
+Sun, B., Jin, M., Yin, B., and Hou, Q.
+Depth anything at any condition.
+arXiv preprint
+arXiv:2507.01634, 2025.
+Sun, P., Kretzschmar, H., Dotiwalla, X., Chouard, A., Patnaik, V., Tsui, P., Guo, J., Zhou, Y., Chai,
+Y., Caine, B., et al. Scalability in perception for autonomous driving: Waymo open dataset.
+In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pp.
+2446–2454, 2020.
+Szeliski, R. Computer vision: algorithms and applications. Springer Nature, 2022.
+Tosi, F., Ramirez, P. Z., and Poggi, M. Diffusion models for monocular depth estimation: Overcoming
+challenging conditions. In European Conference on Computer Vision, pp. 236–257. Springer,
+2024.
+Vyas, P., Saxena, C., Badapanda, A., and Goswami, A. Outdoor monocular depth estimation: A
+research review. arXiv preprint arXiv:2205.01399, 2022.
+Wang, W., Zhu, D., Wang, X., Hu, Y., Qiu, Y., Wang, C., Hu, Y., Kapoor, A., and Scherer, S.
+Tartanair: A dataset to push the limits of visual slam. In 2020 IEEE/RSJ International Conference
+on Intelligent Robots and Systems (IROS), pp. 4909–4916. IEEE, 2020.
+Wang, Y., Liang, Y., Xu, H., Jiao, S., and Yu, H. Sqldepth: Generalizable self-supervised fine-
+structured monocular depth estimation. In Proceedings of the AAAI conference on artificial
+intelligence, volume 38, pp. 5713–5721, 2024.
+Wofk, D., Ranftl, R., Müller, M., and Koltun, V. Monocular visual-inertial depth estimation. In 2023
+IEEE International Conference on Robotics and Automation (ICRA), pp. 6095–6101. IEEE, 2023.
+Xiaogang, R., Wenjing, Y., Jing, H., Peiyuan, G., and Wei, G. Monocular depth estimation based on
+deep learning: A survey. In 2020 Chinese Automation Congress (CAC), pp. 2436–2440. IEEE,
+2020.
+Xu, D., Jiang, Y., Wang, P., Fan, Z., Wang, Y., and Wang, Z. Neurallift-360: Lifting an in-the-wild 2d
+photo to a 3d object with 360deg views. In Proceedings of the IEEE/CVF Conference on Computer
+Vision and Pattern Recognition, pp. 4479–4489, 2023.
+Yang, L., Kang, B., Huang, Z., Xu, X., Feng, J., and Zhao, H. Depth anything: Unleashing the power
+of large-scale unlabeled data. In Proceedings of the IEEE/CVF Conference on Computer Vision
+and Pattern Recognition, pp. 10371–10381, 2024a.
+Yang, L., Kang, B., Huang, Z., Zhao, Z., Xu, X., Feng, J., and Zhao, H. Depth anything v2. arXiv
+preprint arXiv:2406.09414, 2024b.
+13
+
+Ye, C., Nie, Y., Chang, J., Chen, Y., Zhi, Y., and Han, X. Gaustudio: A modular framework for 3d
+gaussian splatting and beyond. arXiv preprint arXiv:2403.19632, 2024.
+Yin, W., Zhang, C., Chen, H., Cai, Z., Yu, G., Wang, K., Chen, X., and Shen, C. Metric3d: Towards
+zero-shot metric 3d prediction from a single image. In Proceedings of the IEEE/CVF International
+Conference on Computer Vision, pp. 9043–9053, 2023.
+Yuan, W., Gu, X., Dai, Z., Zhu, S., and Tan, P. New crfs: Neural window fully-connected crfs for
+monocular depth estimation. arxiv 2022. arXiv preprint arXiv:2203.01502, 2022.
+Zhang, L., Rao, A., and Agrawala, M. Adding conditional control to text-to-image diffusion models.
+In Proceedings of the IEEE/CVF international conference on computer vision, pp. 3836–3847,
+2023.
+Zhao, C., Sun, Q., Zhang, C., Tang, Y., and Qian, F. Monocular depth estimation based on deep
+learning: An overview. Science China Technological Sciences, 63(9):1612–1627, 2020.
+Zheng, J., Lin, C., Sun, J., Zhao, Z., Li, Q., and Shen, C. Physical 3d adversarial attacks against
+monocular depth estimation in autonomous driving. In Proceedings of the IEEE/CVF Conference
+on Computer Vision and Pattern Recognition, pp. 24452–24461, 2024.
+14

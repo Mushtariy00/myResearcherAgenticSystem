@@ -1,0 +1,55 @@
+{
+  "goal": "Conduct a reproducible benchmark survey of monocular depth estimation methods published between 2023\u20112025 across diverse indoor and outdoor datasets, measuring accuracy, speed, and energy efficiency on both high\u2011end GPU and edge hardware.",
+  "config": {
+    "docker_image": "depth-eval-hub:latest",
+    "datasets": [
+      "KITTI",
+      "NYU_Depth_V2",
+      "DynaDepth",
+      "Illumination_Varying_TestSet",
+      "Domain_Shift_TestSet"
+    ],
+    "models": [
+      "Monodepth2",
+      "DPT-ViT",
+      "FastDepth",
+      "New2023Model",
+      "New2024Model",
+      "New2025Model"
+    ],
+    "hardware_profiles": {
+      "gpu_server": {
+        "device": "cuda",
+        "gpu": "NVIDIA RTX 3090",
+        "batch_size": 1
+      },
+      "edge_nano": {
+        "device": "cuda",
+        "gpu": "NVIDIA Jetson Nano",
+        "batch_size": 1
+      }
+    },
+    "config_schema": "depth_eval/config_schema.yaml",
+    "output_dir": "/workspace/results",
+    "log_level": "INFO",
+    "seed": 42,
+    "num_workers": 4
+  },
+  "metrics": {
+    "sandbox_created_files": 19.0,
+    "sandbox_validated_python_files": 10.0,
+    "sandbox_validation_rate": 0.5263,
+    "runner_latency_ms": 0.013,
+    "absrel": 0.0,
+    "rmse": 0.0,
+    "delta1": 0.0,
+    "delta2": 0.0,
+    "delta3": 0.0,
+    "fps": 0.0,
+    "powerdraw_watts": 0.0,
+    "memory_usage_mb": 0.0,
+    "inference_latency_ms": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055",
+  "validation_errors": []
+}

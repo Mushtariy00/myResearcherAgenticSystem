@@ -1,11 +1,11 @@
 """Agentmemory Integration Documentation
 
-This document describes how agentmemory MCP is integrated into the supervisor flow
+This document describes how agentmemory (MCP/REST) is integrated into the supervisor flow
 for persistent research context across sessions.
 
 ## Overview
 
-Agentmemory is a persistent memory system accessible via MCP tools. It allows the
+Agentmemory is a persistent memory system accessible via MCP tools or REST API. It allows the
 research pipeline to:
 1. Save research findings, decisions, and lessons learned
 2. Recall relevant prior research to avoid re-explaining context
@@ -235,15 +235,18 @@ Phase 2+ opportunities:
 
 ## Configuration
 
-Currently hardcoded but can be moved to .env:
+Configure via environment variables:
 ```
-# .env additions for future
 AGENTMEMORY_ENABLED=true
-AGENTMEMORY_SAVE_PAPERS=true
-AGENTMEMORY_SAVE_METHODS=true
-AGENTMEMORY_RECALL_CONTEXT=true
+AGENTMEMORY_URL=http://localhost:3111
+AGENTMEMORY_SECRET=your-secret  # optional, only if set on the server
 AGENTMEMORY_CONTEXT_LIMIT=3  # Max prior results to inject
 ```
+
+## REST Endpoints Used
+- `POST /agentmemory/remember` — save findings/decisions/lessons
+- `POST /agentmemory/smart-search` — recall relevant context
+- `GET /agentmemory/health` — optional health check before enabling
 
 ## References
 

@@ -1,0 +1,16 @@
+{
+  "contract_version": "1",
+  "stage": "experiment",
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-23T12:51:54.833868",
+  "primary_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/experiments/survey-monocular-depth-estimation-2023-2025_20260523_125154/experiment_summary.json",
+  "auxiliary_paths": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/experiments/survey-monocular-depth-estimation-2023-2025_20260523_125154/experiment_summary.json",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/experiments/survey-monocular-depth-estimation-2023-2025_20260523_125154"
+  ],
+  "summary": "Experiment summary stored",
+  "status": "completed",
+  "metadata": {
+    "metrics": 10
+  }
+}

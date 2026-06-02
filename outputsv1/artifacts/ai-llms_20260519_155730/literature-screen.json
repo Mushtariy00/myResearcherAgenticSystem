@@ -1,0 +1,21 @@
+{
+  "contract_version": "1",
+  "stage": "literature_screen",
+  "topic": "AI LLMs",
+  "generated_at": "2026-05-19T15:57:30.163765",
+  "primary_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_screen/ai-llms_20260519_155730.json",
+  "auxiliary_paths": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_screen/ai-llms_20260519_155730.json"
+  ],
+  "summary": "Literature screening selection stored",
+  "status": "completed",
+  "metadata": {
+    "selected_indices": [
+      0,
+      1,
+      3,
+      6,
+      7
+    ]
+  }
+}

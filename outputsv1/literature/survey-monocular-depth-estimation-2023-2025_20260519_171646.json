@@ -1,0 +1,37 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-19T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Transformer\u2011based models dominate performance",
+      "source": "Monocular Depth Estimation: A Survey",
+      "summary": "Architectures such as DPT and MiDaS\u2011v3 set new state\u2011of\u2011the\u2011art records on KITTI and NYU\u2011Depth V2 by leveraging global context modeling.",
+      "url": ""
+    },
+    {
+      "title": "Self\u2011supervised learning expands data applicability",
+      "source": "Monocular Depth Estimation: A Survey",
+      "summary": "Methods that exploit video streams or stereo pairs eliminate the need for dense ground\u2011truth depth, enabling training on massive uncurated datasets.",
+      "url": ""
+    },
+    {
+      "title": "Multi\u2011task training improves robustness",
+      "source": "Monocular Depth Estimation: A Survey",
+      "summary": "Joint prediction of depth, semantics, and surface normals yields higher accuracy and better generalisation across domains.",
+      "url": ""
+    },
+    {
+      "title": "Domain\u2011generalisation techniques mitigate deployment gaps",
+      "source": "Monocular Depth Estimation: A Survey",
+      "summary": "Style randomisation, feature\u2011level alignment and test\u2011time adaptation are critical for maintaining performance on unseen environments.",
+      "url": ""
+    },
+    {
+      "title": "Real\u2011time, edge\u2011friendly depth estimation remains under\u2011explored",
+      "source": "Monocular Depth Estimation: A Survey",
+      "summary": "Current literature is benchmark\u2011centric and lacks models that balance high accuracy with low latency suitable for edge devices.",
+      "url": ""
+    }
+  ],
+  "synthesis": "Between 2023 and 2025, monocular depth estimation has been reshaped by transformer\u2011based backbones, which consistently outperform convolutional rivals on legacy benchmarks such as KITTI and NYU\u2011Depth V2. Parallel advances in self\u2011supervised learning permit scaling to video and stereo data, removing the bottleneck of dense ground\u2011truth annotations and fostering broader in\u2011the\u2011wild applicability. Researchers increasingly adopt multi\u2011task frameworks that co\u2011predict depth, semantics, and surface normals, a strategy that enhances robustness and cross\u2011domain generalisation. To address domain shift, techniques like style randomisation, feature alignment, and test\u2011time adaptation have become standard, yet evaluations remain confined to a limited set of datasets, overlooking newer large\u2011scale suites (e.g., TartanAir, Waymo Open). Crucially, the field still lacks real\u2011time, edge\u2011optimized solutions; most high\u2011performing models demand substantial compute, hindering deployment on mobile or embedded platforms. Consequently, future work should prioritize lightweight transformer designs, benchmark diversification, and systematic assessment of domain\u2011generalisation under realistic runtime constraints."
+}

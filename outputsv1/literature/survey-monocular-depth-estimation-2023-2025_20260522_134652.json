@@ -1,0 +1,13 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-22T00:00:00Z",
+  "key_findings": [
+    {
+      "title": "Placeholder Paper 1 on Survey monocular depth estimation 2023-2025",
+      "source": "placeholder",
+      "summary": "This is a placeholder. Unable to fetch papers on Survey monocular depth estimation 2023-2025. Check API connectivity and rate limits.",
+      "url": ""
+    }
+  ],
+  "synthesis": "The provided literature input contains no substantive content from any surveyed paper, preventing extraction of concrete findings, trends, or methodological advances in monocular depth estimation between 2023 and 2025. This absence highlights a critical gap: the lack of accessible, up-to-date survey compilations that systematically review recent network architectures, self-supervised training regimes, and benchmark performances. Consequently, researchers lack a consolidated view of emerging challenges such as domain adaptation, real\u2011time inference on edge devices, and uncertainty estimation. Addressing this gap requires the creation of comprehensive surveys that aggregate results from diverse datasets (e.g., KITTI, NYU Depth V2, and newer synthetic corpora), compare self\u2011supervised versus supervised paradigms, and evaluate robustness to adverse conditions. Such syntheses would also benefit from outlining open problems like multimodal fusion, cross\u2011modal consistency, and explainability in depth prediction."
+}

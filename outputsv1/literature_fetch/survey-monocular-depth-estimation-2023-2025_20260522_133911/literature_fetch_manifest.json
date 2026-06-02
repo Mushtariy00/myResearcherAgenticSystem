@@ -1,0 +1,12 @@
+[
+  {
+    "index": 1,
+    "source_url": "",
+    "resolved_pdf_url": "",
+    "status": "unresolved",
+    "page_count": 0,
+    "text_length": 0,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/survey-monocular-depth-estimation-2023-2025_20260522_133911/paper_01.txt",
+    "error": "Could not resolve an open-access PDF URL."
+  }
+]

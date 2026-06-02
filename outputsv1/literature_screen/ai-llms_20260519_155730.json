@@ -1,0 +1,15 @@
+{
+  "selected_indices": [
+    0,
+    1,
+    3,
+    6,
+    7
+  ],
+  "rejected_indices": [
+    2,
+    4,
+    5
+  ],
+  "selection_rationale": "The chosen papers directly address core technical and societal aspects of AI LLMs: (0) a comprehensive survey of memory mechanisms in LLMs, (1) safety concerns via jailbreak persuasion, (3) advancing reasoning capabilities through reinforcement learning, (6) a decade-long review of bias in LLM outputs, and (7) a benchmarking study of LLM performance on quantum operation generation. The rejected papers focus on peripheral applications (financial governance, PDF chatbots, medical CTG interpretation) that are less central to a general literature synthesis on AI LLMs."
+}

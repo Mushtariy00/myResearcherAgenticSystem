@@ -1,0 +1,15 @@
+{
+  "contract_version": "1",
+  "stage": "literature",
+  "topic": "AI LLMs",
+  "generated_at": "2026-05-19T15:59:24.125648",
+  "primary_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature/ai-llms_20260519_155924.json",
+  "auxiliary_paths": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature/ai-llms_20260519_155924.json"
+  ],
+  "summary": "Literature synthesis stored",
+  "status": "completed",
+  "metadata": {
+    "key_findings": 5
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-23T14:27:00Z",
+  "key_findings": [
+    {
+      "title": "Zero-shot metric depth models improve cross\u2011domain generalization",
+      "source": "Survey on Monocular Metric Depth Estimation (arXiv:2501.11841v4)",
+      "summary": "Methods such as ZoeDepth (2023) and UniDepth (2024) combine relative\u2011depth pre\u2011training with adaptive metric binning or camera\u2011invariant modules, achieving strong performance on unseen datasets without finetuning.",
+      "url": "https://arxiv.org/abs/2501.11841v4"
+    },
+    {
+      "title": "Adaptive depth binning (AdaBins, LocalBins, BinsFormer) yields finer discretisation and higher accuracy",
+      "source": "Survey on Monocular Metric Depth Estimation (arXiv:2501.11841v4)",
+      "summary": "Learning data\u2011dependent depth discretisation reduces quantisation error and is a common component in state\u2011of\u2011the\u2011art models from 2023\u20112025.",
+      "url": "https://arxiv.org/abs/2501.11841v4"
+    },
+    {
+      "title": "Attention\u2011enhanced multi\u2011scale fusion refines boundaries and thin structures",
+      "source": "Deep Learning\u2011based Depth Estimation Methods from Monocular Image and Videos: A Comprehensive Survey",
+      "summary": "Spatial, channel\u2011wise and hybrid attention mechanisms, combined with multi\u2011scale feature fusion, consistently improve depth fidelity, especially at object edges and for small or distant objects.",
+      "url": "N/A"
+    },
+    {
+      "title": "Large\u2011scale semi\u2011supervised datasets are pivotal for zero\u2011shot performance",
+      "source": "Survey on Monocular Metric Depth Estimation (arXiv:2501.11841v4)",
+      "summary": "Depth Anything\u2019s 62\u202fM self\u2011annotated images and synthetic\u2011real hybrid data enable strong domain adaptation, demonstrating the importance of massive, diverse training corpora.",
+      "url": "https://arxiv.org/abs/2501.11841v4"
+    },
+    {
+      "title": "Real\u2011time efficiency remains a bottleneck for detail\u2011preserving architectures",
+      "source": "Survey on Monocular Metric Depth Estimation (arXiv:2501.11841v4) & Towards Real-Time Monocular Depth Estimation for Robotics (2021)",
+      "summary": "Patch\u2011based and transformer\u2011based models (PatchFusion, BinsFormer) improve fine\u2011grained geometry but incur latency, while lightweight designs struggle to match their accuracy, highlighting an unresolved trade\u2011off.",
+      "url": "https://arxiv.org/abs/2501.11841v4"
+    }
+  ],
+  "synthesis": "From 2023 to 2025 monocular depth estimation has shifted toward zero\u2011shot metric models that blend relative\u2011depth pre\u2011training with adaptive binning, enabling strong cross\u2011domain performance without explicit finetuning. Adaptive discretisation strategies such as AdaBins, LocalBins, and the transformer\u2011based BinsFormer have become standard, reducing quantisation error and boosting overall accuracy. Concurrently, attention\u2011enhanced multi\u2011scale fusion has emerged as a key technique for preserving sharp object boundaries and handling thin or distant structures, though its computational cost limits real\u2011time deployment. The explosion of large\u2011scale semi\u2011supervised datasets (e.g., Depth Anything\u2019s 62\u202fM self\u2011annotated images) and synthetic\u2011real hybrid pipelines has been instrumental in achieving these gains, yet models still exhibit geometric blurring and reduced fidelity on high\u2011resolution or out\u2011of\u2011distribution scenes. A persistent research gap lies in reconciling detail preservation with low latency, especially for robotics and AR/VR applications, and in establishing unified evaluation protocols that fairly compare metric versus relative depth outputs across diverse domains."
+}

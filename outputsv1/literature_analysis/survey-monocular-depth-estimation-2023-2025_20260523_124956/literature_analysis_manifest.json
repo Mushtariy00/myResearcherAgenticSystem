@@ -1,0 +1,86 @@
+[
+  {
+    "index": 0,
+    "title": "Survey on Monocular Metric Depth Estimation",
+    "source": "arXiv preprint arXiv:2501.11841v4  [cs.CV]  26 Aug 2025",
+    "relevance_assessment": "Highly relevant \u2013 the paper is a comprehensive survey of Monocular Metric Depth Estimation (MMDE) covering methods, datasets, recent advances (2023\u20112025), performance benchmarks, and open challenges, directly addressing the requested topic.",
+    "key_findings": [
+      "MMDE has progressed from geometry\u2011based pipelines to deep models that predict absolute scale, enabling deployment in SLAM, AR/VR, and autonomous driving.",
+      "Zero\u2011shot MMDE methods such as ZoeDepth (2023) and UniDepth (2024) achieve strong cross\u2011domain generalization by combining relative depth pre\u2011training with metric binning or camera\u2011invariant modules.",
+      "Adaptive binning strategies (AdaBins, LocalBins, BinsFormer) markedly improve accuracy by learning data\u2011dependent depth discretization.",
+      "Patch\u2011based and transformer\u2011based architectures (PatchFusion, PatchRefiner, BinsFormer) preserve fine\u2011grained structures but increase computational cost.",
+      "Generative diffusion models (Marigold, GeoWizard, DMD) can recover high\u2011frequency geometry, yet remain slower and mostly focused on relative depth.",
+      "Large\u2011scale semi\u2011supervised data (Depth Anything\u2019s 62\u202fM self\u2011annotated images) and synthetic\u2011real hybrid datasets are crucial for zero\u2011shot performance."
+    ],
+    "limitations": [
+      "Generalization to unseen domains still limited; models suffer from geometric blurring and loss of detail in high\u2011resolution or out\u2011of\u2011distribution scenes.",
+      "Patch\u2011based methods improve detail but introduce latency that hinders real\u2011time use.",
+      "Diffusion\u2011based MMDE offers superior fidelity but is computationally intensive and often predicts only relative depth.",
+      "Lack of standardized evaluation protocols and inconsistent reporting of metric vs. relative depth impede fair comparison across works."
+    ],
+    "evidence_snippets": [
+      "\u201cMonocular Metric Depth Estimation (MMDE) overcomes this challenge by producing depth maps with absolute scale\u2026 this survey reviews the evolution of MMDE, from geometry\u2011based methods to state\u2011of\u2011the\u2011art deep models\u2026\u201d",
+      "\u201cZero\u2011shot MMDE was a breakthrough in ZoeDepth (Bhat et al., 2023), which extended MiDaS with adaptive metric binning and scene\u2011aware routing, achieving strong cross\u2011domain generalization\u2026\u201d",
+      "\u201cAdaBins introduced dynamic depth bin allocation (Bhat et al., 2021), refined by LocalBins\u2026 while BinsFormer integrated Transformers for global\u2011local bin optimization (Li et al., 2024c).\u201d",
+      "\u201cPatch\u2011based methods improve detail by combining local and global cues. BoostingDepth and PatchFusion use multi\u2011resolution fusion\u2026 PatchRefiner introduces Detail and Scale Disentangling loss to sharpen boundaries\u2026\u201d",
+      "\u201cGenerative diffusion models\u2026 Marigold achieves sharper predictions in reflective and transparent regions (Ke et al., 2024), while GeoWizard introduces scene\u2011aware decoupling and normal map integration\u2026 DMD incorporates field\u2011of\u2011view conditioning and log\u2011scale parameterization for accurate zero\u2011shot MMDE (Saxena et al., 2023).\u201d",
+      "\u201cDepth Anything employs a semi\u2011supervised framework generating 62M self\u2011annotated images, enabling strong cross\u2011domain adaptation\u2026 Depth Anything V2 leverages synthetic supervision with pseudo\u2011labeling and gradient\u2011matching loss\u2026\u201d",
+      "\u201cChallenges remain: models often suffer from geometric blurring, loss of fine details, and degraded performance in high\u2011resolution or cross\u2011domain scenarios\u2026 trade\u2011off between accuracy and efficiency (Spencer et al., 2024b).\u201d"
+    ],
+    "summary": "The survey provides a thorough overview of Monocular Metric Depth Estimation (MMDE) up to 2025, tracing the shift from geometry\u2011based pipelines to deep networks that output absolute depth. It highlights key methodological trends: zero\u2011shot models (ZoeDepth, UniDepth) that blend relative pre\u2011training with metric binning; adaptive binning (AdaBins, LocalBins, BinsFormer) for finer discretization; transformer and patch\u2011based designs (PatchFusion, PatchRefiner) that improve boundary preservation at the cost of runtime; and generative diffusion approaches (Marigold, GeoWizard, DMD) offering high\u2011frequency detail but limited efficiency. Large\u2011scale semi\u2011supervised datasets and synthetic\u2011real hybrids are identified as pivotal for generalization. Despite advances, persistent issues include domain generalization, geometric blurring, and the lack of unified benchmarks, underscoring the need for more efficient, detail\u2011preserving, and universally evaluated MMDE solutions."
+  },
+  {
+    "index": 0,
+    "title": "Deep Learning\u2011based Depth Estimation Methods from Monocular Image and Videos: A Comprehensive Survey",
+    "source": "Full paper text provided in the prompt",
+    "relevance_assessment": "Highly relevant. The survey reviews >160 papers up to early 2024, presents a detailed taxonomy (input/output modalities, network architectures, supervision levels, datasets, domain\u2011adaptation), discusses recent trends such as vision\u2011transformers, attention mechanisms, self\u2011supervised video training, and outlines future research gaps that match the 2023\u20112025 focus.",
+    "key_findings": [
+      "A unified taxonomy that classifies monocular depth methods by input type (single image vs video), architecture (CNN, ViT, RNN, GAN, hybrid), supervision (3\u2011D supervised, self\u2011supervised, semi\u2011/weakly\u2011supervised, online) and domain\u2011adaptation strategies.",
+      "Identification of core challenges: depth ambiguity, lack of camera parameters, brightness inconsistency, temporal consistency, moving objects, and the difficulty of obtaining dense ground\u2011truth.",
+      "Self\u2011supervised training is now the dominant paradigm, using image reprojection losses, photometric consistency, and masking strategies to handle occlusions and dynamic scenes.",
+      "Attention mechanisms (spatial, channel\u2011wise, hybrid) and multi\u2011scale feature fusion markedly improve depth fidelity, especially at object boundaries.",
+      "Domain\u2011adaptation is tackled by fine\u2011tuning and data\u2011style transformation (GAN\u2011based). Emerging trends include shape\u2011biased Vision Transformers and CLIP\u2011based few\u2011shot depth estimation.",
+      "Open gaps: poor handling of thin/distant objects, dynamic/non\u2011rigid motions, reflective/transparent materials, aerial/panoramic viewpoints, real\u2011time constraints, and model explainability."
+    ],
+    "limitations": [
+      "The survey stops at early\u20112024 and does not cover the very latest transformer\u2011based models (e.g., DepthAnything 2024) or large\u2011scale foundation\u2011model approaches that emerged after its compilation.",
+      "Quantitative performance tables are absent; the paper focuses on qualitative taxonomy, limiting direct comparison of state\u2011of\u2011the\u2011art accuracies.",
+      "The 360\u00b0 monocular depth literature is explicitly excluded, despite growing interest in omnidirectional depth estimation."
+    ],
+    "evidence_snippets": [
+      "\u201cWe present a broad taxonomy \u2026 based on their input and output modalities, network architectures, and learning methods.\u201d",
+      "\u201cGeneral challenges \u2026 3D\u2011to\u20112D mapping ambiguity, camera parameters estimation, brightness inconsistency \u2026 Temporal consistency and smoothness \u2026 Moving objects and moving camera.\u201d",
+      "\u201cSelf\u2011supervised monocular depth estimation methods \u2026 formulate the problem as an image reprojection problem \u2026 minimize the dissimilarity \u2026 between the synthesized (reprojected) view and the target view.\u201d",
+      "\u201cAttention mechanisms focus on more important features \u2026 Spatial attention \u2026 Channel\u2011wise attention \u2026 Hybrid \u2026 improve depth estimation with respect to meaningful semantic information.\u201d",
+      "\u201cDomain adaptation \u2026 fine\u2011tuning \u2026 data transformation \u2026 GAN\u2011based style transfer \u2026 AdaDepth \u2026 to transform the style of synthetic data to match real data.\u201d",
+      "\u201cInaccurate results for thin, small, and distant objects \u2026 Limitations in self\u2011supervision \u2026 Inaccurate depth for complex materials \u2026 Methods limited to estimate at eye\u2011level depth \u2026 Lack of explainability \u2026 Real\u2011time depth estimation \u2026 CLIP models for depth \u2026 human\u2011biased depth bins.\u201d"
+    ],
+    "summary": "The survey delivers a comprehensive overview of monocular depth estimation up to early 2024, organizing more than 160 works into a detailed taxonomy that spans input modalities, network designs (CNN, Vision Transformer, RNN, GAN, and hybrids), and supervision schemes (fully supervised, self\u2011supervised, semi\u2011/weakly\u2011supervised, online). It highlights persistent challenges\u2014depth ambiguity, camera pose uncertainty, illumination variance, and temporal consistency\u2014while emphasizing the rise of self\u2011supervised video training and attention\u2011enhanced multi\u2011scale fusion. Domain\u2011adaptation methods, including fine\u2011tuning and GAN\u2011based style transfer, are surveyed, and emerging directions such as shape\u2011biased Transformers and CLIP\u2011driven few\u2011shot depth are noted. The paper also pinpoints gaps: poor handling of thin or reflective objects, dynamic scenes, aerial viewpoints, real\u2011time constraints, and model explainability, setting a clear agenda for research in 2023\u20112025."
+  },
+  {
+    "index": 0,
+    "title": "Towards Real-Time Monocular Depth Estimation for Robotics: A Survey",
+    "source": "Xingshuai Dong et al., 2021 (arXiv:2111.08600)",
+    "relevance_assessment": "The paper is a comprehensive survey of monocular depth estimation (MDE) methods up to 2021, covering classic SfM, handcrafted-feature, and deep\u2011learning approaches, as well as datasets, metrics, and robotic applications. While it provides essential background for understanding the evolution of MDE, it does not include works published after 2021, so its direct relevance to the 2023\u20112025 period is limited to historical context and identified future research directions.",
+    "key_findings": [
+      "Classifies MDE methods into three categories: Structure\u2011from\u2011Motion (SfM), traditional handcrafted\u2011feature, and deep\u2011learning\u2011based (Section\u202fIII\u2011V).",
+      "Summarizes 197 articles (1970\u20112021) and highlights the rapid growth of publications after 2015 (Fig.\u202f2).",
+      "Provides a detailed taxonomy of deep\u2011learning architectures (multi\u2011scale, encoder\u2011decoder, CNN\u2011CRF, GAN) and discusses real\u2011time lightweight models such as FastDepth and DepthNet\u202fNano (Section\u202fV\u2011A\u20114).",
+      "Analyzes performance on KITTI, showing supervised methods achieve the best accuracy, with Bhat et\u202fal.\u202f[71] achieving the lowest Abs\u202fRel (0.058) but at high computational cost (Section\u202fVII\u2011A, Table\u202fIV).",
+      "Identifies major open challenges and future directions: richer diverse datasets, real\u2011time accuracy\u2011efficiency trade\u2011offs, domain adaptation, semi\u2011supervised learning, multimodal fusion, and interpretability (Conclusion)."
+    ],
+    "limitations": [
+      "Coverage ends in 2021; the survey does not discuss important MDE advances from 2022\u20112025 such as transformer\u2011based depth networks, self\u2011supervised video\u2011centric methods, or recent large\u2011scale synthetic\u2011to\u2011real adaptation techniques.",
+      "Running\u2011time analysis is incomplete because many papers do not report inference speed, limiting direct comparison of real\u2011time suitability.",
+      "Depth\u2011completion methods are only briefly reviewed and lack systematic evaluation or integration with MDE pipelines."
+    ],
+    "evidence_snippets": [
+      "\u201cWe classify the reviewed methods into three main categories: Structure from Motion (SfM)-based methods, traditional handcrafted feature\u2011based methods, and state\u2011of\u2011the\u2011art deep learning\u2011based methods.\u201d (Section\u202fI)",
+      "\u201cFigure\u202f2 shows the number of published articles on MDE from 2000 to 2021\u2026 the overall development trend of MDE is to push the increase of accuracy.\u201d (Section\u202fI)",
+      "Table\u202fIV presents a comparison of 42 representative methods on KITTI, highlighting that supervised methods achieve the best error/accuracy metrics and that Bhat et\u202fal.\u202f[71] obtains the lowest Abs\u202fRel (0.058).",
+      "\u201cReal\u2011time monocular depth estimation with accuracy and efficiency balance: \u2026 researchers have begun to develop real\u2011time MDE methods [27], [69], [113], [137]. However, the accuracy of these methods is inferior to state\u2011of\u2011the\u2011art methods.\u201d (Conclusion)",
+      "Future\u2011direction list: \u201cCollecting rich scene datasets\u2026 Real\u2011time monocular depth estimation with accuracy and efficiency balance\u2026 Monocular depth estimation with domain adaptation\u2026 Semi\u2011supervised monocular depth estimation\u2026 Depth estimation with information fusion\u2026 Interpretability of monocular depth estimation networks.\u201d (Conclusion)"
+    ],
+    "summary": "This 2021 survey provides an extensive overview of monocular depth estimation up to the start of 2021, organizing methods into SfM, handcrafted and deep\u2011learning categories, and detailing datasets, metrics, and robotic applications. It reports that supervised deep models dominate performance, while recent lightweight networks aim for real\u2011time operation at some accuracy loss. The paper pinpoints key research gaps\u2014insufficiently diverse datasets, the need for accuracy\u2011efficient real\u2011time models, domain adaptation, semi\u2011supervised learning, multimodal fusion, and model interpretability\u2014offering a roadmap that aligns with many trends emerging in 2023\u20112025. However, it does not cover the latest transformer\u2011based or video\u2011self\u2011supervised approaches that dominate the field after 2021, limiting its direct applicability to the current survey period."
+  }
+]

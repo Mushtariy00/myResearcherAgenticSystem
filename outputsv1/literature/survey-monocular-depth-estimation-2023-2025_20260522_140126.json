@@ -1,0 +1,37 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-22T14:37:12Z",
+  "key_findings": [
+    {
+      "title": "Review of monocular depth estimation methods",
+      "source": "Semantic Scholar",
+      "summary": "Abstract. Estimating depth from monocular images has an inherent limitation problem, which can lead to errors in understanding and recognizing the scene. Therefore, how to recover scene depth information from monocular RGB images or RGB video sequences has been a hot and challenging research topic in computer vision for decades. Traditional methods rely heavily on handcrafted features, geometric constraints, and optimization techniques. The critical approaches use in conventional monocular depth estimation include structure from motion, stereo vision, shape-from-shading, and depth from defocus. Motivated by their growing success in solving various 2D to 3D vision problems, depth estimation b",
+      "url": "https://www.semanticscholar.org/paper/727d9e59259a3245a552c757e7615df1fd084874"
+    },
+    {
+      "title": "Survey on Monocular Metric Depth Estimation",
+      "source": "Semantic Scholar",
+      "summary": "Monocular metric depth estimation (MMDE) aims to generate depth maps with an absolute metric scale from a single RGB image, which enables accurate spatial understanding, 3D reconstruction, and autonomous navigation. Unlike conventional monocular depth estimation that predicts only relative depth, MMDE maintains geometric consistency across frames and supports reliable integration with visual SLAM, high-precision 3D modeling, and novel view synthesis. This survey provides a comprehensive review of MMDE, tracing its evolution from geometry-based formulations to modern learning-based frameworks. The discussion emphasizes the importance of datasets, distinguishing metric datasets that supply abs",
+      "url": "https://www.semanticscholar.org/paper/ab664b3b6e73d67a0c1d86bbc1efe9454f79af88"
+    },
+    {
+      "title": "A Survey of the State of the Art in Monocular 3D Human Pose Estimation: Methods, Benchmarks, and Challenges",
+      "source": "Semantic Scholar",
+      "summary": "Three-dimensional human pose estimation (3D HPE) from monocular RGB cameras is a fundamental yet challenging task in computer vision, forming the basis of a wide range of applications such as action recognition, metaverse, self-driving, and healthcare. Recent advances in deep learning have significantly propelled the field, particularly with the incorporation of state-space models (SSMs) and diffusion models. However, systematic reviews that comprehensively cover these emerging techniques remain limited. This survey contributes to the literature by providing the first comprehensive analysis of recent innovative approaches, featuring diffusion models and SSMs within 3D HPE. It categorizes and",
+      "url": "https://www.semanticscholar.org/paper/be11a82813952b2642d3253b0b3b936ea61eea84"
+    },
+    {
+      "title": "A Survey on Self-Supervised Monocular Depth Estimation Based on Deep Neural Networks",
+      "source": "Semantic Scholar",
+      "summary": "Monocular depth estimation aims to predict the corresponding scene depth map to an input image, which has wide application prospects in various fields, such as robot navigation, autonomous driving, and augmented reality. Due to the advantage that only images rather than ground truth depth maps are required for model training, self-supervised monocular depth estimation methods have received more and more attention in recent years. Although numerous self-supervised monocular depth estimation methods were proposed, there has been no a comprehensive survey on them yet. Addressing this issue, we review recent developments in the community of self-supervised monocular depth estimation in this arti",
+      "url": "https://www.semanticscholar.org/paper/a8781b1e1b4c24a600bceca7557768aeea75f20c"
+    },
+    {
+      "title": "Survey on unsupervised monocular depth estimation in dynamic scenes based on deep learning",
+      "source": "Semantic Scholar",
+      "summary": "None",
+      "url": "https://www.semanticscholar.org/paper/472fddb1d16637e4baa0872a7abefb7d657a05f5"
+    }
+  ],
+  "synthesis": "The supplied analyses contain no extracted evidence, findings, or summaries from any of the referenced papers. Consequently, no concrete trends, methodological advances, or performance benchmarks can be synthesized for the period 2023\u20112025. This absence highlights a critical gap: the lack of accessible, curated literature that details recent self\u2011supervised, unsupervised, and dynamic\u2011scene monocular depth estimation techniques. Future work should prioritize the collection and systematic annotation of primary sources, enabling meta\u2011analysis of emerging architectures, loss functions, and evaluation protocols. Without these foundational data, it remains impossible to delineate the state\u2011of\u2011the\u2011art or to identify open research challenges such as handling occlusions, improving real\u2011time inference, and generalizing across diverse domains."
+}

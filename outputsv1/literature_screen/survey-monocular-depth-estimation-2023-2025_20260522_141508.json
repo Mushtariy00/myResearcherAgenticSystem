@@ -1,0 +1,18 @@
+{
+  "selected_indices": [
+    0,
+    1,
+    2
+  ],
+  "rejected_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "selection_rationale": "None of the candidate papers are dedicated survey articles focusing on monocular depth estimation published between 2023 and 2025. The only survey present (index 0) addresses binocular stereo rather than monocular depth, while the remaining entries are individual method papers or application studies. Consequently, no paper meets the strict criteria for inclusion in a literature synthesis of recent monocular depth estimation surveys."
+}

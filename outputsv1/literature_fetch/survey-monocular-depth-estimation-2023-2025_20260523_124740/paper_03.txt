@@ -1,0 +1,3760 @@
+1
+Towards Real-Time Monocular Depth Estimation
+for Robotics: A Survey
+Xingshuai Dong, Matthew A. Garratt, Senior Member, IEEE, Sreenatha G. Anavatti, and Hussein A.
+Abbass, Fellow, IEEE
+School of Engineering and Information Technology, University of New South Wales, Canberra, Australia.
+Abstract—As an essential component for many autonomous
+driving and robotic activities such as ego-motion estimation,
+obstacle avoidance and scene understanding, monocular depth
+estimation (MDE) has attracted great attention from the com-
+puter vision and robotics communities. Over the past decades,
+a large number of methods have been developed. To the best
+of our knowledge, however, there is not a comprehensive survey
+of MDE. This paper aims to bridge this gap by reviewing 197
+relevant articles published between 1970 and 2021. In particular,
+we provide a comprehensive survey of MDE covering various
+methods, introduce the popular performance evaluation metrics
+and summarize publically available datasets. We also summarize
+available open-source implementations of some representative
+methods and compare their performances. Furthermore, we
+review the application of MDE in some important robotic tasks.
+Finally, we conclude this paper by presenting some promising
+directions for future research. This survey is expected to assist
+readers to navigate this research ﬁeld.
+Index Terms—Monocular Depth Estimation, Single Image
+Depth Estimation, Depth Prediction, Robotics, Survey.
+I. INTRODUCTION
+D
+EPTH estimation refers to the process of estimating a
+dense depth map from the corresponding input image(s).
+Depth information can be utilized to infer the 3D structure,
+which is an essential part in many robotics and autonomous
+system tasks, such as ego-motion estimation [1], obstacle
+avoidance [2] and scene understanding [3]. Active methods
+depend on RGB-D cameras, LIDAR, Radar or ultrasound
+devices to directly get the depth information of the scene [4].
+However, RGB-D cameras suffer from a limited measurement
+range, LIDAR and Radar is limited to sparse coverage, and
+ultrasound devices are limited by the inherently imprecise
+measurements. In addition, the above devices are large in size
+and energy-consuming, which is a deﬁciency when it comes
+to small sized robots such as micro aerial vehicles (MAVs).
+On the contrary, RGB cameras are cheaper and light weight.
+More importantly, they can provide richer information about
+the environment. Many methods [5]–[7] depend on stereo
+matching to estimate depth maps from stereo images. Stereo
+methods are more accurate, however, collecting stereo images
+require complex alignment and calibration procedures. Be-
+sides, stereo vision-based methods are limited by the baseline
+distance between the two cameras. To be speciﬁc, the esti-
+mated depth values tend to be inaccurate when the considered
+distance are large. With the advancements in computer vision
+algorithms, it is more convenient to infer a dense depth map
+from RGB images.
+In this paper, we restrict our survey to monocular depth
+estimation (MDE) for dense depth maps. We extensively
+Input
+Output
+Depth 
+Estimator
+Fig. 1: The overall pipeline of monocular depth estimation.
+Given an input RGB image, the depth predictor produces a
+dense depth map (best viewed in color). (The colors in the
+depth map correspond to the distance of that pixel, yellow
+and blue indicates far and close respectively.)
+survey 197 relevant articles spanning over 50 years (from
+1970 to 2021). Our aim is to assist readers to navigate this
+research ﬁeld, which has attracted great attention from the
+computer vision and robotics communities. Figure 2 shows
+the number of published articles on MDE from 2000 to 2021,
+while Figure 5 illustrates the milestones of MDE in recent
+years.
+We classify the reviewed methods into three main cate-
+gories: Structure from Motion (SfM)-based methods, tradi-
+tional handcrafted feature-based methods, and state-of-the-art
+deep learning-based methods. SfM-based methods [8]–[11]
+track a set of corresponding pixels, across a series of images
+taken in a given scene, and compute depth values at the pixels
+where features are matched. Therefore, the obtained depth
+maps are sparse. For traditional handcrafted feature-based
+methods [12]–[19], features are ﬁrst extracted from monocular
+images, which are then utilized to estimate dense depth maps
+by optimizing a probabilistic model such as a Markov Random
+Field (MRF) or a Conditional Random Field (CRF). Over the
+past few years, the success of deep neural networks (DNNs)
+has greatly motivated the development of MDE. A variety of
+models [20]–[27] manifest their effectiveness to recover the
+depth information from a single image. A possible reason is
+that the monocular cues can be better modeled with the larger
+capacity of DNNs.
+In recent years, a number of surveys concerning depth esti-
+mation [28]–[35] have been published, as summarized in Ta-
+ble I. According to Figure 3, compared with applications such
+as 3D reconstruction, SfM, stereo matching, etc, fewer surveys
+on depth estimation have been published. However, among
+these existing surveys on depth estimation, a comprehensive
+one covering classic and deep learning-based methods as well
+as the application of MDE is lacking. Therefore, this survey
+aims to bridge this gap with the following contributions:
+• Focusing the survey entirely on MDE: Most of the
+previous surveys [28]–[31], [33]–[35] blend monocu-
+arXiv:2111.08600v1  [cs.RO]  16 Nov 2021
+
+2
+The Number of Publications in Monocular Depth Estimation
+2000
+2001
+2002
+2003
+2004
+2005
+2006
+2007
+2008
+2009
+2010
+2011
+2012
+2013
+2014
+2015
+2016
+2017
+2018
+2019
+2020
+2021
+Year
+0
+50
+100
+150
+200
+250
+300
+Number of Publications
+Fig. 2: The number of published articles on monocular depth
+estimation from 2000 to June 2021. (Data from Google
+scholar advanced search.)
+lar and stereo algorithms together, and hence do not
+provide a comprehensive survey of MDE. Moreover,
+[32] only reviews 5 state-of-the-art deep learning-based
+methods and does not reveal the technical evolution of
+MDE. This paper performs an extensive investigation
+into the methods of MDE from the SfM and traditional
+handcrafted feature-based methods to the state-of-the-art
+deep learning-based methods. In addition, we summarize
+the publically available datasets, commonly used perfor-
+mance metrics and open-source implementations of the
+representative methods.
+• Conduct a comprehensive survey in the aspect of
+MDE for robotics: Previous surveys only focus on the
+techniques of depth estimation. As a main method for
+range perception, MDE plays an important role in the
+ﬁeld of robotics. This paper makes an investigation to the
+application of MDE for ego-motion estimation, obstacle
+avoidance and scene understanding. We illustrate how
+MDE works on the above tasks and make robots more
+intelligent.
+The remainder of this paper is organized as follows: In
+Section 2, we introduce the background of MDE. MDE with
+Structure from Motion and traditional handcrafted feature-
+based methods will be reviewed in Section 3 and Section 4
+respectively. Section 5 reviews state-of-the-art deep learning-
+based methods. Section 6 will review other related methods.
+Section 7 presents a discussion and comparison on different
+MDE methods. The applications of monocular depth estima-
+tion will be reviewed in Section 8. Conclusions are given in
+Section 9. We show the overall organization of this paper in
+Fig. 4.
+II. BACKGROUND OF MONOCULAR DEPTH ESTIMATION
+A. Problem Deﬁnition
+The problem deﬁnition of monocular depth estimation
+(MDE) can be viewed as follows. Let I be a single RGB
+image with size w × h, D is the corresponding depth map
+with the same size as I. The task of MDE is to formulate
+a non-linear mapping Ψ: I →D. Whilst requiring less
+computational resources and avoiding the baseline issue, MDE
+is an ill-posed problem as a monocular image may be captured
+from different distinct 3D scenes. Therefore, MDE algorithms
+The Number of Published Literature Reviews
+3D-R
+DE
+IC
+OD
+OF
+OR
+OT
+SfM
+SM
+SS
+VO
+V-SLAM
+Application
+0
+50
+100
+150
+200
+250
+300
+350
+Number of Publications
+Fig. 3: The number of published literature reviews on differ-
+ent applications until June 2021. (“3D-R”: 3D Reconstruc-
+tion, “DE”: Depth Estimation, “IC”: Image Classiﬁcation,
+“OD”: Object Detection, “OF”: Optical Flow Estimation,
+“OT”: Object Tracking, “SfM”: Structure from Motion, “SM”:
+Stereo Matching, “SS”: Semantic Segmentation, “VO”: Visual
+Odometry and “V-SLAM”: Visual Simultaneous Localization
+and Mapping.) (Data from Google scholar advanced search.)
+exploit different monocular cues such as texture, occlusion,
+known object size, lighting, shading, haze and defocus.
+B. Performance Evaluation
+Given an estimated depth map D and the corresponding
+ground-truth D∗, let Di and D∗
+i represent the estimated
+and ground-truth depth values at the pixel indexed by i,
+respectively, and N represent the total number of pixels for
+which there exist both valid ground-truth and estimated depth
+pixels. As for the quantitative comparison of the estimated
+depth map and ground-truth, the commonly used evaluation
+metrics in prior works are listed as follows:
+• Absolute Relative Difference (Abs Rel): deﬁned as the
+average value over all the image pixels of the L1 distance
+between the ground-truth and the estimated depth, but
+scaled by the estimated depth:
+AbsRel = 1
+N
+X
+N
+|D∗
+i −Di|
+Di
+(1)
+• Squared Relative Difference (Sq Rel): deﬁned as the
+average value over all the image pixels of the L2 distance
+between the ground-truth and the estimated depth, but
+scaled by the estimated depth:
+SqRel = 1
+N
+X
+N
+|D∗
+i −Di|2
+Di
+(2)
+• The linear Root Mean Square Error (RMSE): deﬁned
+as:
+RMSE =
+s
+1
+N
+X
+N
+|D∗
+i −Di|2
+(3)
+• The logarithm Root Mean Square Error (RMSE log):
+deﬁned as:
+RMSE log =
+s
+1
+N
+X
+N
+|log D∗
+i −log Di|2
+(4)
+
+3
+MDE
+MDE
+1) General Methods
+2) Classification
+3) Multi-task Learning
+4) Real-Time Methods
+1) General Methods
+2) Combining with 
+     Other Tasks
+Supervised 
+Learning
+(Sec. V-A)
+Unsupervised 
+Learning
+(Sec. V-B)
+Semi-supervised
+Learning
+(Sec. V-C)
+1) General Methods
+2) Multi-task Learning
+3) Adversarial Learning
+4) Real-Time Methods
+Domain Adaptation
+(Sec. V-D)
+1) Fine-tuning
+2) Data Transformation
+Deep Learning
+(Sec. V)
+Deep Learning
+(Sec. V)
+SfM
+(Sec. III)
+SfM
+(Sec. III)
+SfM
+(Sec. III)
+Traditional
+Methods
+(Sec. IV)
+Traditional
+Methods
+(Sec. IV)
+Other Related 
+Methods
+(Sec. VI)
+Other Related 
+Methods
+(Sec. VI)
+  1) Sparse Depth from 
+      LIDAR
+  2) Sparse Depth from
+      SLAM
+Discussion
+(Sec. VII)
+Discussion
+(Sec. VII)
+Discussion
+(Sec. VII)
+  1) Accuracy
+  2) Computational Time
+Applications
+(Sec. VIII)
+Applications
+(Sec. VIII)
+Applications
+(Sec. VIII)
+1) Ego-motion Estimation
+2) Obstacle Avoidance
+3)  Scene Understanding
+Fig. 4: An overview of the organization of this paper (from Section III to Section VIII.). (“MDE”: Monocular Depth Estimation
+and “SfM”: Structure from Motion.)
+TABLE I: Summarization of a number of related surveys on depth estimation in recent years. “Ref.”: Reference.
+No.
+Title
+Ref.
+Year
+Published
+Description
+1
+Depth Extraction from Video: A Survey
+[28]
+2015
+IJIRAE
+A survey on depth estimation from videos and propose a
+method for generating depth maps from videos and images
+2
+A Review on Depth Estimation for
+Computer Vision Applications
+[29]
+2015
+Position
+A survey of different methods for depth estimation
+3
+A Survey on Depth Map Estimation Strategies
+[30]
+2016
+ICSP
+A survey of active and passive methods for depth estimation
+4
+Literature Review on Various Depth
+Estimation Methods for An Image
+[31]
+2017
+IJRG
+A survey on different depth estimation
+methods using cues from two images
+5
+Monocular Depth Estimation: A Survey
+[32]
+2019
+arXiv
+A review of ﬁve algorithms of MDE
+with different deep learning techniques
+6
+A Survey on Deep Learning Architectures
+for Image-based Depth Reconstruction
+[33]
+2019
+arXiv
+A comprehensive survey of recent developments
+in depth reconstruction with deep learning techniques
+7
+Literature Review on Depth Estimation
+Using a Single Image
+[34]
+2019
+IJARIIT
+A review of learning-based MDE
+8
+A Survey of Depth Estimation
+Based on Computer Vision
+[35]
+2020
+DSC
+A survey of current mainstream active
+and passive depth approaches
+9
+This Survey
+-
+2021
+Ours
+A comprehensive survey of MDE from classic to deep
+learning-based methods, and its application in robotics
+“DSC”: International Conference on Data Science in Cyberspace, “ICSP”: International Conference on Signal Processing, “IJRG”: International Journal of
+Research-Granthaalayah, “IJIRAE”: International Journal of Innovative Research in Advanced Engineering and “IJARIIT”: International Journal of Advance
+Research, Ideas and Innovations in Technology.
+• Accuracy under a threshold: is the percentage of
+predicted pixels where the relative error is within a
+threshold. The formula is represented as:
+max( Di
+D∗
+i
+, D∗
+i
+Di
+) < threshold
+(5)
+where the values of threshold usually set to 1.25, 1.252,
+1.253.
+In addition, Eigen et al. [20] design a scale-invariant error
+to measure the relationships between points in the scene,
+irrespective of the absolute global scale. The scale-invariant
+mean squared error in log space is deﬁned in Equation 6:
+E(D, D∗) =
+1
+2N
+N
+X
+i=1
+(log Di −log D∗
+i + α(D, D∗))2
+(6)
+where α(D, D∗) =
+1
+N
+P
+i(log D∗i −log Di) is the value of
+α which minimizes the difference for a given (D, D∗). For
+any estimation D, errα is the scale that best aligns it to the
+ground-truth, and err is the difference between D and D∗
+in log space. Since all scalar multiples of D∗have the same
+error, the scale is invariant.
+C. Datasets
+Datasets play a critical role in developing and evaluating
+depth estimation. In depth estimation, a number of well-
+known datasets have been released. Beginning with Make3D
+[36], representative datasets include NYU depth v2 [37],
+KITTI [38], Cityscapes [39] and Virtual KITTI [40], [41]. The
+features of the datasets for depth estimation are summarized
+in Table II.
+III. STRUCTURE FROM MOTION BASED METHODS
+Structure from motion (SfM) refers to the process of pre-
+dicting camera motion and/or 3D structure of the environment
+from a sequence of images taken from different viewpoints
+[72]. Given a sequence of input images that taken from dif-
+ferent viewpoints, features such as Harris, SIFT, or SURF are
+ﬁrst extracted from all the images. Then the extracted features
+will be matched. Because some features maybe incorrectly
+matched, RANSAC (random sample consensus) is typically
+applied to remove the outliers. These matched features are
+tracked from image to image to estimate the 3-D coordinates
+of the features. This produces a point cloud which can be
+transformed to a depth map.
+A. Methodologies
+Wedel et al. [8] estimate the scene depth from the scal-
+ing of supervised image regions using SfM. Deﬁne a point
+X(t) = (X(t), Y (t), Z(t))T in 3-D space at time t, and its
+
+4
+TABLE II: A summary of the datasets for depth estimation. “K”: thousand, “M”: million and “-”: not available.
+Year
+Dataset
+Scenario
+Sensors
+Resolution
+Type
+Images
+Annotation
+2008
+Make3D [36]
+Outdoor
+Laser Scanner
+2272 × 1704
+Real
+534
+Dense
+2012
+NYU-v2 [37]
+Indoor
+Kinect v1
+640 × 480
+Real
+1449
+Dense
+2012
+RGB-D SLAM [42]
+Indoor
+Kinect v1
+640 × 480
+Real
+48K
+Dense
+2013
+KITTI [38]
+Driving
+LiDAR
+1238 × 374
+Real
+44K
+Sparse
+2015
+SUN RGB-D [43]
+Indoor
+-
+-
+Real
+10335
+Dense
+2016
+DIW [44]
+Outdoor
+-
+-
+Real
+495K
+Single Pair
+2016
+Cityscapes [39]
+Driving
+Stereo Camera
+2048 × 1024
+Real
+5000
+Disparity
+2016
+CoRBS [45]
+Indoor
+Kinect v2
+1920 × 1080 for RGB,
+512 × 424 for Depth
+Real
+-
+Dense
+2016
+Virtual KITTI [40]
+Outdoor
+-
+1242 × 375
+Synthetic
+21260
+Dense
+2017
+2D-3D-S [46]
+Indoor
+Matterport Camera
+1080 × 1080
+Real
+71909
+Dense
+2017
+ETH3D [47]
+In/Outdoor
+Laser Scanner
+940 × 490
+Real
+-
+Dense
+2017
+Matterport3D [48]
+Indoor
+Matterport Camera
+1280 × 1024
+Real
+194400
+Dense
+2017
+ScanNet [49]
+Indoor
+Structure Sensor
+1296 × 968 for RGB,
+640 × 480 for Depth
+Real
+2.5M
+Dense
+2017
+SceneNet RGB-D [50]
+Indoor
+-
+320 × 240
+Synthetic
+5M
+Dense
+2017
+SUNCG [51]
+Indoor
+-
+640 × 480
+Synthetic
+45000
+Dense
+2018
+MegaDepth [52]
+In/Outdoor
+-
+-
+Real
+130K
+Dense/Ordinal
+2018
+Unreal [53]
+Outdoor
+-
+256 × 160
+Synthetic
+107K
+Dense
+2018
+SafeUAV [54]
+Outdoor
+-
+640 × 480
+Synthetic
+8137
+Dense
+2018
+3D60 [55]
+Indoor
+-
+-
+Synthetic
+35995
+Dense
+2018
+NUSTMS [56]
+Outdoor
+Radar
+576 × 160 for Infrared,
+144 × 40 for Depth
+Real
+3600
+Dense
+2019
+DIML/CVL [57]
+In/Outdoor
+Kinect v2,
+Zed Stereo Camera
+1920 × 1080
+1280 × 720
+Real
+1M
+Dense
+2019
+DrivingStereo [58]
+Driving
+LiDAR
+1762 × 800
+Real
+182K
+Sparse
+2019
+DIODE [59]
+In/Outdoor
+Laser Scanner
+1024 × 768
+Real
+25458
+Dense
+2019
+Mid-Air [60]
+Outdoor
+-
+1024 × 1024
+Synthetic
+119K
+Dense
+2020
+Forest Environment [61]
+Forest
+Depth Camera
+640 × 480
+Real
+134K
+Dense
+2020
+Shanghaitech-Kujiale [62]
+Indoor
+-
+1024 × 512
+Synthetic
+3500
+Dense
+2020
+Virtual KITTI 2 [41]
+Outdoor
+-
+1242 × 375
+Synthetic
+21260
+Dense
+corresponding projected image point x(t). The camera trans-
+lation in depth between time t and t + τ is T(t, τ), while
+the point at time t + τ is X(t + τ) = X(t) + T(t, τ). The
+motion of image regions are divided into two parts, with
+the correctly computed vehicle translation and displacement
+of image points, the scene depth can be computed through
+Equation 7:
+d ≡Z(t) =
+s(t, τ)
+1 −s(t, τ)TZ(t, τ)
+(7)
+where s(t, τ) is the scale, and TZ(t, τ) is the camera transla-
+tion in depth.
+Prakash et al. [9] present a SfM-based sparse depth esti-
+mation method. The proposed approach takes a sequence of
+5 to 8 images captured by a monocular camera to estimate a
+depth map. With the captured images, features are detected
+by a multi-scale Fast detector. After matching the detected
+features from a reference frame and any other frame in the
+input subset, the two-view geometry is computed between the
+considered frames. The sparse depth values at the matched
+feature locations are calculated and reconstructed through a
+metric transformation.
+Ha et al. [10] propose a Structure from Small Motion
+(SfSM) method which utilizes a plane sweep technique to
+estimate a depth map. The Harris corner detector is applied to
+extract features in the reference image and the corresponding
+features in other images are found by the Kanade-Lukas-
+Tomashi (KLT) algorithm. Then, the plane sweeping tech-
+nique is applied to get dense depth maps. Although [10] gen-
+erates dense depth maps, it takes about 10 minutes to process
+just one image. To solve the problem of computing efﬁciency,
+Javidnia and Corcoran [11] utilize the ORB algorithm as the
+feature extractor. It reduces the run time to minutes but still
+cannot run in real-time. In addition, as a corner detector, the
+ORB algorithm is highly sensitive to the texture present in the
+scene. As a result, the estimated depth maps are erroneous in
+low-textured environments.
+B. Summary
+SfM relies on feature detection and matching to get the
+correspondence between the detected features and the ac-
+curacy of produced depth values depends on the quality of
+feature matching. The number of detected features relies on
+the environment, for example, less features are detected in
+textureless or low-contrast surroundings. Therefore, most of
+the existing SfM methods produce the sparse depth maps.
+These depth maps are adequate for the task of localization, but
+are not sufﬁcient for applications such as autonomous ﬂight
+which requires a dense depth map to enable UAVs to avoid
+frontal obstacles. Although using more features and images
+produces better estimations, it requires more time to generate
+a depth map.
+
+5
+(Eigen et al.) 
+Deep Learning-based 
+Methods
+Supervised Learning
+UuSupervised and Semi-
+Supervised Learning
+Traditional Methods
+NYU Depth Dataset
+(Silberman et al.) 
+(Eigen et al.) 
+FCRN
+(Laina et al.) 
+DCNF
+(Liu et al.) 
+Unsupervised Depth Estimation
+(Garg et al.) 
+Unsupervised LR CNN
+(Godard et al.) 
+FastDepth
+(Wofk et al.) 
+The Milestones of Monocular Depth Estimation
+SfMLearner
+(Zhou et al.)
+KITTI Dataset
+(Geiger et al.) 
+OmiDepth
+(Zioulis et al.) 
+First Panorama 
+Image Dataset 
+First Encoder-
+Decoder Network 
+Semantic Depth 
+Classifier
+(Ladicky et al.) 
+DIML/CVL 
+Dataset
+(Cho et al.)
+First CNN for MDE 
+(Saxena et al.) 
+Make 3D Dataset
+SCN
+(Saxena et al.) 
+First Supervised 
+Learning-based Method
+First Multi-task 
+Learning Method
+First Unsupervised Network
+Unsupervised Learning 
++ Left-Right Consistency
+Unsupervised Learning on 
+Monocular Video
+Combination of CNN 
+and Continuous CRF
+ Real-Time Network 
+on Embedded 
+Platforms  
+(Aleotti et al.)
+First GAN Model
+(Kuznietsov et al.)
+First Semi-Supervised 
+Network 
+PyD-Net
+(Poggi et al.)
+First Unsupervised 
+Real-Time Network 
+AdBin
+(Bhat et al.) 
+First ViT-based 
+Method 
+(Cao et al.) 
+First Classification 
+Method 
+CReaM
+(Spek et al.)
+First Real-Time Network 
+on Embedded Platforms
+Fig. 5: Milestones of monocular depth estimation, including traditional handcrafted feature based-methods [13], [16], [36]–[38]
+and state-of-the-art deep learning-based methods [20]–[22], [27], [55], [57], [63]–[71].
+IV. TRADITIONAL HANDCRAFTED FEATURE BASED
+METHODS
+Due to the loss of 3D information in the process of captur-
+ing images with a monocular camera, it is not straightforward
+to infer a depth map from a single-view image. Unlike
+stereo vision-based methods that can perform stereo matching
+between the left and right images to estimate depth, earlier
+monocular depth estimation (MDE) algorithms mainly use
+texture variations, occlusion boundaries, defocus, color/haze,
+surface layout and size of known objects as cues for predicting
+depth maps. Although Markov Random Field (MRF) and its
+variants are a branch of machine learning, they are often
+combined with handcrafted features to incorporate more con-
+textual information. Therefore, we review methods with MRF
+in this section to distinguish from the deep neural network
+(DNN)-based methods.
+The handcrafted feature based-methods roughly work as
+follows. First, the input images are over-segmented into a set
+of small regions, called superpixels. Each such superpixel is
+assumed as a coherent region in the scene that all the pixels
+have similar properties. Then a number of color, location,
+texture, motion and geometric context-based features are
+computed from the obtained superpixels. With the computed
+features, depth cues will be computed to estimate the depth for
+each superpixel. Finally, a MRF model is applied to combine
+superpixel-based depth estimation with information between
+different superpixels to construct the ﬁnal depth map.
+A. Methodologies
+According to Google scholar, the pioneering work in depth
+estimation from monocular images is [73]. In this work,
+the intensity or color gradients of a monocular image are
+exploited to estimate the depth information of objects. The
+intrinsic images correspond to physical properties of the
+scene such as depth, reﬂectance, shadows and surface shape,
+provide complementary information [74]. Inspired by this
+point, Kong and Black [75] formulate dense depth estimation
+as an intrinsic image estimation problem. They combine [18]
+with a method that extracts consistent albedo and shading
+from monocular video. A contour detector is trained to predict
+surface boundaries from albedo, shading and pixel values and
+the predicted contour is applied to replace image boundaries
+to enhance the qualities of depth maps.
+Torralba and Oliva [12] propose the ﬁrst learning-based
+approach, which infers absolute depth from monocular images
+by incorporating the size of known objects in the image. As
+the recognition of objects under unconstrained conditions is
+difﬁcult and unreliable, the absolute scene depth of the images
+is derived from the global image structure represented as a set
+of features from Fourier and wavelet transforms. Real-world
+images contain various objects, while the work in [12] handles
+different objects with the same method. Hence, it is unsuitable
+because it disregards the object’s own properties. Jung and
+Ho [14] design an MDE algorithm using a Bayesian learning-
+based object classiﬁcation method. With the property of linear
+perspective, objects in a monocular image are categorized into
+four types: sky, ground, cubic and plane. According to the
+type, a relative depth value to each object and 3D model is
+generated.
+Saxena et al. [13] introduce a supervised learning-based
+method to estimate depth from monocular images. They divide
+the input image into small patches and estimate a single depth
+value for each patch. Two kinds of features, absolute and
+relative depth features are applied. The former is used to esti-
+mate the absolute depth at a particular patch and the latter is
+for distinguishing the depth magnitude between two patches.
+Considering the depth of a particular patch relies on the
+features of the patch and the depths of other parts of the image,
+a MRF is utilized to model the relation between the depth
+of a patch and the depths of its neighbouring patches. Raza
+et al. [19] combine the texture features, geometric context,
+motion boundary-based monocular cues with co-planarity,
+connectivity and spatio-temporal consistency constraints to
+infer depth from monocular videos. Given a monocular video,
+they ﬁrst decompose it into spatio-temporal regions. For each
+region, depth cues that model the relationship of depth to
+visual appearance, motion and geometric classes are computed
+and utilized to estimate depth with random forest regression.
+
+6
+Subsequently, the estimated depth is reﬁned by incorporating
+3D scene properties in MRF with occlusion boundaries.
+Besides image features, semantic labels are also used as a
+cue for inferring depth. The semantic classes of a pixel or
+region usually have geometry constraints, for example, sky
+is far away and ground is horizontal. Therefore, depth can
+be estimated by measuring the difference in appearance with
+respect to a given semantic class. Liu et al. [15] propose a
+method that uses semantic information as context to estimate
+depth from a single image. The proposed method consists of
+two steps. In the ﬁrst step, a learned multi-class image labeling
+MRF is applied to infer the semantic class for each pixel in
+the image. The obtained semantic information is incorporated
+in the depth reconstruction model in the second step. Two
+different MRF models, a pixel-based and a superpixel-based,
+are designed. Both MRF models deﬁne convex objectives that
+are solved by using the L-BFGS algorithm to compute a depth
+value for each pixel in the image.
+Ladicky et al. [16] demonstrate how semantic labeling
+and depth estimation can beneﬁt each other under a uniﬁed
+framework. They propose a pixel-wise classiﬁer by using the
+property of perspective geometry. Conditioning the semantic
+label on the depth promotes the learning of a more dis-
+criminative classiﬁer. Conditioning depth on semantic classes
+enables the classiﬁer to overcome some ambiguities of depth
+estimation. The relationship between different parts of the
+image is another cue for estimating depth. Liu et al. [17]
+model MDE as a discrete-continuous optimizing problem. The
+continuous variables encode the depth of the superpixels in
+the input image, and the additional discrete variables encode
+the relationship of two neighboring superpixels. With these
+variables, the depth estimation can be solved by an inference
+problem in a discrete-continuous CRF.
+Karsch et al. [18] design a non-parametric, data-driven
+method for estimating depth maps from 2D videos or single
+images. Given a new image, the designed algorithm ﬁrst
+searches similar images from a dataset by applying GIST
+matching. Subsequently, the label transfer between the given
+image and the matched image are applied to construct a set
+of possible depth values for the scene. Finally, the spatio-
+temporal regularization in an MRF formulation is conducted
+to make the generated depths spatially smooth.
+B. Summary
+In the above mentioned methods, handcrafted features
+are extracted from the monocular images to estimate depth
+maps by optimizing a probabilistic model. These features are
+designed beforehand by human experts to extract a given set
+of chosen characteristics, while some corner cases may be
+missed. Therefore, it may result in unsatisfactory performance
+when applied in new environments. In addition, these methods
+need pre-processing or post-processing, which imposes a
+computational burden and makes them unsuitable for the real-
+time control of robots.
+V. DEEP LEARNING BASED METHODS
+The success of deep learning in image classiﬁcation
+also boosts the development of monocular depth estimation
+(MDE). In this section, we review deep learning based-MDE
+methods. According to the dependency on ground-truth, there
+are three types of learning approaches: supervised, unsuper-
+vised and semi-supervised. These three types of methods are
+trained on the real data, we also review methods trained on
+the synthetic data and then transferred to the real data in the
+fourth sub-section. The implementations and download links
+of the source code of some algorithms are summarized in
+Table III.
+A. Depth Estimation with Supervised Learning
+The pipeline of supervised learning-based MDE methods
+can be described as follows (see Fig. 7 (a)). The MDE network
+incorporates a single image I and the corresponding ground-
+truth depth map D∗to learn the scene structure information
+for estimating a dense depth map (D). Then the parameters
+of the network is updated by minimizing a loss function
+L(D∗, D), which measures the difference between D and D∗.
+The network converges when D is as close as possible to D∗.
+1) General Supervised Methods: The general supervised
+methods treat MDE as a regression problem. To our knowl-
+edge, Eigen et al. [20] introduced the ﬁrst deep learning-
+based MDE algorithm. In order to exploit global and local
+information, two CNNs are employed in this work (Fig 6(a)).
+In addition to the common scale-dependent errors, a scale-
+invariant error is used as the loss function to optimize the
+training. The real scale of depth is recovered without any post-
+processing. This work remarkably improved the performance
+of MDE on the NYU [37] and KITTI [38] datasets. Con-
+sidering the continuous nature of depth values, Liu et al. [63]
+cast depth estimation as a deep continuous conditional random
+ﬁelds (CRF) learning problem. They design a network which
+includes three modules: unary part, pairwise part and continu-
+ous CRF loss layer. The input images are ﬁrst segmented into
+superpixels. Only image patches centered around each super-
+pixel are passed to the designed network to predict depth
+values. [20], [63] depend on fully connected (FC) layers to
+predict depth values. While the FC layer yields a full receptive
+ﬁeld, it has a huge number of trainable parameters resulting
+in [63] needing over a second to estimate a single depth map
+from a test image.
+Laina et al. [22] introduce a fully convolutional residual
+network (FCRN) for depth estimation. FCRN consists of two
+parts, encoder and decoder (Fig 6(b)). The encoder is modiﬁed
+from ResNet-50 [82] by removing the FC layers and the last
+pooling layer. The decoder guides the network into learning its
+upscaling via a series of upsample and convolutional layers.
+The removal of FC layers signiﬁcantly reduces the number
+of learnable parameters. Their experiments demonstrate that
+with the increase of network depth, the accuracy apparently
+increases, because a deeper network leads to a larger receptive
+ﬁeld and captures more context information. Inspired by
+this ﬁnding, CNNs with more than 100 layers e.g., ResNet-
+101/152 [82], DenseNet-169 [83] or SENet-154 [84] have
+been applied to MDE. Mancini et al. [85] utilize optical ﬂow
+as additional information to estimate depth from monocular
+images. They concatenate the current RGB image with an
+optical ﬂow map generated from the current frame and the
+previous one. The stacked images are fed to an encoder-
+decoder architecture to learn depth from fused information.
+
+7
+Input
+Coarse 
+Refined
+Coarse Scale
+Network
+Coarse Scale
+Network
+Fine Scale
+Network
+Fine Scale
+Network
+Input
+Coarse 
+Refined
+Coarse Scale
+Network
+Fine Scale
+Network
+Input
+Output
+CNN
+CNN
+CRF
+CRF
+Input
+Output
+CNN
+CRF
+Input
+True 
+or 
+False
+Generator
+Network
+Generator
+Network
+Real
+Images
+Real
+Images
+Synthetic
+Images
+Synthetic
+Images
+Discriminator
+Network
+Discriminator
+Network
+Input
+True 
+or 
+False
+Generator
+Network
+Real
+Images
+Synthetic
+Images
+Discriminator
+Network
+Input
+Output
+Encoder
+Encoder
+Decoder
+Decoder
+Encoder
+Decoder
+Input
+Output
+Encoder
+Decoder
+(a)
+(b)
+(c)
+(d)
+Fig. 6: Taxonomy of different network architectures. (a) Multi-scale Network [20], [21], (b) Encoder-Decoder Network (dotted
+lines represent skip connections) [22], [26], [76]–[78], (c) CNN Combines with CRF [23], [79], [80], (d) GANs [68], [81].
+(Best viewed in color).
+Back Propagation
+Depth 
+Loss
+Depth 
+Loss
+Depth 
+Network
+Depth 
+Network
+Input
+Ground-truth
+Back Propagation
+Depth 
+Loss
+Depth 
+Network
+Input
+Ground-truth
+Warping
+Reconstruction 
+Loss
+Left Image
+Warped Image
+Disparity Map
+Right Image
+Depth 
+Network
+Depth 
+Network
+Warping
+Reconstruction 
+Loss
+Left Image
+Warped Image
+Disparity Map
+Right Image
+Depth 
+Network
+Warping
+Reconstruction 
+Loss
+Left Image
+Warped Image
+Disparity Map
+Right Image
+Depth 
+Network
+Large amount of 
+unlabeled dataset
+Small amount of 
+labeled dataset
+Pseudo-labeled 
+dataset
+Depth network trained 
+on labeled + pseudo-
+labeled dataset
+Network
+Network
+Depth 
+Network
+Depth 
+Network
+RGB
+Ground-truth
+Large amount of 
+unlabeled dataset
+Small amount of 
+labeled dataset
+Pseudo-labeled 
+dataset
+Depth network trained 
+on labeled + pseudo-
+labeled dataset
+Network
+Depth 
+Network
+RGB
+Ground-truth
+Synthetic Image
+Ground-truth
+Depth
+Real Image
+Depth
+Source Domain
+Target Domain
+Proxy Depth 
+Network
+Proxy Depth 
+Network
+Depth Network
+Depth Network
+Synthetic Image
+Ground-truth
+Depth
+Real Image
+Depth
+Source Domain
+Target Domain
+Proxy Depth 
+Network
+Depth Network
+(a)
+(b)
+(c)
+(d)
+Fig. 7: The general architecture of deep learning-based monocular depth estimation. (a) Supervised learning network, which
+takes an RGB image and ground-truth depth as input and outputs the estimated depth map, (b) Unsupervised learning network
+takes as input the stereo image, (c) Semi-supervised learning network, which uses a small amount of image-depth pairs and
+a large amount of unlabeled images, and (d) Domain adaptation method, where the network in the target domain is trained
+on synthetic data, the arrow with dotted line represents adaptation. (Best viewed in color).
+Based on DenseNet-169 [83], Alhashim and Wonka [86]
+design a densely connected encoder-decoder architecture. Un-
+like [22], they use a simple decoder method which consists
+of a bilinear upsampling and two convolution layers. With
+the deeper network architecture, elaborated augmentation and
+training strategies, the designed network generates more ac-
+curate results on the NYU [37] and KITTI [38] datasets.
+To effectively guide the mapping from the densely extracted
+features to the desired depth estimation, Lee et al. [87] design
+a local planar guidance (LPG) layer and apply it to each
+decoding stage. The output from the LPG layers has the same
+size as the desired depth map. Then, the outputs are combined
+to get the ﬁnal estimation. Yin et al. [88] construct a geometric
+constraint in the 3D space for depth estimation by designing
+a loss term. The designed loss function combines geometric
+with pixel-wise depth supervisions, which enables the depth
+estimation network generates accurate depth map and high
+quality 3D point cloud.
+Hu et al. [26] combine an encoder-decoder module with a
+multi-scale feature fusion (MSFF) module and a reﬁnement
+(RF) module. The MSFF module upscales feature maps from
+different encoder layers to the same size and then concatenate
+it channel by channel. Features from the MSFF module are
+combined with features from the decoder and then fed to
+
+8
+the RF module to generate the ﬁnal prediction. The main
+contribution of [26] is a hybrid loss function, which measures
+errors in depth, gradients and surface normals. Inspired by
+[26], Chen et al. [78] design a Structure-Aware Residual
+Pyramid Network (SARPN) to exploit scene structures in
+multiple scales for MDE. SARPN includes three parts, an
+encoder which extracts multi-scale features, an adaptive dense
+feature fusion module for dense feature fusion and a residual
+pyramid decoder. The residual pyramid decoder estimates
+depth maps at multiple scales to restore the scene structure in
+a coarse-to-ﬁne manner.
+Fu et. al. [89] discretize the continuous depth into a
+series of intervals and transfer depth estimation to an ordi-
+nal regression problem. As the uncertainty of the estimated
+depth increases along with the ground-truth depth values,
+the common uniform discretization (UD) strategy may result
+in an over-strengthened loss for the large depth values. In
+order to solve this problem, a spacing increasing discretization
+(SID) strategy is designed to discretize the depth values.
+With the obtained discrete depth values, an ordinal regression
+loss which involves the ordered information between discrete
+labels is applied to train the network.
+Bhat et al. [71] divide the estimated depth range into bins
+where the bin widths change per image. This enables the
+network to learn to adaptively focus on the regions of different
+depths. The main contribution of [71] is a Mini-ViT module
+consisting of four transformer layers [90]. Being designed as
+a variant of Vision Transformer [91], Mini-ViT takes as input
+the multi-channel feature map of the input image to compute
+global information at a high resolution and outputs bin-widths
+and range-attention-maps showing the likelihood of each bin.
+Unlike Fu et al. [89] estimate depth as the bin center of
+the most likely bin. The ﬁnal depth of [71] is the linear
+combination of bin centers weighted by the probabilities.
+Hence, this approach generates smoother depth maps.
+In recent years, omnidirectional cameras have become more
+and more popular. Depth estimation from single 360◦images
+[55], [92] also being explored by researchers. Compared
+with the regular cameras, omnidirectional cameras have a
+larger ﬁeld-of-view which enables them to record the entire
+surroundings. According to Google Scholar, the ﬁrst work
+to estimate a depth map from an omnidirectional image is
+OmniDepth [55]. The main contribution of [55] is a dataset
+consisting of 360◦RGB-depth pairs. Since acquiring 360◦
+datasets with ground-truth is difﬁcult, the authors resort
+to re-use recently released 3D datasets to produce diverse
+360◦view images. Wang et al. [92] propose a two-branch
+framework which combines equirectangular and cubemap
+projection to infer depth from monocular 360◦images. The
+two branches take equirectangular image and cubemap as
+input, respectively. The produced features are combined by
+a bi-projection fusion block to exploit the shared feature
+representations.
+In addition to Convolutional Neural Networks (CNNs),
+Recurrent Neural Networks (RNNs) are also applied to the
+application of MDE. RNNs are a class of neural networks
+that model the temporal behavior of sequential data through
+hidden states with cyclic connections. Unlike CNNs that back-
+propagate gradient through the network, RNNs additionally
+back-propagate the gradient through time. Therefore, RNNs
+can learn dependencies across time. As an extension of the
+regular RNN, the long short-term memory (LSTM) is able to
+learn long-term dependencies within the input sequence.
+Kumar et al. [93] design a convolutional LSTM (ConvL-
+STM) based encoder-decoder architecture to learn depth from
+the spatio-temporal dependencies between video frames. The
+encoder consists of a set of ConvLSTM layers and the decoder
+includes a sequence of deconvolutional and convolutional
+layers. Each ConvLSTM layer has N states that correspond
+to the number of timestamps, thus, the network learns depth
+maps from N consecutive video frames. Zhang et al. [94]
+exploit spatial and temporal information for depth estima-
+tion by combining ConvLSTM and Generative Adversarial
+Network (GAN). In addition, a temporal consistency loss is
+designed to further maintain the temporal consistency among
+video frames. The designed temporal loss is combined with
+the spatial loss to update the model in an end-to-end manner.
+A RNN-based multi-view method for learning depth and
+camera pose from monocular video sequences is introduced by
+[95]. The ConvLSTM units are interleaved with convolutional
+layers to exploit multiple previous frames in each estimated
+depth map. With the model of multi-views, the image repro-
+jection constraint between multi view images can be incorpo-
+rated into the loss function. Additionally, a forward-backward
+ﬂow-consistency constraint is applied to solve the ambiguity
+of image reprojection by providing additional supervision.
+2) Monocular Depth Estimation by Classiﬁcation: For dif-
+ferent pixels in a single image, the possible depth values may
+have different distributions. Therefore, depth estimation can
+be formulated as a pixel-wise classiﬁcation task by discretiz-
+ing the continuous depth values into segments [23], [25], [96]–
+[98]. Cao et al. [23] design a fully convolutional deep residual
+network to estimate the depth range. Li et al. [25] propose a
+hierarchical fusion dilated CNN to learn the mapping between
+the input RGB image and corresponding depth map. A soft-
+weighted-sum inference is proposed to transfer the discretized
+depth scores to continuous depth values.
+Following [23], [25], [96], Zou et al. [98] cast depth
+estimation as a classiﬁcation problem but take probability
+distribution into account in the training step. The main con-
+tribution of [98] is a novel mean-variance loss which consists
+of a mean loss and a variance loss. The mean loss is used
+to penalize the error between the mean of estimated depth
+distribution and the ground-truth. Meanwhile the variance loss
+is complementary to the mean loss and makes the distribution
+sharper. The mean-variance loss is combined with the softmax
+loss to supervise the training of the depth estimation network.
+In addition, depth estimation can also be solved by combin-
+ing depth regression and depth interval classiﬁcation together
+[99], [100]. Song et al. [100] exploit the shared features from
+the semantic labels, contextual relations and depth information
+in a uniﬁed network. They use a FCN-based network to
+encode the input RGB images into high-level semantic feature
+maps. The generated feature maps are passed to a two step
+decoder. In the ﬁrst step, the feature maps are sampled and
+fed into a “semantic decoder” to up-sample semantic class
+labels, and a “depth decoder” to estimate the depth map.
+Subsequently, the semantic map and depth map are reﬁned
+at the class and pixel level by a CRF layer. At last, the
+classiﬁcation and regression tasks are integrated to model the
+
+9
+depth estimation process by a joint-loss layer and produce the
+ﬁnal depth map.
+3) Multi-task Learning Based Methods: Depth estimation
+and other applications such as semantic segmentation and sur-
+face normal estimation are correlated and mutually beneﬁcial.
+For example, semantic maps and depth maps reveal the layout
+and object boundaries/shapes [101]. In order to take advantage
+of the complementary properties of these tasks, multi-task
+learning in a uniﬁed framework has been explored [21], [102]–
+[109].
+Eigen and Fergus [21] design a uniﬁed three-scale network
+for three different tasks, depth estimation, surface normal
+estimation and semantic segmentation. The ﬁrst scale block
+estimates a coarse global feature from the entire image. Then
+the feature map is passed to the second and third scale
+blocks. The second scale block produces mid-level resolution
+estimations, and the third scale outputs higher resolution
+estimations at half size of the input image. The designed
+network can be trained for three different tasks by changing
+the output layer and the loss function.
+Inspired by the global network of [20], Wang et al. [102]
+propose a CNN that jointly estimates pixel-wise depth values
+and semantic labels. To obtain ﬁne-level details, the authors
+decompose input images into local segments and use the
+global layouts to guide the estimation of region-level depth
+and semantic labels. With the global and local estimations, the
+inference problem is formulated to a two-layer Hierarchical
+Conditional Random Field to produce the reﬁned depth and
+semantic map. Jafari et al. [103] design a modular CNN that
+jointly solve MDE and semantic segmentation. The designed
+network consists of an estimation module and a reﬁne module.
+The estimation module utilizes [21] and [110] as sub-networks
+for different tasks respectively. During training, the two sub-
+networks positively enforce each other and mutually improve
+each other. The reﬁne module incorporates the output of the
+estimation module and produces reﬁned estimations.
+The above-mentioned methods [21], [102], [103] require
+training images have per-pixel labels with depth and semantic
+class ground-truth. It is difﬁcult to collect such datasets,
+especially for outdoor scenarios. Gurram et al. [104] solve
+this problem by leveraging depth and semantic information
+from two heterogeneous datasets to train a depth estimation
+CNN. The training process is divided into two steps. In the
+ﬁrst step, a multi-task learning scheme is applied for pixel-
+level depth and semantic classiﬁcation. In the second step,
+the regression layers take as input the classiﬁed depth maps
+in order to generate the ﬁnal depth maps.
+Qi et al. [106] design a Geometric Neural Network
+(GeoNet) that jointly learns depth and surface normals from
+monocular images. Being designed as a two-stream CNN,
+GeoNet consists of a depth-to-normal (DTN) and a normal-
+to-depth (NTD) network. The DTN network infers surface
+normal from depth map via the least square solution and a
+residual module, while the NTD network reﬁnes the depth
+estimation from the estimated surface normal and initial depth
+map. Hesieh et al. [108] propose a multi-task learning network
+by adding a depth estimation branch to YOLOv3 [111]. In
+the process of training, an L1 distance depth estimation loss
+(PN
+i |depthi −depth∗
+i |, where N is the amount of objects in
+a batch, depthi and depth∗
+i denote the estimated and ground-
+truth object depth) is directly added to the object detection
+loss function.
+Abdulwahab et al. [109] introduce a framework for pre-
+dicting the depth and 3D pose of the main objects shown
+in the input image. The proposed framework stacks a GAN
+block and a regression CNN block in series connection.
+The GAN block is trained with a loss function for feature
+matching which enables the network to generate a dense
+depth map from an input image, while the regression block
+incorporates the generated depth map to predict the 3D pose.
+The supervised multi-task learning methods estimate depth
+maps with other tasks such as semantic estimation and surface
+normal estimation can improve the accuracy of the depth map.
+However, it is difﬁcult to collect datasets with depth labels and
+other labels.
+4) Real-Time Supervised Monocular Depth Estimation:
+The aforementioned algorithms are based on complex DNNs
+which are challenging for real-time requirements. In order to
+enable MDE network to run at real-time speed on embedded
+platforms, Spek et al. [70] build a lightweight depth estimation
+network on top of the “non-bottleneck-1D” block [112]. The
+designed network runs about 30fps on the Nvidia-TX2 GPU,
+but its accuracy is inferior.
+Later, Wofk et al. [27] develop a lightweight encoder-
+decoder network for monocular depth estimation. In addition,
+a network pruning algorithm is applied to further reduce
+the amount of parameters. Experimental results on the NYU
+dataset show that the obtained depth estimation network
+runs at 178 fps on an Nvidia-TX2 GPU, while the RMSE
+and δ1 values are 0.604 and 0.771 respectively. Inspired
+by the densely-connected encoder-decoder architecture [86],
+Wang et al. [113] design a highly compact network named
+DepthNet Nano. DepthNet Nano applies densely connected
+projection batchnorm expansion projection (PBEP) modules
+to reduce network architecture and computation complexity
+while maintaining the representative ability.
+Supervised learning methods require vast amounts of depth
+images as ground-truth for training, allowing these methods
+to achieve high accuracy for MDE. However, collecting this
+ground-truth data from the real world requires depth sensing
+devices such as LIDAR or RGB-D cameras, which increases
+the expense. In addition, these sensors require accurate extrin-
+sic and intrinsic calibration, any error in calibration results in
+an inaccurate ground-truth. Therefore, unsupervised learning-
+based methods [64]–[66] which do not require ground-truth
+are attracting attention.
+B. Depth Estimation with Unsupervised Learning
+Unsupervised learning methods take as input stereo images
+or video sequences with small changes in camera positions
+between frames as two continuous frames can be treated
+as stereo images. These methods formulate depth estima-
+tion as an image reconstruction problem, where depth maps
+are an intermediate product that integrates into the image
+reconstruction loss. The pipeline of unsupervised learning-
+based methods (see Fig. 7(b)) can be described as follows:
+the network incorporates two images (name it IL and IR)
+of the same scene but with slightly different perspectives.
+Subsequently, the depth map is estimated for IL, and the
+obtained depth map is represented by DL. With DL and the
+
+10
+camera motion between images, IR can be warped to an image
+which is similar to IL through Equation 8.
+IR(DL) →˜IL
+(8)
+where ˜IL is the warped image. The network can be trained
+with the reconstruction loss formulated in Equation 9.
+loss = L(˜IL, IL)
+(9)
+1) General Unsupervised Methods: According to our liter-
+ature review, Garg et al. [64] developed the ﬁrst unsupervised
+learning method for MDE. In this work, image pairs with
+known camera motion are fed to the network to learn the
+non-linear transformation between the source image and depth
+map. The color constancy error between the input image and
+the inverse-warped target image is used as the loss to optimize
+the update of network weights. In addition to camera motion,
+the correspondence between the left and right images are
+also cues for unsupervised MDE. Godard et al. [65] train
+an encoder-decoder network in an unsupervised manner by
+designing a left-right consistency loss. With the calibrated
+stereo image pairs and epipolar geometry constraints, the
+designed method does not need depth data as a supervisory
+signal. Both [64] and [65] require calibrated stereo pairs
+for training. Thus, datasets without stereo images [36], [37]
+cannot be applied to train these methods.
+Mahjourian et al. [114] alleviate the dependence on stereo
+images by exploiting the consistency between depth and ego-
+motion from continuous frames as supervisory signal for
+training. Tosi et al. [115] propose an unsupervised framework
+that infers depth from a single input image by synthesizing
+features from a different point of view. The designed net-
+work includes three parts: multi-scale feature extractor, initial
+disparity estimator and disparity reﬁnement module. Given
+an input image, high-level features at different scales are
+extracted by the multi-scale feature extractor. The extracted
+features are passed to the initial disparity estimator to predict
+multi-scale disparity maps that aligned with the input and
+synthesized right view image. The reﬁnement module reﬁnes
+the initial disparity by performing stereo matching between
+the real and synthesized feature representations.
+Ma et al. [116] extend [76] to an unsupervised approach.
+The input sparse depth maps and the RGB images are pre-
+processed by initial convolutions separately. The output fea-
+tures are concatenated into a single tensor, which are passed
+to the encoder-decoder framework. The network is trained
+in an unsupervised scheme. Besides, the authors use the
+Perspective-n-Pose method to estimate pose, which assumes
+that the input sparse depth is noiseless and susceptible to
+failure in low image texture situations. Based on [116], Zhang
+et al. [117] design a framework that jointly learns depth
+and pose from monocular images. The temporal constraint
+is applied to measure the reprojection error and provides a
+training signal to depth and pose CNNs simultaneously. The
+reprojection error signal works on the noisy sparse depth
+input, while the ground-truth depth provides scale information
+and supervises the training of depth estimation.
+Fei et al. [118] design an unsupervised network that uses
+the global orientation and the semantics of the scene as
+the supervisory signal. Unlike previous work that computes
+the surface normals from the depth values ﬁrst and then
+impose regularity, they directly regularize the depth values
+via the scale-invariant constraint. Guizilini et al. [119] utilize
+semantic information to guide the geometric representation
+learning of MDE. The designed architecture is built within an
+unsupervised scheme [120]. It consists of two networks, one
+responsible for depth estimation whilst the other performs se-
+mantic segmentation. During training, only the depth estima-
+tion network is optimized, while the weights of the semantic
+segmentation network are ﬁxed to guide the depth estimation
+network to learn features via pixel-adaptive convolutions.
+Recently, Johnston and Carneiro [121] introduce a discrete
+disparity volume to regularize the training of an unsupervised
+network. The designed method enables the network to predict
+sharper depth map and pixel-wise depth uncertainties.
+2) Multi-task Learning Based Methods: Zhou et al. [66]
+present a method that jointly learning depth maps and camera
+motion from monocular videos. The proposed framework
+stacks a depth network [122] and a pose network. The
+produced depth maps and relative camera pose are applied to
+inverse warp the source views to reconstruct the target view.
+By using view synthesis as the supervisory signal, the entire
+framework can be trained in an unsupervised manner. Due
+to the dependence on two frame visual odometry estimation
+method, this network suffers from the per frame scale ambi-
+guity problem.
+Inspired by [66], Prasad and Bhowmich [123] use epipolar
+constrains to optimize the joint learning of depth and ego-
+motion. The main idea behind the training is similar to [122].
+Instead of using epipolar constrains as labels for training, the
+authors apply it to weight the pixels to guide the training.
+Klodt and Vedaldi [124] modify [66] in the following aspects.
+Firstly, a structural similar loss is imported to strengthen
+the brightness constancy loss. Besides, an explicit model of
+conﬁdence is incorporated to the network by predicting each
+pixel a distribution over possible brightnesses. Finally, a SfM
+algorithm [125] is applied to the network to provide supervi-
+sory signal for the training of depth estimation network.
+Vijayanarasimhan
+et
+al.
+[126]
+design
+“SfM-Net,”
+a
+geometry-aware network capable of estimating depth, camera
+motion and dynamic object segmentation. The designed net-
+work includes two sub-networks, the structure network learns
+to estimate depth while the motion network predicts camera
+and object motion. The outputs from both sub-networks are
+then transformed into optical ﬂow by projecting the point
+cloud from depth estimation to the image space. Thus, the
+network can be trained in an unsupervised manner through
+minimizing the photometric error. Dai et al. [127] propose
+a self-supervised learning framework for jointly estimating
+individual object motion and depth from monocular video.
+Instead of modeling the motion by 2D optical ﬂow or 3D
+scene ﬂow, the object motion is modeled and predicted in the
+form of full 6 degrees of freedom (6 DoF).
+Joint learning of depth estimation and pose estimation is
+usually done under the assumption that a consistent scale
+of CNN-based MDE and relative pose estimation can be
+learned across all input samples. This hypothesis degrades the
+performance in environments where the changes of relative
+pose across sequences are signiﬁcantly remarkable. In order
+to tackle the problem of scale inconsistency, Bian et al. [128]
+design a geometry consistency loss as shown in Equation 10.
+
+11
+With the proposed loss function, the depth and ego-motion
+networks are trained in monocular videos to predict scale-
+consistent results. Given any two continuous images (Ia, Ib)
+from an unlabeled video, they ﬁrst use a depth network to
+compute the corresponding depth maps (Da, Db), and then
+compute the relative 6 DoF pose Pab between them using a
+pose network. With the obtained depth and relative camera
+pose, the warped Da
+b is computed by transforming Da to 3D
+space and projecting it to Ib using Pab. The inconsistency
+between Da
+b and D
+′
+b are used as geometric consistency loss
+LGC to supervise the training of the network. LGC is deﬁned
+as in Equation 10.
+LGC =
+1
+|V |
+X
+p∈V
+Ddiff(p)
+(10)
+where V represents valid points that are successfully projected
+from Ia to the image plane of Ib, |V | means the number of
+points in V , and Ddiff stands for the depth inconsistency
+map. For each point p in V , Ddiff is deﬁned in Equation 11.
+Ddiff(p) = |Da
+b (p) −D
+′
+b(p)|
+Da
+b (p) + D
+′
+b(p)
+(11)
+In order to mitigate the inﬂuence of moving objects and
+occlusions on network training, Bian et al. design a self-
+discovered mask M (M = 1−Ddiff) which assigns low/high
+weights for inconsistent/consistent pixels.
+Zhao et al. [129] disentangle scale from the joint learning of
+depth and relative pose. Unlike [66] and [123] utilize PoseNet
+[130] to generate relative pose, the work in [129] directly
+predicts relative pose by solving the fundamental matrix from
+dense optical ﬂow correspondence and apply a differentiable
+two-view triangulation module to recover an up-to-scale 3D
+structure. The depth error is measured after a scale adaptation
+from the estimated depth to the triangulated structure and
+the reprojection error between depth and ﬂow is computed
+to further enforce the end-to-end joint training.
+Zou et al. [131] present an unsupervised framework to
+jointly learn depth and optical ﬂow from monocular video
+sequences. In addition to the regular photometric and spatial
+smoothness loss, a cross-task consistency loss is designed to
+provide additional supervisory signals for both tasks. Yin and
+Shi [132] jointly learn depth, optical ﬂow and camera pose in
+a uniﬁed network. They use a rigid structure reasoning module
+to infer scene architecture, and a non-rigid motion reﬁnement
+module to cope with the effect of dynamic objects. These
+two modules work in different stages, and the view synthetics
+are used as a basic supervision for the unsupervised learning
+paradigm. Furthermore, an adaptive geometric consistency
+loss is designed to tackle the occlusions and texture ambi-
+guities that is not included in pure view synthesis objectives.
+Ranjan et al. [133] learn depth along with camera motion
+estimation, optic ﬂow estimation and motion segmentation.
+In order to achieve the goal of joint learning, they design a
+Competitive Collaboration (CC) learning method. It consists
+of two modules, the static scene reconstructor infers the static
+scene pixels using depth and camera motion, and the moving
+region reconstructor reasons about pixels in the independently
+moving regions. The two modules compete for a resource
+whilst being regulated by a moderator, the motion segmen-
+tation network. The CC method coordinates the training of
+multiple tasks and achieves performance gains in both tasks.
+3) Adversarial Learning Based Methods: In addition to
+learning depth from view-synthesis or minimizing photo-
+metric reconstruction error, unsupervised MDE [68], [81],
+[134]–[136] has also been solved by Generative Adversarial
+Networks (GANs). GANs consist of a generator network and
+a discriminator network (Fig. 6(d)). The two networks are
+trained by the backpropagation algorithm, thus they can work
+together to construct unsupervised learning models. Since
+there is no ground-truth depth in unsupervised learning, the
+discriminator distinguishes between the synthesized and the
+real images.
+Aleotti et al. [68] present the ﬁrst generative adversarial
+network for unsupervised MDE. The generator network is
+trained to infer a depth map from the input image to generate
+a warped synthesized image. The discriminator network is
+trained to distinguish the warped image and the input real
+image. Since the quality of the estimated depth maps has
+an effect on the warped synthesized images, the generator
+is forced to generate more accurate depth maps. Mehta et
+al. [81] introduce a structural adversarial training method
+which predicts dense depth maps using stereo-view synthesis.
+Given a monocular image, the generator network outputs
+a dense disparity maps. With the produced disparity map,
+multi-view stereo pairs corresponding to the input image view
+are generated. The discriminator network distinguishes these
+reconstructed views from the real views in the training data.
+Wang et al. [135] integrate adversarial learning with spatial-
+temporal geometric constraints for the joint learning of depth
+and ego-motion. The generator combines depth-pose net with
+direct visual odometry DVO to produce a synthesized image.
+The combination of posenet and DVO generates a ﬁne-grained
+pose estimation and provides an effective back-propagation
+gradient to the depth network. Meanwhile, the discriminator
+takes the synthesized and original images to distinguish the
+reconstructed and real images. Almalioglu et al. [136] design
+an adversarial and recurrent unsupervised learning framework.
+The designed network consists of a depth generator and a
+pose regressor. With the produced depth map, 6 DoF camera
+pose and color values from the source images, the view recon-
+struction module synthesizes a target image. The discriminator
+network distinguishes the synthesized target image from the
+real target image.
+4) Real-Time Unsupervised Monocular Depth Estimation:
+Although these works achieve promising performance, how-
+ever, they all have fairly deep and complex architectures.
+Therefore, real-time speed can only be achieved on high-
+performance GPUs, which inhibits their application in au-
+tonomous driving or robotics. In order to tackle the problem
+of running speed, Poggi et al. [69] stack a simple encoder
+and multiple small decoders working in a pyramidal structure.
+The designed network only has 1.9M parameters and requires
+0.12s to produce a depth map on a i7-6700K CPU, which
+is close to a real-time speed. Liu et al. [137] introduce a
+lightweight model (named MiniNet) trained on monocular
+video sequences for unsupervised depth estimation. The core
+part of MiniNet is DepthNet, which iteratively utilizes the
+recurrent module-based encoder to extract multi-scale feature
+maps. The obtained feature maps are passed to the decoder to
+
+12
+generate multi-scale disparity maps. MiniNet achieves real-
+time speed about 54fps with 640 × 192 sized images on a
+single Nvidia 1080Ti GPU.
+Unsupervised learning methods formulate MDE as an im-
+age reconstruction problem and use geometric constraints
+as supervisory signal. This category of methods take stereo
+images or monocular image sequences as input to learn
+geometry constraints between the left and right images or
+continuous frames. Unsupervised learning methods do not
+require ground-truth in the training process, which avoids
+the expense of collecting depth maps. However, due to the
+absence of ground-truth the accuracy rate is inferior to super-
+vised learning methods (see Table IV).
+C. Depth Estimation with Semi-supervised Learning
+Unsupervised learning methods eliminate the dependence
+on ground-truth, which is time-consuming and expensive to
+obtain. However, their accuracy is limited by stereo con-
+struction. With this motivation, semi-supervised methods [57],
+[67], [153], [154], [160], [162], [163] use a small amount of
+labeled data and a large amount of unlabeled data to improve
+the accuracy of depth estimation.
+The general semi-supervised monocular depth estimation
+(MDE) network works as follows (see Fig. 7(c)). First, the
+model is trained with a small amount of labeled training data
+until it achieves good performance. Then the trained network
+is used with unlabeled training data to produce outputs known
+as pseudo labels which may not be quite accurate. The labels
+and input images from the labeled training data are linked with
+the generated pseudo labels and input images in the unlabeled
+training data. Finally, the model is trained in the same way
+as the ﬁrst step.
+1) General Semi-supervised Methods: Kuznietsov et al.
+[67] design the ﬁrst semi-supervised learning MDE network
+by combining supervised and unsupervised loss terms to-
+gether. The network is trained with the image-sparse depth
+pairs and unlabeled stereo images. The unsupervised learning-
+based on direct image alignment between the stereo images
+is utilized to complement supervised training. Experiments
+prove that the semi-supervised results outperform the super-
+vised and unsupervised results (see Table IV for numerical
+indicators). Amiri et al. [154] extend [65] to a semi-supervised
+network by adding sparse ground-truth data as additional
+labels for supervised learning. In the training stage, LiDAR
+data is used as the supervisory signal, and rectiﬁed stereo
+images are used for unsupervised training.
+Ji et al. [163] introduce a semi-supervised adversarial learn-
+ing network that is trained on a small number of image-depth
+pairs and a large number of unlabeled monocular images. The
+proposed framework consists of a generator network for depth
+estimation and two discriminator networks to measure the
+quality of the estimated depth map. During training, unlabeled
+images are passed to the generator to output depth maps. The
+two discriminator networks provide feedback to the generator
+as a uniﬁed loss to enable the generator output depth map that
+accords with the natural depth value distribution. Meanwhile,
+Guizilini et al. [160] propose a novel supervised loss which
+optimizes the re-projected depth in the image space. The
+designed loss term operates under the same conditions as
+the photometric loss, by re-projecting depth errors back onto
+the image space. Hence, the depth labels are incorporated
+into an appearance-based unsupervised learning method and
+generates a semi-supervised approach.
+2) Semi-supervised Methods with Other Tasks: Ramirez
+et al. [153] propose a semi-supervised network for joint
+learning of semantic segmentation and depth estimation. The
+network has a shared encoder, a depth decoder and a semantic
+decoder. The depth estimation task is trained with unsuper-
+vised image re-projection loss, while semantic segmentation
+is trained in the supervised manner. During training time,
+the semantic segmentation branch provides feedback to the
+encoder which enables a shared feature representation of both
+tasks. In addition, a cross-domain discontinuity is proposed
+to improve the performance of depth estimation. Yue et al.
+[164] present a semi-supervised depth estimation framework
+which consists of a symmetric depth estimation network and
+a pose estimation network. The RGB image and its semantic
+map are passed to each sub-network of the depth network
+to produce an initial depth map and a semantic weight map
+separately. The two are integrated to generate the ﬁnal depth
+map. The pose estimation network outputs a 6 DoF pose for
+view synthesis. The depth estimation network is trained by
+minimizing the difference between the synthesized view and
+target view.
+Tian and Li [162] introduce a conﬁdence learning-based
+semi-supervised algorithm by stacking a depth network and
+a conﬁdence network. The depth network can be any MDE
+network, e.g., [20], [22], which takes an RGB image as input
+and produces a depth map, while the conﬁdence network
+incorporates an RGB image image and the produced depth
+map to generate a spatial conﬁdence map. The produced
+conﬁdence map is then utilized as the supervisory signal
+to guide the training of depth network on unlabeled data.
+Inspired by the student-teacher strategy, Cho et al. [57] design
+a semi-supervised learning framework that stacks a stereo
+matching network and an MDE network. The deep stereo
+matching network [165] which trained with ground-truth is
+used as teacher to produce depth maps from the stereo image
+pairs. Then stereo conﬁdence maps are predicted to cope
+with the estimation error from the deep stereo network. The
+generated depth maps and stereo conﬁdence maps are used as
+“pseudo ground-truth” to supervise the training of a shallow
+MDE network. With this method, the MDE network performs
+as accurately as the deeper teacher network, and yields better
+performance than directly learning with ground-truth data.
+Semi-supervised learning methods learn depth from a small
+amount of labeled data and a large amount of unlabeled data.
+The labeled data can be some auxiliary information, e.g.,
+sparse depth or semantic maps, which enables the estimated
+depth maps more accuracy than unsupervised learning meth-
+ods. Semi-supervised learning methods alleviate the depen-
+dence on ground-truth to some extent, however, it still requires
+a large amount of unlabeled data in training.
+D. Monocular Depth Estimation with Domain Adaptation
+The ﬁrst three subsections review DNN-based monocular
+depth estimation (MDE) methods trained on data collected in
+real world. Recent advances in computer graphics and modern
+high-level generic graphic platforms such as game engines
+make it possible to generate a large set of synthetic 3D scenes.
+
+13
+TABLE III: A summary of deep learning-based monocular depth estimation algorithms with open-source implementations.
+“S”: supervised, “U”: unsupervised, “Semi”: semi-supervised and “D” : domain adaptation.
+Year
+Algorithm
+Type
+Implementation
+Source code
+2014
+Eigen et al. [20]
+S
+Python
+https://cs.nyu.edu/ deigen/depth/
+2015
+Eigen et al. [21]
+S
+Python
+https://cs.nyu.edu/ deigen/dnl/
+2016
+Laina et al. [22]
+S
+TensorFlow, MatConvNet
+https://github.com/iro-cp/FCRN-DepthPrediction
+2017
+Xu et al. [24]
+S
+Caffe
+https://github.com/danxuhk/ContinuousCRF-CNN.git
+2018
+Alhashim and Wonka [86]
+S
+PyTorch, TensorFlow
+https://github.com/ialhashim/DenseDepth
+2018
+Fu et al. [89]
+S
+Caffe
+https://github.com/hufu6371/DORN
+2018
+Guo et al. [138]
+S
+PyTorch
+https://github.com/xy-guo/Learning-Monocular-Depth-by-Stereo
+2018
+Li and Snavely [52]
+S
+PyTorch
+https://github.com/zhengqili/MegaDepth
+2018
+Ma and Karaman [76]
+S
+PyTorch
+https://github.com/fangchangma/sparse-to-dense.pytorch
+2018
+Zioulis et al. [55]
+S
+PyTorch
+https://github.com/VCL3D/SphericalViewSynthesis
+2019
+Bian et al. [128]
+S
+PyTorch
+https://github.com/JiawangBian/SC-SfMLearner-Release
+2019
+Chen et al. [78]
+S
+PyTorch
+https://github.com/Xt-Chen/SARPN
+2019
+Hu et al. [26]
+S
+PyTorch
+https://github.com/JunjH/Revisiting-Single-Depth-Estimation
+2019
+Lee et al. [87]
+S
+PyTorch, TensorFlow
+https://github.com/cogaplex-bts/bts
+2019
+Liebel and Ko¨rner [99]
+S
+Pytorch
+https://github.com/lukasliebel/MultiDepth
+2019
+Nekrasov et al. [107]
+S
+PyTorch
+https://github.com/DrSleep/multi-task-reﬁnenet
+2019
+Qiu et al. [139]
+S
+PyTorch
+https://github.com/JiaxiongQ/DeepLiDAR
+2019
+Wofk et al. [27]
+S
+PyTorch
+https://github.com/dwofk/fast-depth
+2019
+Yin et al. [88]
+S
+Pytorch
+https://tinyurl.com/virtualnormal
+2020
+Fang et al. [140]
+S
+PyTorch
+https://github.com/zenithfang/supervised-dispnet
+2020
+Sartipi et al. [141]
+S
+PyTorch
+https://github.com/MARSLab-UMN/vi-depth-completion
+2020
+Xian et al. [142]
+S
+PyTorch
+https://github.com/KexianHust/Structure-Guided-Ranking-Loss
+2021
+Bhat et al. [71]
+S
+Pytorch
+https://github.com/shariqfarooq123/AdaBins
+2016
+Garg et al. [64]
+U
+Caffe
+https://github.com/Ravi-Garg/Unsupervised-Depth-Estimation
+2017
+Godard et al. [65]
+U
+TensorFlow
+https://github.com/mrharicot/monodepth
+2017
+Zhou et al. [66]
+U
+TensorFlow
+https://github.com/tinghuiz/SfMLearner
+2018
+Pilzer et al. [134]
+U
+TensorFlow
+https://github.com/andrea-pilzer/unsup-stereo-depthGAN
+2018
+Poggi et al. [69]
+U
+TensorFlow
+https://github.com/mattpoggi/pydnet
+2018
+Qi et al. [106]
+U
+TensorFlow
+https://github.com/xjqi/GeoNet
+2018
+Zhan et al. [143]
+U
+Caffe2
+https://github.com/Huangying-Zhan/Depth-VO-Feat
+2019
+Casser et al. [144]
+U
+TensorFlow
+https://github.com/tensorﬂow/models/tree/archive/research/struct2depth
+2019
+Elkerdawy et al. [145]
+U
+TensorFlow
+https://github.com/selkerdawy/joint-pruning-monodepth
+2019
+Fei et al. [118]
+U
+TensorFlow
+https://github.com/feixh/GeoSup
+2019
+Godard et al. [146]
+U
+PyTorch
+https://github.com/nianticlabs/monodepth2
+2019
+Ranjan [133]
+U
+PyTorch
+https://github.com/anuragranj/cc
+2019
+Tosi et al. [115]
+U
+TensorFlow
+https://github.com/fabiotosi92/monoResMatch-Tensorﬂow
+2019
+Watson et al. [147]
+U
+PyTorch
+https://github.com/nianticlabs/depth-hints
+2019
+Zioulis et al. [148]
+U
+PyTorch
+https://github.com/VCL3D/SphericalViewSynthesis
+2020
+Guizilini [120]
+U
+PyTorch
+https://github.com/TRI-ML/packnet-sfm
+2020
+Klingner [149]
+U
+PyTorch
+https://github.com/ifnspaml/SGDepth
+2020
+Peng et al. [150]
+U
+TensorFlow
+https://github.com/kspeng/lw-eg-monodepth
+2020
+Shu et al. [151]
+U
+PyTorch
+https://github.com/sconlyshootery/FeatDepth
+2020
+Xue et al. [152]
+U
+PyTorch
+https://github.com/TJ-IPLab/DNet
+2017
+Kuznietsov [67]
+Semi
+TensorFlow
+https://github.com/Yevkuzn/semodepth
+2018
+Ramirez [153]
+Semi
+TensorFlow
+https://github.com/CVLAB-Unibo/Semantic-Mono-Depth
+2019
+Amiri [154]
+Semi
+TensorFlow
+https://github.com/jahaniam/semiDepth
+2018
+Atapour et al. [155]
+D
+Pytorch
+https://github.com/atapour/monocularDepth-Inference
+2018
+Guo et al. [138]
+D
+Pytorch
+https://github.com/xy-guo/Learning-Monocular-Depth-by-Stereo
+2018
+Zheng et al. [156]
+D
+Pytorch
+https://github.com/lyndonzheng/Synthetic2Realistic
+2019
+Zhao et al. [157]
+D
+Pytorch
+https://github.com/sshan-zhao/GASDA
+With the constructed scenes, researchers can capture a large
+amount of synthetic images and their corresponding depth
+maps to train the MDE model. While training MDE models
+on synthetic data mitigates the cost of collecting real datasets
+consist of a large set of image-depth pairs, the produced
+models normally do not generalize well to the real scenes
+
+14
+TABLE IV: Comparison of many monocular depth estimation methods on the KITTI dataset [38] using the data split in [20].
+Depth range from 0m to 80m. “T”: traditional, “S”: supervised, “U”: unsupervised, “Semi”: semi-supervised, “D”: domain
+adaptation, “GPU”: running-time (ms) tested on for a single forward pass and “-”: not available. The best result of supervised
+learning-based method is shown in red and bold values, the best result of unsupervised learning-based method is shown in
+blue and bold values, the best result of semi-supervised learning-based method is shown in green and bold values, and the
+best result of domain adaptation method is shown in cyan and bold values.
+Year
+Algorithm
+Type
+Abs Rel
+Sq Rel
+RMSE
+RMSE log
+δ1
+δ2
+δ3
+GPU
+Device
+2008
+Saxena et al. [36]
+T
+0.412
+5.712
+9.635
+0.444
+0.556
+0.752
+0.870
+-
+-
+2014
+Eigen et al. [20]
+S
+0.190
+1.515
+7.156
+0.270
+0.692
+0.899
+0.967
+13
+NVidia Titan Black
+2017
+Cao et al. [23]
+S
+0.115
+-
+4.712
+0.198
+0.887
+0.963
+0.982
+-
+-
+2017
+Kuznietsov et al. [67]
+S
+0.122
+0.763
+4.815
+0.194
+0.845
+0.957
+0.987
+48
+Nvidia GTX 980Ti
+2018
+Alhashim and Wonka [86]
+S
+0.093
+0.589
+4.170
+0.171
+0.886
+0.965
+0.986
+333.3
+Jetson AGX Xavier
+2018
+Fu et al. [89]
+S
+0.072
+0.307
+2.727
+0.120
+0.932
+0.984
+0.994
+500
+-
+2018
+Guo et al. [138]
+S
+0.105
+0.717
+4.422
+0.183
+0.874
+0.959
+0.983
+-
+-
+2018
+Gurram et al. [104]
+S
+0.100
+0.601
+4.298
+0.174
+0.874
+0.966
+0.989
+-
+-
+2018
+Kumar et al. [93]
+S
+0.137
+1.019
+5.187
+0.218
+0.809
+0.928
+0.971
+-
+-
+2018
+Li et al. [25]
+S
+0.104
+0.697
+4.513
+0.164
+0.868
+0.967
+0.990
+-
+-
+2019
+Lee et al. [87]
+S
+0.059
+0.241
+2.756
+0.096
+0.956
+0.993
+0.998
+-
+-
+2019
+Wang et al. [95]
+S
+0.088
+0.245
+1.949
+0.127
+0.915
+0.984
+0.996
+-
+-
+2019
+Yin et al. [88]
+S
+0.072
+-
+3.258
+0.117
+0.938
+0.990
+0.998
+-
+-
+2020
+Patil et al. [158]
+S
+0.102
+0.655
+4.148
+0.172
+0.884
+0.966
+0.987
+10
+-
+2020
+Wang et al. [113]
+S
+0.103
+0.511
+3.916
+-
+0.894
+0.978
+0.994
+71.84
+Jetson AGX Xavier
+2021
+Bhat et al. [71]
+S
+0.058
+0.190
+2.360
+0.088
+0.964
+0.995
+0.999
+-
+-
+2017
+Godard et al. [65]
+U
+0.148
+1.344
+5.927
+0.247
+0.862
+0.960
+0.964
+35
+Nvidia Titan-X
+2017
+Kuznietsov et al. [67]
+U
+0.308
+9.367
+8.700
+0.367
+0.752
+0.904
+0.952
+48
+Nvidia GTX 980Ti
+2017
+Zhou et al. [66]
+U
+0.208
+1.768
+6.865
+0.283
+0.678
+0.885
+0.957
+30
+Nvidia Titan-X
+2018
+Aleotti et al. [68]
+U
+0.118
+0.908
+4.978
+0.150
+0.855
+0.948
+0.976
+-
+-
+2018
+Mahjourian et al. [114]
+U
+0.163
+1.240
+6.220
+0.250
+0.762
+0.916
+0.968
+10.5
+Nvidia GTX 1080
+2018
+Pilzer et al. [134]
+U
+0.152
+1.388
+6.016
+0.247
+0.789
+0.918
+0.965
+140
+Nvidia k80
+2018
+Poggi et al. [69]
+U
+0.153
+1.363
+6.030
+0.252
+0.789
+0.918
+0.963
+20
+Nvidia TiTan-X
+2018
+Qi et al. [106]
+U
+0.155
+1.296
+5.857
+0.233
+0.793
+0.931
+0.973
+870
+Nvidia TiTan-X
+2018
+Zou et al. [131]
+U
+0.150
+1.124
+5.507
+0.223
+0.806
+0.933
+0.973
+-
+-
+2019
+Almalioglu et al. [136]
+U
+0.150
+1.141
+5.448
+0.216
+0.808
+0.939
+0.975
+-
+-
+2019
+Bian et al. [128]
+U
+0.137
+1.089
+5.439
+0.217
+0.830
+0.942
+0.975
+-
+-
+2019
+Godard et al. [146]
+U
+0.115
+0.882
+4.701
+0.190
+0.879
+0.961
+0.982
+-
+-
+2019
+Ranjan et al. [133]
+U
+0.140
+1.070
+5.326
+0.217
+0.826
+0.941
+0.975
+-
+-
+2019
+Tosi et al. [115]
+U
+0.111
+0.867
+4.714
+0.199
+0.864
+0.954
+0.979
+160
+Nvidia TiTan-Xp
+2020
+Guizilini et al. [119]
+U
+0.102
+0.698
+4.381
+0.178
+0.896
+0.964
+0.984
+-
+-
+2020
+Liu et al. [137]
+U
+0.141
+1.080
+5.264
+0.216
+0.825
+0.941
+0.976
+18.57
+Nvidia GTX 1080Ti
+2020
+Zhao et al. [129]
+U
+0.113
+0.704
+4.581
+0.184
+0.871
+0.961
+0.984
+-
+-
+2017
+Cho et al. [57]
+Semi
+0.099
+0.748
+4.599
+0.183
+0.880
+0.959
+0.983
+-
+-
+2017
+Kuznietsov et al. [67]
+Semi
+0.113
+0.741
+4.621
+0.189
+0.862
+0.960
+0.986
+48
+Nvidia GTX 980Ti
+2019
+Amiri et al. [154]
+Semi
+0.096
+0.552
+3.995
+0.152
+0.892
+0.972
+0.992
+-
+-
+2019
+Dos et al. [159]
+Semi
+0.123
+0.641
+4.524
+0.199
+0.881
+0.966
+0.986
+-
+-
+2020
+Guizilini et al. [160]
+Semi
+0.072
+0.340
+3.265
+0.116
+0.934
+-
+-
+-
+-
+2020
+Zhao et al. [161]
+Semi
+0.143
+0.927
+4.679
+0.246
+0.798
+0.922
+0.968
+-
+-
+2018
+Atapouret al. [155]
+D
+0.110
+0.929
+4.726
+0.194
+0.923
+0.967
+0.984
+22.7
+Nvidia GTX 1080Ti
+2018
+Guo et al. [138]
+D
+0.096
+0.641
+4.095
+0.168
+0.892
+0.967
+0.986
+-
+-
+2019
+Zhao et al. [157]
+D
+0.149
+1.003
+4.995
+0.227
+0.824
+0.941
+0.973
+-
+-
+The results of Saxena et al. [36] are reproduce from Eigen et al. [20]; the running-time of Fu et al. [89] is reported in Patil et al. [158]; the running-time of
+Alhashim et al. [86] is reported in Wang et al. [113].
+because of the inherent domain gap1. In order to tackle this
+problem, domain adaptation-based methods ﬁrst train MDE
+1Due to the distinctions in the intrinsic nature of different domains, the
+model trained on data from one domain is often incapable of performing well
+on data from another domain.
+networks on synthetic data to mitigate the effect of domain
+gap, making the synthetic data representative of real data (see
+Fig.7(d)) have been proposed.
+1) Domain Adaptation via Fine-tuning: Approaches re-
+viewed in this subsection ﬁrst train a network on images
+
+15
+from a certain domain such as synthetic data, and then ﬁne-
+tune it on images from the target domain. According to our
+investigation, DispNet [122] is the ﬁrst work that apply ﬁne-
+tuning to overcome domain gap for depth estimation. DispNet
+is ﬁrst trained on a large synthetic dataset, and then ﬁne-
+tuned on a smaller dataset with ground-truth. Guo et al.
+[138] ﬁrst apply synthetic data to train a stereo matching
+network. Subsequently, the stereo matching network is ﬁne-
+tuned on real data. Finally, the produced disparity maps from
+the stereo network are used as ground-truth to train the
+MDE network. Experimental results demonstrate that [138]
+outperforms Eigen et al. Fine [20], [65], [66], and Kuznietsov
+et al. supervised [67].
+The ﬁne-tuning based methods normally require a certain
+amount of ground-truth depth from the target domain. How-
+ever, suitable ground-truth depth is only available for a few
+benchmark datasets, e.g., KITTI. Furthermore, in practical
+settings collecting RGB images with corresponding ground-
+truth depth maps requires expensive sensors (e.g., LIDAR)
+and accurate calibration. Since this procedure is complicated
+and costly, collecting enough real data to pursue ﬁne-tuning
+in the target domain is seldom feasible [166].
+2) Domain Adaptation via Data Transformation: Methods
+reviewed in this part transform data in one domain to look
+similar in style to the data from another domain. Atapour-
+Abarghouei et al. [155] introduce a GAN-based style transfer
+approach to adapt the real data to ﬁt into the distribution
+approximated by the generator in the depth estimation model.
+In order to infer depth maps, a stereo matching network is
+applied to compute disparity from pixel-wise matching. Com-
+pared with methods which directly learn from synthetic data,
+[155] generalizes better from synthetic domain to real domain.
+Zheng et al. [156] develop an end-to-end trainable framework
+that consists of an image translation network (GS→R, where S
+means synthetic and R means real) and a task MDE network
+(fT ). The translation network takes as input the synthetic and
+real training images. For the real images, GS→R behaves as an
+autoencoder and uses a reconstruction loss to apply minimal
+change to the images. For the synthetic data, GS→R uses a
+GAN loss to translates synthetic images into the real domain.
+The translated images are fed to fT to estimate depth maps
+which are compared to the synthetic ground-truth depth maps.
+However, [155], [156] does not consider the geometric
+structure of the natural images from the target domain. Zhao
+et al. [157] exploit the epipolar geometry between the stereo
+images and design a geometry-aware symmetric domain adap-
+tation network (GASDA) for MDE. The designed framework
+consists of a style transfer network and a depth estimation
+network. Since the style transfer network considers both
+real-to-synthetic and synthetic-to-real translations, two depth
+estimators can be trained on the original synthetic data and the
+generated realistic data in supervised manners respectively.
+The data transformation-based methods achieve domain
+invariance in terms of visual appearance by mitigating the
+cross-domain discrepancy in image layout and structure. It
+suffers a drop in accuracy when dealing with environments
+that are different in appearance and/or context from the source
+domain [166]. Moreover, sudden change of the illumination
+or the saturation in images may inﬂuence the quality of the
+transformed images, which will impair the performance of
+depth estimation [167].
+Domain adaptation enables MDE networks trained on the
+synthetic data are adapted to real data, which reduces the cost
+of acquiring ground-truth depth in real-world environments.
+It is a promising technique for addressing the unavailability
+of large amounts of labeled real data.
+VI. OTHER RELATED METHODS
+In this section, we review methods for constructing a dense
+depth map on top of a sparse depth map from LIDAR or
+SLAM. These methods take as input the sparse depth maps
+and the aligned RGB images to ﬁll-in missing data in the
+sparse depth maps. The reviewed methods are referred to in
+the literature as “depth completion.”
+A. Sparse depth map from LIDAR
+To the best of our knowledge, Liao et al. [168] is the ﬁrst to
+perform depth completion. Given a partially observed depth
+map, the ﬁrst step is to generate a dense reference depth
+map via projecting the 2D planar depth values along the
+gravity direction. The reference depth map is concatenated
+with the corresponding image and passed to the network
+which combines both classiﬁcation and regression losses for
+estimating the continuous depth value. Ma and Karaman [76]
+concatenate a set of sparse depth points from LIDAR with an
+RGB image in the channel dimension to train a depth network.
+Unlike [168], the sparse depth data is randomly sampled from
+the ground-truth depth image in order to complement the RGB
+data.
+Since the depth data and RGB intensities represent different
+information, Jaritz et al. [169] fuse sparse depth data from
+LIDAR and RGB images in a late fusion method. Speciﬁcally,
+the RGB image and sparse depth are processed by two
+encoders separately. The generated feature maps are concate-
+nated along the channel axis and then fed to the decoder
+network to generate a dense depth map. [76], [168], [169] use
+depth data to update model weights in the process of training.
+Wang et al. [170] design a Plug-and-Play (PnP) module to
+improve the accuracy of existing MDE networks by using
+sparse depth data in the process of inference. For the general
+training of the MDE network, the aim is to minimize the
+error between the estimation f(I) and ground-truth D∗, with
+respect to the network f parametrized by θ through Equation
+12.
+θ∗= argminL(f(I; θ), D∗)
+(12)
+where L(·, ·) is the loss function. Both the model parameters
+θ and the input I can affect the estimated depth f(I; θ), but
+only the parameters are updated in the process of training.
+The designed PnP module utilizes the gradient computed
+from the sparse depth map to update the intermediate feature
+representation, which is a function of I.
+Chen et al. [171] design a 2D-3D fusion block for the joint
+learning of 2D and 3D feature representations. The designed
+block consists of a multi-scale 2D convolution branch and
+a 3D continuous convolution branch. These two branches
+extract features from the RGB image and the sparse depth
+data separately, and the generated feature maps are fused
+by element-wise summation. With this design, various sized
+network can be created by stacking 2D-3D fusion block
+
+16
+sequentially. Qiu et al. [139] infer dense depth maps from the
+sparse depth maps and the RGB images while using surface
+normals as the intermediate representation. The designed
+network consists of a color branch and a surface normal
+branch. These two branches take as input the RGB image and
+sparse depth respectively. The color branch directly outputs a
+dense depth map. The surface normal branch ﬁrst produces
+a surface normal image which is fused with the sparse input
+and a conﬁdence mask from the color branch to produce a
+dense depth map. Depth maps from different branches are
+then fused by an attention mechanism to compute the ﬁnal
+depth.
+B. Sparse depth map from SLAM
+Yang et al. [2] utilize sparse depth maps from ORB-SLAM
+to guide the learning of a dense depth map and a conﬁdence
+map. The RGB image and sparse depth map are separately
+processed by a convolutional layer and a max pooling layer.
+The generated feature maps from the RGB image and the
+sparse depth map are then concatenated together and pro-
+cessed by another convolutional layer. The fused feature maps
+are passed to an encoder-decoder network to generate the
+output. Sartipi et al. [141] use RGB images, learned surface
+normals and sparse depth from visual-inertial SLAM (VI-
+SLAM) to infer dense depth maps. Since the depth map from
+VI-SLAM is more sparse, a sparse-depth enrichment step is
+performed to increase its density. The enriched sparse depth
+maps along with the RGB images and surface normals are
+passed to the depth completion network to produce dense
+depth maps.
+Depth completion methods integrate the RGB images and
+sparse depth information to generate dense depth maps. The
+RGB images provide color, texture, contextual and scene
+structure information, while the sparse depth maps provide a
+rough geometric structure of the scene. The two input data are
+complementary, thus, this category of methods demonstrate
+better accuracy rate than MDE methods [76], [168].
+VII. DISCUSSION AND COMPARISON
+In order to evaluate and compare the monocular depth
+estimation (MDE) methods, we summarize the quantitative
+results of 42 representative methods on the KITTI dataset [38].
+The performance comparison of the summarized methods is
+listed in Table IV, including error metric (Abs Rel, Sq Rel,
+RMSE and RMSE log, lower is better), accuracy metrics (δ1,
+δ2 and δ3, higher is better) and running-time (GPU). The
+results listed in Table IV are from their respective papers.
+A. Accuracy
+According to Table IV, all deep learning-based methods
+show much better results than the traditional Make3D method
+[36]. Thus, Make3D is not applicable in any recent applica-
+tion. We observe that the overall development trend of MDE
+is to push the increase of accuracy. Among the four categories
+of methods, the supervised learning method generates the
+best error and accuracy metric results, followed by the semi-
+supervised, domain adaptation and unsupervised methods.
+It demonstrates that supervised learning method can learn
+more representative features from the ground-truth depth.
+Note that Bhat et al. [71] generate the best performance
+among supervised learning methods, suggesting that explicitly
+utilizing global information at a high resolution decisively
+improves the performance of MDE.
+Regarding the domain adaptation methods [138], [155],
+[157], Guo et al. [138] yields the best performance. Unlike
+[155] and [157], [138] ﬁrst pre-trained with synthetic data
+and then ﬁne-tuned on real data. It demonstrates that when
+the ﬁne-tuning dataset is similar to the test dataset, the ﬁne-
+tuning method performs better than the data transformation
+method. The best domain adaptation method [138] has su-
+perior performance to the best unsupervised method [119].
+Regarding the best semi-supervised method [119] and the best
+domain adaptation method [138], [119] outperforms [138].
+In particular, their accuracy metrics are almost equal, while
+the error metrics especially Sq Rel, RMSE and RMSE log
+are highly variable. This suggests that even small amounts of
+labeled data can make a great contribution to the performance
+of depth networks.
+B. Computational Time
+In Table IV, we do not show the running-time of all
+summarized methods because many publications do not report
+it. Since some authors did not provide enough information to
+replicate their results, it is impractical to test the running-
+time on our computer. However, as the number of network
+parameters affects memory footprint and running-time re-
+quired to infer depth, we use this information as an additional
+information to compare the running-time. For example, Poggi
+et al. [69] has 1.9M parameters and requires 20ms to infer a
+depth map on a popular Nvidia Titan-X GPU.
+According to [71], the proposed network has 78M parame-
+ters, which is 40 times more than Poggi et al. [69]. Therefore,
+[71] requires much more time to infer a depth map it is hard to
+run at a real-time speed on a single GPU. This demonstrates
+that [71] can only be applied to accuracy-ﬁrst tasks. The
+supervised method by Wang et al. [113] runs at about 14fps
+on a Jetson AGX Xavier embedded device, which is close to a
+real-time speed. Moreover, [113] has less parameters than [69]
+(1.75M vs 1.9M) and yields much better results. This suggests
+that [113] is suitable for real-time tasks. Among unsupervised
+methods, [69], [114], [137] show the three fastest speeds.
+Although the running-time is tested on different GPUs, the
+order of GPU computation capacity is “Titan-X > 1080Ti
+> 1080”. Regarding the error and accuracy metrics, [137] is
+inferior to [114] and [69]. In addition, [137] runs faster than
+[69] on a less powerful GPU. Therefore, Liu et al. [137] can
+be applied to real-time tasks where large amount of labeled
+data is not available.
+VIII. APPLICATIONS IN ROBOTICS
+Autonomous vehicles need to detect obstacles, other cars
+and pedestrians and depth estimation is a fundamental compo-
+nent required to do this in a 3D environment. Depth estimation
+is a basic component in perceiving the 3D environment.
+Although autonomous vehicles and robots can perceive depth
+information through LIDAR, they only produce sparse depth
+maps. The sparsity of these depth measurements makes it
+hard to meet the perception requirements needed for safe self-
+driving car applications. Monocular depth estimation (MDE)
+
+17
+estimates dense depth maps from single images. The resulting
+dense depth maps have the potential to provide the absolute
+distances to surfaces of objects in real-time with a single
+sensor, whilst meeting the requirements of autonomous navi-
+gation and obstacle avoidance systems [172].
+Autonomous vehicles operate in real-world environments
+where real-time performance is crucial. Moreover, small au-
+tonomous vehicle platforms (e.g., micro aerial vehicles or
+mini ground vehicles) normally have limited memory and
+computational resource. The onboard sensor on such plat-
+forms may be limited to a monocular RGB camera, and
+no additional information (e.g., sparse depth point clouds)
+may be present. Motivated by this fact, lightweight CNNs
+[112], [173], [174] and monocular depth estimation networks
+[27], [69], [70], [137], [175] that run on real-time embedded
+devices have been developed on top of depthwise separable
+convolutions, factorized convolutions or network architecture
+search techniques. It is worth noting that these lightweight
+implementations [27], [69], [70], [137], [175] achieve a real-
+time speed on mobile platforms (e.g., Nvidia-TX2 or Jetson
+AGX Xavier GPU) and produce more accurate depth maps
+than their traditional counterparts (e.g., [18], [36]) which
+cannot run in real-time. Therefore, it enables the autonomous
+vehicles or robots to perceive more accurate depth information
+than [18], [36], whilst not limiting the reactive speed of these
+vehicles.
+Due to the relatively low cost, size and energy consumption,
+MDE has been applied to the task of ego-motion estimation
+[70], [176]–[179], obstacle avoidance [2], [180]–[184] and
+scene understanding [3], [185], [186].
+A. Ego-motion Estimation
+Systems for calculating ego-motion from vision generally
+need an absolute range sensor to provide scale to the visual
+motions. MDE can provide the range measurements needed
+to provide this information. However, in some cases this can
+be done using inertial sensing with an appropriate sensor
+fusion ﬁlter. Li et al. [187] use feature depth and onboard
+Inertial Measurement Unit (IMU) data to compute optic ﬂow
+to estimate the motion of UAV. Such techniques need the
+vehicle to be constantly moving and will fail if there is not
+motion, and are prone to noise. Wang et al. [188] design an
+ego-motion estimation method for UAV by fusing data from
+an RGB-D camera and an IMU. The utilized depth camera
+suffers from a limited measurement range (0.5m-4m), which
+can be replaced by a real-time MDE algorithm, such as [27],
+[69], [70], [137], [175].
+DNNs can predict the absolute scale information in the
+process of MDE, it is helpful in tackling the scale ambiguity
+and drift problem in monocular ego-motion estimation and
+improving the mapping process. [176], [178], [179] incor-
+porate CNN-based depth estimations into monocular visual
+odometry (VO). The obtained VO algorithms show robustness
+to scale drift and achieve comparable performance to stereo
+VO methods. Tateno et al. [1] fuse CNN estimated dense
+depth maps with semi-dense depth measurements from SLAM
+[189] to solve the scale ambiguity and drift problem of
+monocular SLAM. In order to improve the computing speed,
+dense depth maps only computed from every key-frame. In
+addition, LOO et al. [190] combine the semi-direct visual
+odometry (SVO) with a depth estimation CNN [65]. The
+added depth estimation network provides depth priors in the
+map points initialization process when a key-frame is selected.
+With the prior knowledge of the scene geometry, the proposed
+CNN-SVO is able to obtain a much better estimate of the
+mean and a smaller initial variance of the depth-ﬁlter than
+the original SVO.
+The fusion of depth maps and VO or V-SLAM algorithms
+improves the performance of ego-motion estimation [1], [190],
+while the applied depth estimation CNNs [22], [65] require a
+high-end GPU (e.g., Titan X) to achieve a real-time speed.
+This limits the application of [1], [190] in small sized
+platforms with limited memory and computational resource.
+Spek et al. [70] integrate the estimated depth maps from
+a lightweight CNN with ORB-SLAM2 system [125]. The
+fused system runs tracking and mapping on mobile platforms
+at a real-time speed while effectively reducing scale-drift
+and improving the accuracy of a standard monocular SLAM
+system.
+B. Obstacle Avoidance
+Depth maps contain information about the distance between
+the surface of objects to the camera [191], [192]. With the
+estimated depth maps, it is possible for autonomous vehicles
+or robots to perceive the environment and achieve the goal
+of avoiding obstacles in stationary scenes [2], [180]–[183].
+Michels et al. [180] use a supervised learning algorithm to
+learn depth cues that can accurately represent the distance
+of the nearest obstacles in the scene. The estimated depth
+information is then converted to steering commands for con-
+trolling a ground vehicle in the static outdoor environments.
+Chakravarty et al. [182] pass depth maps to a behaviour
+arbitration-based control algorithm to guide a UAV which
+ﬂies at a particular height in indoor environment to avoid
+obstacles. Given a depth map, a vertical and horizontal strip
+through the middle of the depth map is selected. Then the
+averaged depth values within each vertical and horizontal bin
+verti and horzi are used as depth values di from the angle.
+These depth values di are used to compute an angular velocity
+for steering the UAV away from obstacles. Zhang et al. [183]
+use the estimated depth maps to compute the rotation angle to
+guide a UAV to avoid obstacles and ﬂy towards a destination.
+Depth maps can also be used to select collision-free way-
+points in order to steer robots in a safe path. Alvarez et al.
+[181] ﬁrst compute a dense depth map from a small set of
+consecutive images. Then the depth map is applied to generate
+the next obstacle-free waypoints to proceed in a forward
+direction. To this end, the most distant point in 3D space
+reachable by the UAV without collisions will be computed.
+Yang et al. [2] design an Ego Dynamic Space (EDS)-based
+obstacle avoidance method by embedding the dynamic motion
+constrains of the UAV and the conﬁdence values into the
+spatial depth map. With the estimated depth and conﬁdence
+maps, the distances Deff to the obstacles can be written as
+in Equation 13.
+Deff = D −Dbrake −Derror
+= D −(vT −aT 2
+2 ) −Derror
+(13)
+
+18
+where D is the perceived distance to the obstacles (i.e. the
+estimated depth map), Dbrake is the deceleration distance to
+stop a UAV which moves at velocity v using deceleration a in
+a sampling interval T, and Derror is the depth measurement
+error which is computed by Derror = −ln(C), C is the
+estimated conﬁdence. Subsequently, Deff is converted into a
+binary depth map, which includes collision-free regions that
+a UAV can move safely.
+It should be noted that the CNNs used in [2], [182],
+[183] were trained on data recorded through cameras on
+moving ground vehicles, which is limited in viewing angles
+in recorded images. Moreover, the ground vehicles normally
+move in constrained environments such as roads or corridors.
+The onboard cameras only encounter a limited subset of
+motion types, and do not completely explore the 3D envi-
+ronment. This results in the perspective and angle of view
+of the captured images being different from the UAV view.
+Therefore, this may raise concerns about the generalization
+potential of the trained CNNs to the application of obstacle
+avoidance for UAVs [60].
+Depth information offers opportunities and complexities for
+the determination of the collision-point and time-to-collision
+when a robot is navigating in a dynamic environment. In
+particular, depth information could offer the robot a space
+to navigate in an otherwise more constrained environment.
+However, error in depth estimation could have a profound
+impact on a robot’s ability to estimate a collision-point with
+a moving object and subsequently, the time-to-collision with
+that object. While there exists an extensive literature on
+collision avoidance research in dynamic 3D environments
+[193]–[195], including research on point-clouds from sensors
+such as LIDAR, literature tackling collision avoidance in
+dynamic 3D environments with depth estimation is almost
+non-existent.
+C. Scene Understanding
+Autonomous vehicles and robots require a full understand-
+ing of the geometric structure of environment to interact with
+it. The task of scene understanding is to obtain 3D geometric
+information from 2D image. Depth maps encode the 3D struc-
+ture of the scene, which helps to resolve ambiguities and to
+avoid a physical implausible labeling [185]. Scharwachter and
+Franke [185] propose an approach to infer the coarse layout
+of street scenes from color, texture and depth information.
+When an agent moves through the world, the apparent
+motion of scene elements is usually inversely proportional
+to their depth. For example, as the agent moves, faraway
+mountains do not move much, while nearby trees move a lot.
+Inspired by this point, Jiang et al. [3] use the depth estimation
+network as the base for city scene understanding. They ﬁrst
+train a deep network to infer relative scene depth from single
+images, and then ﬁne-tune it for tasks such as semantic
+segmentation, joint semantic reasoning of road segmentation
+and car detection.
+Rojas-Perez et al. [186] propose a depth estimation-based
+landing zone detection method for UAVs. The detection is
+divided into two stages: depth estimation from single aerial
+images and classiﬁcation of possible landing zones. Based on
+the extracted patches from RGB images, a multi-layer CNN
+architecture is designed and trained to infer depth from aerial
+images. The obtained depth map is then fed to another CNN
+to detect possible landing zones for UAV.
+IX. CONCLUSION
+In this paper, we presented the ﬁrst comprehensive survey
+of monocular depth estimation (MDE). We reviewed the
+literature from the structure from motion-based methods,
+traditional handcrafted feature-based methods to the state-
+of-the-art deep learning-based methods. We also summarized
+the publically available datasets, commonly used performance
+evaluation metrics, and open-source implementations of some
+representative methods. In addition, we compared and an-
+alyzed the performance of 42 representative methods from
+different perspectives, including error, accuracy and running-
+time metrics. Since MDE plays an important role in robotics,
+we provided a review of the application of MDE in ego-
+motion estimation, obstacle avoidance and scene understand-
+ing. Based on the reviewed literature, we concluded that the
+promising future research directions of MDE may focus on
+but are not limited to the following aspects:
+Collecting rich scene datasets: Deep learning-based mod-
+els show great performance in MDE. However, training robust
+models requires a dataset consists of various scenes, in order
+that the models can learn various scene features. Compared
+with real-world environments which include complex sce-
+narios such as moving objects, cluttered scenes, occlusions,
+illumination changes and weather changes, the existing public
+datasets are not rich enough. Speciﬁcally, these datasets focus
+on certain scenes such as indoor [37], driving [38], campus
+[36] and forest [61]. Thus, it is essential to collect datasets
+that encompass richness and high-diversity of environmental
+scenarios.
+Real-time monocular depth estimation with accuracy
+and efﬁciency balance: The overall development trend of
+MDE is to push the increase of accuracy using extremely deep
+CNNs or by designing a complex network architecture, which
+are computationally expensive for current mobile computa-
+tional devices which have limited memory and computational
+capability. Therefore, it is difﬁcult for these networks to
+be deployed in small sized robots which depend on mobile
+computational devices. Under this context, researchers have
+begun to develop real-time MDE methods [27], [69], [113],
+[137]. However, the accuracy of these methods is inferior
+to state-of-the-art methods. Therefore, developing real-time
+MDE network is assumed to achieve the trade-off between
+accuracy and efﬁciency.
+Monocular depth estimation with domain adaptation:
+The training of a supervised MDE network requires a
+large amount of ground-truth data. However, collecting these
+ground-truth data requires LIDAR or RGB-D cameras, which
+increase the cost. With computer graphic techniques, it is
+easier to obtain a large set of synthetic images and its corre-
+sponding depth maps. Applying domain adaptation techniques
+to training MDE models on synthetic and transferring it to real
+data seems to be a popular direction in MDE.
+Semi-supervised monocular depth estimation: The train-
+ing of supervised MDE network relies on a large amount of
+labeled data. The process of collecting depth maps is time-
+consuming, expensive and inefﬁcient. Unsupervised methods
+do not need the ground-truth data, while suffering from
+
+19
+lower accuracy. Developing semi-supervised methods that
+are trained on a small number of labeled images and a
+large number of unlabeled images is of great importance for
+reducing labor costs and improving prediction accuracy.
+Depth estimation with information fusion: Depth estima-
+tion with multiple sources/modalities of data, such as sparse
+depth maps, optical ﬂow and surface normal, show the better
+performance. Some open questions include: how to apply
+well-designed depth estimation to different modalities of data,
+how to efﬁciently fuse different information to improve the
+accuracy of depth estimation and how to use optical ﬂow to
+handle independently moving objects in a dynamic scene?
+Interpretability of monocular depth estimation net-
+works: While deep learning-based depth estimation has
+achieved remarkable improvement in accuracy, there remain
+questions about these networks. For example, what exactly
+are depth estimation networks learning? What is a minimal
+network architecture that can achieve a certain accuracy?
+Although studies in [196], [197] explored the mechanism of
+depth estimation networks, a speciﬁc study of the underly-
+ing behavior/dynamics of these networks was not available.
+Thus, the research on the interpretability of depth estimation
+networks is an important topic.
+REFERENCES
+[1] K. Tateno, F. Tombari, I. Laina, and N. Navab, “CNN-SLAM: Real-
+time dense monocular SLAM with learned depth prediction,” in CVPR,
+2017, pp. 6243–6252.
+[2] X. Yang, J. Chen, Y. Dang, H. Luo, Y. Tang, C. Liao, P. Chen,
+and K.-T. Cheng, “Fast depth prediction and obstacle avoidance on
+a monocular drone using probabilistic convolutional neural network,”
+IEEE TITS, 2019.
+[3] H. Jiang, G. Larsson, M. Maire Greg Shakhnarovich, and E. Learned-
+Miller, “Self-supervised relative depth learning for urban scene under-
+standing,” in ECCV, 2018, pp. 19–35.
+[4] D. Forouher, M. G. Besselmann, and E. Maehle, “Sensor fusion of
+depth camera and ultrasound data for obstacle detection and robot
+navigation,” in ICARCV, 2016, pp. 1–6.
+[5] L. Wang and R. Yang, “Global stereo matching leveraged by sparse
+ground control points,” in CVPR, 2011, pp. 3033–3040.
+[6] M. P. Muresan, M. Negru, and S. Nedevschi, “Improving local stereo
+algorithms using binary shifted windows, fusion and smoothness
+constraint,” in ICCP, 2015, pp. 179–185.
+[7] R. Spangenberg, T. Langner, S. Adfeldt, and R. Rojas, “Large scale
+semi-global matching on the cpu,” in IV, 2014, pp. 195–201.
+[8] A. Wedel, U. Franke, J. Klappstein, T. Brox, and D. Cremers, “Real-
+time depth estimation and obstacle detection from monocular video,”
+in JPRS, 2006, pp. 475–484.
+[9] C. D. Prakash, J. Li, F. Akhbari, and L. J. Karam, “Sparse depth
+calculation using real-time key-point detection and structure from
+motion for advanced driver assist systems,” in ISVC, 2014, pp. 740–
+751.
+[10] H. Ha, S. Im, J. Park, H.-G. Jeon, and I. So Kweon, “High-quality
+depth from uncalibrated small motion clip,” in CVPR, 2016, pp. 5413–
+5421.
+[11] H. Javidnia and P. Corcoran, “Accurate depth map estimation from
+small motions,” in ICCV, 2017, pp. 2453–2461.
+[12] A. Torralba and A. Oliva, “Depth estimation from image structure,”
+IEEE TPAMI, vol. 24, no. 9, pp. 1226–1238, 2002.
+[13] A. Saxena, S. H. Chung, and A. Y. Ng, “Learning depth from single
+monocular images,” in NIPS, 2006, pp. 1161–1168.
+[14] J.-I. Jung and Y.-S. Ho, “Depth map estimation from single-view
+image using object classiﬁcation based on bayesian learning,” in 3DTV
+Conference, 2010, pp. 1–4.
+[15] B. Liu, S. Gould, and D. Koller, “Single image depth estimation from
+predicted semantic labels,” in CVPR, 2010, pp. 1253–1260.
+[16] L. Ladicky, J. Shi, and M. Pollefeys, “Pulling things out of perspec-
+tive,” in CVPR, 2014, pp. 89–96.
+[17] M. Liu, M. Salzmann, and X. He, “Discrete-continuous depth estima-
+tion from a single image,” in CVPR, 2014, pp. 716–723.
+[18] K. Karsch, C. Liu, and S. B. Kang, “Depth transfer: Depth extraction
+from video using non-parametric sampling,” IEEE TPAMI, vol. 36,
+no. 11, pp. 2144–2158, 2014.
+[19] S. H. Raza, O. Javed, A. Das, H. Sawhney, H. Cheng, and I. Essa,
+“Depth extraction from videos using geometric context and occlusion
+boundaries,” arXiv preprint arXiv:1510.07317, 2015.
+[20] D. Eigen, C. Puhrsch, and R. Fergus, “Depth map prediction from a
+single image using a multi-scale deep network,” in NIPS, 2014, pp.
+2366–2374.
+[21] D. Eigen and R. Fergus, “Predicting depth, surface normals and
+semantic labels with a common multi-scale convolutional architecture,”
+in ICCV, 2015, pp. 2650–2658.
+[22] I. Laina, C. Rupprecht, V. Belagiannis, F. Tombari, and N. Navab,
+“Deeper depth prediction with fully convolutional residual networks,”
+in 3DV, 2016, pp. 239–248.
+[23] Y. Cao, Z. Wu, and C. Shen, “Estimating depth from monocular images
+as classiﬁcation using deep fully convolutional residual networks,”
+IEEE TCSVT, vol. 28, no. 11, pp. 3174–3182, 2017.
+[24] D. Xu, E. Ricci, W. Ouyang, X. Wang, and N. Sebe, “Multi-scale
+continuous CRFs as sequential deep networks for monocular depth
+estimation,” in CVPR, 2017, pp. 5354–5362.
+[25] B. Li, Y. Dai, and M. He, “Monocular depth estimation with hierar-
+chical fusion of dilated CNNs and soft-weighted-sum inference,” PR,
+vol. 83, pp. 328–339, 2018.
+[26] J. Hu, M. Ozay, Y. Zhang, and T. Okatani, “Revisiting single image
+depth estimation: Toward higher resolution maps with accurate object
+boundaries,” in WACV, 2019, pp. 1043–1051.
+[27] D. Wofk, F. Ma, T.-J. Yang, S. Karaman, and V. Sze, “FastDepth: Fast
+monocular depth estimation on embedded systems,” in ICRA, 2019,
+pp. 6101–6108.
+[28] A. Chavan and R. S. Gudodagi, “Depth extraction from video: a
+survey,” IJIRAE, vol. 2, pp. 199–204, 2015.
+[29] D. Mohan and A. R. Ram, “A review on depth estimation for computer
+vision applications,” Positions, vol. 4, no. 11, 2015.
+[30] N. Jamwal, N. Jindal, and K. Singh, “A survey on depth map
+estimation strategies,” in ICSP, 2016.
+[31] S. Bahadur, R. Shrestha, Y. Sumaharshini, G. R. Teja, and K. N,
+“Literature review on various depth estimation methods for an image,”
+IJRG, vol. 5, 2017.
+[32] A. Bhoi, “Monocular depth estimation: a survey,” arXiv preprint
+arXiv:1901.09402, 2019.
+[33] H. Laga, “A survey on deep learning architectures for image-based
+depth reconstruction,” arXiv preprint arXiv:1906.06113, 2019.
+[34] R. Vyshna and S. Priya, “Literature review on depth estimation using
+a single image,” IJARIIT, vol. 5, pp. 1760–1763, 2019.
+[35] Y. Liu, J. Jiang, J. Sun, L. Bai, and Q. Wang, “A survey of depth
+estimation based on computer vision,” in DSC, 2020, pp. 135–141.
+[36] A. Saxena, M. Sun, and A. Y. Ng, “Make3D: Learning 3D scene
+structure from a single still image,” IEEE TPAMI, vol. 31, no. 5, pp.
+824–840, 2008.
+[37] N. Silberman, D. Hoiem, P. Kohli, and R. Fergus, “Indoor segmenta-
+tion and support inference from RGB-D images,” in ECCV, 2012, pp.
+746–760.
+[38] A. Geiger, P. Lenz, C. Stiller, and R. Urtasun, “Vision meets robotics:
+The KITTI dataset,” IJRR, vol. 32, no. 11, pp. 1231–1237, 2013.
+[39] M. Cordts, M. Omran, S. Ramos, T. Rehfeld, M. Enzweiler, R. Benen-
+son, U. Franke, S. Roth, and B. Schiele, “The cityscapes dataset for
+semantic urban scene understanding,” in CVPR, 2016, pp. 3213–3223.
+[40] A. Gaidon, Q. Wang, Y. Cabon, and E. Vig, “Virtual worlds as proxy
+for multi-object tracking analysis,” in CVPR, 2016, pp. 4340–4349.
+[41] Y. Cabon, N. Murray, and M. Humenberger, “Virtual KITTI 2,” arXiv
+preprint arXiv:2001.10773, 2020.
+[42] J. Sturm, N. Engelhard, F. Endres, W. Burgard, and D. Cremers, “A
+benchmark for the evaluation of RGB-D SLAM systems,” in IROS,
+2012, pp. 573–580.
+[43] S. Song, S. P. Lichtenberg, and J. Xiao, “SUN RGB-D: A RGB-D
+scene understanding benchmark suite,” in CVPR, 2015, pp. 567–576.
+[44] W. Chen, Z. Fu, D. Yang, and J. Deng, “Single-image depth perception
+in the wild,” in NIPS, 2016, pp. 730–738.
+[45] O. Wasenm¨uller, M. Meyer, and D. Stricker, “CoRBS: Comprehensive
+RGB-D benchmark for SLAM using Kinect v2,” in WACV, 2016, pp.
+1–7.
+[46] I. Armeni, S. Sax, A. R. Zamir, and S. Savarese, “Joint 2D-
+3D-semantic data for indoor scene understanding,” arXiv preprint
+arXiv:1702.01105, 2017.
+[47] T. Schops, J. L. Schonberger, S. Galliani, T. Sattler, K. Schindler,
+M. Pollefeys, and A. Geiger, “A multi-view stereo benchmark with
+high-resolution images and multi-camera videos,” in CVPR, 2017, pp.
+3260–3269.
+
+20
+[48] A. Chang, A. Dai, T. Funkhouser, M. Halber, M. Niessner, M. Savva,
+S. Song, A. Zeng, and Y. Zhang, “Matterport3D: Learning from RGB-
+D data in indoor environments,” arXiv preprint arXiv:1709.06158,
+2017.
+[49] A. Dai, A. X. Chang, M. Savva, M. Halber, T. Funkhouser, and
+M. Nießner, “ScanNet: Richly-annotated 3D reconstructions of indoor
+scenes,” in CVPR, 2017, pp. 5828–5839.
+[50] J. McCormac, A. Handa, S. Leutenegger, and A. J. Davison, “SceneNet
+RGB-D: Can 5M synthetic images beat generic ImageNet pre-training
+on indoor segmentation?” in ICCV, 2017, pp. 2678–2687.
+[51] S. Song, F. Yu, A. Zeng, A. X. Chang, M. Savva, and T. Funkhouser,
+“Semantic scene completion from a single depth image,” in CVPR,
+2017, pp. 1746–1754.
+[52] Z. Li and N. Snavely, “MegaDepth: Learning single-view depth
+prediction from internet photos,” in CVPR, 2018, pp. 2041–2050.
+[53] M. Mancini, G. Costante, P. Valigi, and T. A. Ciarfuglia, “J-MOD 2:
+Joint monocular obstacle detection and depth estimation,” IEEE RAL,
+vol. 3, no. 3, pp. 1490–1497, 2018.
+[54] A. Marcu, D. Costea, V. Licaret, M. Pˆırvu, E. Slusanschi, and
+M. Leordeanu, “SafeUAV: Learning to estimate depth and safe landing
+areas for UAVs from synthetic data,” in ECCV Workshops, 2018, pp.
+43–58.
+[55] N. Zioulis, A. Karakottas, D. Zarpalas, and P. Daras, “OmniDepth:
+Dense depth estimation for indoors spherical panoramas,” in ECCV,
+2018, pp. 448–465.
+[56] S. Wu, H. Zhao, and S. Sun, “Depth estimation from infrared video
+using local-feature-ﬂow neural network,” IJMLC, vol. 10, no. 9, pp.
+2563–2572, 2019.
+[57] J. Cho, D. Min, Y. Kim, and K. Sohn, “A large RGB-D dataset
+for semi-supervised monocular depth estimation,” arXiv preprint
+arXiv:1904.10230, 2019.
+[58] G. Yang, X. Song, C. Huang, Z. Deng, J. Shi, and B. Zhou, “Driv-
+ingStereo: A large-scale dataset for stereo matching in autonomous
+driving scenarios,” in CVPR, 2019, pp. 899–908.
+[59] I. Vasiljevic, N. Kolkin, S. Zhang, R. Luo, H. Wang, F. Z. Dai,
+A. F. Daniele, M. Mostajabi, S. Basart, M. R. Walter et al.,
+“DIODE: A dense indoor and outdoor depth dataset,” arXiv preprint
+arXiv:1908.00463, 2019.
+[60] M. Fonder and M. Van Droogenbroeck, “Mid-Air: A multi-modal
+dataset for extremely low altitude drone ﬂights,” in CVPR Workshops,
+2019, pp. 0–0.
+[61] C. Niu, D. Tarapore, and K.-P. Zauner, “Low-viewpoint forest depth
+dataset for sparse rover swarms,” arXiv preprint arXiv:2003.04359,
+2020.
+[62] L. Jin, Y. Xu, J. Zheng, J. Zhang, R. Tang, S. Xu, J. Yu, and S. Gao,
+“Geometric structure based and regularized depth estimation from 360
+indoor imagery,” in CVPR, 2020, pp. 889–898.
+[63] F. Liu, C. Shen, G. Lin, and I. Reid, “Learning depth from single
+monocular images using deep convolutional neural ﬁelds,” IEEE
+TPAMI, vol. 38, no. 10, pp. 2024–2039, 2015.
+[64] R. Garg, V. K. BG, G. Carneiro, and I. Reid, “Unsupervised CNN
+for single view depth estimation: Geometry to the rescue,” in ECCV,
+2016, pp. 740–756.
+[65] C. Godard, O. Mac Aodha, and G. J. Brostow, “Unsupervised monoc-
+ular depth estimation with left-right consistency,” in CVPR, 2017, pp.
+270–279.
+[66] T. Zhou, M. Brown, N. Snavely, and D. G. Lowe, “Unsupervised
+learning of depth and ego-motion from video,” in CVPR, 2017, pp.
+1851–1858.
+[67] Y. Kuznietsov, J. Stuckler, and B. Leibe, “Semi-supervised deep
+learning for monocular depth map prediction,” in CVPR, 2017, pp.
+6647–6655.
+[68] F. Aleotti, F. Tosi, M. Poggi, and S. Mattoccia, “Generative adversarial
+networks for unsupervised monocular depth prediction,” in ECCV
+Workshops, 2018, pp. 337–354.
+[69] M. Poggi, F. Aleotti, F. Tosi, and S. Mattoccia, “Towards real-time
+unsupervised monocular depth estimation on CPU,” in IROS, 2018,
+pp. 5848–5854.
+[70] A. Spek, T. Dharmasiri, and T. Drummond, “CReaM: Condensed real-
+time models for depth prediction using convolutional neural networks,”
+in IROS, 2018, pp. 540–547.
+[71] S. F. Bhat, I. Alhashim, and P. Wonka, “Adabins: depth estimation
+using adaptive bins,” in CVPR, 2021, pp. 4009–4018.
+[72] S. Ullman, “The interpretation of structure from motion,” Proceedings
+of the Royal Society of London. Series B. Biological Sciences, vol.
+203, no. 1153, pp. 405–426, 1979.
+[73] B. K. Horn, “Shape from shading: A method for obtaining the shape
+of a smooth opaque object from one view,” 1970.
+[74] H. Barrow, J. Tenenbaum, A. Hanson, and E. Riseman, “Recovering
+intrinsic scene characteristics,” Comput. Vis. Syst, vol. 2, no. 3-26, p. 2,
+1978.
+[75] N. Kong and M. J. Black, “Intrinsic depth: Improving depth transfer
+with intrinsic images,” in ICCV, 2015, pp. 3514–3522.
+[76] F. Ma and S. Karaman, “Sparse-to-dense: Depth prediction from sparse
+depth samples and a single image,” in ICRA, 2018, pp. 4796–4803.
+[77] X. Cheng, P. Wang, and R. Yang, “Depth estimation via afﬁnity learned
+with convolutional spatial propagation network,” in ECCV, 2018, pp.
+103–119.
+[78] X. Chen, X. Chen, and Z.-J. Zha, “Structure-aware residual pyra-
+mid
+network
+for
+monocular
+depth
+estimation,”
+arXiv
+preprint
+arXiv:1907.06023, 2019.
+[79] B. Li, C. Shen, Y. Dai, A. Van Den Hengel, and M. He, “Depth and
+surface normal estimation from monocular images using regression on
+deep features and hierarchical CRFs,” in CVPR, 2015, pp. 1119–1127.
+[80] M. Heo, J. Lee, K.-R. Kim, H.-U. Kim, and C.-S. Kim, “Monocular
+depth estimation using whole strip masking and reliability-based
+reﬁnement,” in ECCV, 2018, pp. 36–51.
+[81] I. Mehta, P. Sakurikar, and P. Narayanan, “Structured adversarial
+training for unsupervised monocular depth estimation,” in 3DV, 2018,
+pp. 314–323.
+[82] K. He, X. Zhang, S. Ren, and J. Sun, “Deep residual learning for
+image recognition,” in CVPR, 2016, pp. 770–778.
+[83] G. Huang, Z. Liu, L. Van Der Maaten, and K. Q. Weinberger, “Densely
+connected convolutional networks,” in CVPR, 2017, pp. 4700–4708.
+[84] J. Hu, L. Shen, and G. Sun, “Squeeze-and-excitation networks,” in
+CVPR, 2018, pp. 7132–7141.
+[85] M. Mancini, G. Costante, P. Valigi, and T. A. Ciarfuglia, “Fast
+robust monocular depth estimation for obstacle detection with fully
+convolutional networks,” in IROS, 2016, pp. 4296–4303.
+[86] I. Alhashim and P. Wonka, “High quality monocular depth estimation
+via transfer learning,” arXiv preprint arXiv:1812.11941, 2018.
+[87] J. H. Lee, M.-K. Han, D. W. Ko, and I. H. Suh, “From big to small:
+Multi-scale local planar guidance for monocular depth estimation,”
+arXiv preprint arXiv:1907.10326, 2019.
+[88] W. Yin, Y. Liu, C. Shen, and Y. Yan, “Enforcing geometric constraints
+of virtual normal for depth prediction,” in ICCV, 2019, pp. 5684–5693.
+[89] H. Fu, M. Gong, C. Wang, K. Batmanghelich, and D. Tao, “Deep
+ordinal regression network for monocular depth estimation,” in CVPR,
+2018, pp. 2002–2011.
+[90] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N.
+Gomez, L. Kaiser, and I. Polosukhin, “Attention is all you need,” arXiv
+preprint arXiv:1706.03762, 2017.
+[91] A. Dosovitskiy, L. Beyer, A. Kolesnikov, D. Weissenborn, X. Zhai,
+T. Unterthiner, M. Dehghani, M. Minderer, G. Heigold, S. Gelly et al.,
+“An image is worth 16x16 words: Transformers for image recognition
+at scale,” arXiv preprint arXiv:2010.11929, 2020.
+[92] F.-E. Wang, Y.-H. Yeh, M. Sun, W.-C. Chiu, and Y.-H. Tsai, “Bifuse:
+Monocular 360 depth estimation via bi-projection fusion,” in CVPR,
+2020, pp. 462–471.
+[93] A. CS Kumar, S. M. Bhandarkar, and M. Prasad, “DepthNet: A
+recurrent neural network architecture for monocular depth prediction,”
+in CVPR Workshops, 2018, pp. 283–291.
+[94] H. Zhang, C. Shen, Y. Li, Y. Cao, Y. Liu, and Y. Yan, “Exploiting
+temporal consistency for real-time video depth estimation,” in ICCV,
+2019, pp. 1725–1734.
+[95] R. Wang, S. M. Pizer, and J.-M. Frahm, “Recurrent neural network
+for (Un-) supervised learning of monocular video visual odometry and
+depth,” in CVPR, 2019, pp. 5555–5564.
+[96] R. Li, K. Xian, C. Shen, Z. Cao, H. Lu, and L. Hang, “Deep attention-
+based classiﬁcation network for robust depth prediction,” in ACCV,
+2018, pp. 663–678.
+[97] Y. Chen, H. Zhao, and Z. Hu, “Attention-based context aggre-
+gation network for monocular depth estimation,” arXiv preprint
+arXiv:1901.10137, 2019.
+[98] H. Zou, K. Xian, J. Yang, and Z. Cao, “Mean-variance loss for
+monocular depth estimation,” in ICIP, 2019, pp. 1760–1764.
+[99] L. Liebel and M. K¨orner, “MultiDepth: Single-image depth esti-
+mation via multi-task regression and classiﬁcation,” arXiv preprint
+arXiv:1907.11111, 2019.
+[100] W. Song, S. Li, J. Liu, A. Hao, Q. Zhao, and H. Qin, “Contextualized
+CNN for scene-aware depth estimation from single RGB image,” IEEE
+TMM, vol. 22, no. 5, pp. 1220–1233, 2019.
+[101] D. S´anchez-Escobedo, X. Lin, J. R. Casas, and M. Pardas, “HybridNet
+for depth estimation and semantic segmentation,” in ICASSP, 2018, pp.
+1563–1567.
+
+21
+[102] P. Wang, X. Shen, Z. Lin, S. Cohen, B. Price, and A. L. Yuille,
+“Towards uniﬁed depth and semantic prediction from a single image,”
+in CVPR, 2015, pp. 2800–2809.
+[103] O. H. Jafari, O. Groth, A. Kirillov, M. Y. Yang, and C. Rother,
+“Analyzing modular CNN architectures for joint depth prediction and
+semantic segmentation,” in ICRA, 2017, pp. 4620–4627.
+[104] A. Gurram, O. Urfalioglu, I. Halfaoui, F. Bouzaraa, and A. M.
+L´opez, “Monocular depth estimation by learning from heterogeneous
+datasets,” in IV, 2018, pp. 2176–2181.
+[105] J. Jiao, Y. Cao, Y. Song, and R. Lau, “Look deeper into depth:
+Monocular depth estimation with semantic booster and attention-driven
+loss,” in ECCV, 2018, pp. 53–69.
+[106] X. Qi, R. Liao, Z. Liu, R. Urtasun, and J. Jia, “GeoNet: Geometric
+neural network for joint depth and surface normal estimation,” in
+CVPR, 2018, pp. 283–291.
+[107] V. Nekrasov, T. Dharmasiri, A. Spek, T. Drummond, C. Shen, and
+I. Reid, “Real-time joint semantic segmentation and depth estimation
+using asymmetric annotations,” in ICRA, 2019, pp. 7101–7107.
+[108] Y.-Y. Hsieh, W.-Y. Lin, D.-L. Li, and J.-H. Chuang, “Deep learning-
+based obstacle detection and depth estimation,” in ICIP, 2019, pp.
+1635–1639.
+[109] S. Abdulwahab, H. A. Rashwan, M. A. Garcia, M. Jabreel, S. Cham-
+bon, and D. Puig, “Adversarial learning for depth and viewpoint
+estimation from a single image,” IEEE TCSVT, 2020.
+[110] J. Long, E. Shelhamer, and T. Darrell, “Fully convolutional networks
+for semantic segmentation,” in CVPR, 2015, pp. 3431–3440.
+[111] J. Redmon and A. Farhadi, “YoloV3: An incremental improvement,”
+arXiv preprint arXiv:1804.02767, 2018.
+[112] E. Romera, J. M. Alvarez, L. M. Bergasa, and R. Arroyo, “ERFNet:
+Efﬁcient residual factorized convnet for real-time semantic segmenta-
+tion,” IEEE TITS, vol. 19, no. 1, pp. 263–272, 2017.
+[113] L. Wang, M. Famouri, and A. Wong, “DepthNet Nano: A highly com-
+pact self-normalizing neural network for monocular depth estimation,”
+arXiv preprint arXiv:2004.08008, 2020.
+[114] R. Mahjourian, M. Wicke, and A. Angelova, “Unsupervised learning
+of depth and ego-motion from monocular video using 3D geometric
+constraints,” in CVPR, 2018, pp. 5667–5675.
+[115] F. Tosi, F. Aleotti, M. Poggi, and S. Mattoccia, “Learning monocular
+depth estimation infusing traditional stereo knowledge,” in CVPR,
+2019, pp. 9799–9809.
+[116] F. Ma, G. V. Cavalheiro, and S. Karaman, “Self-supervised sparse-to-
+dense: Self-supervised depth completion from LiDAR and monocular
+camera,” in ICRA, 2019, pp. 3288–3295.
+[117] Y. Zhang, T. Nguyen, I. D. Miller, S. Chen, C. J. Taylor, V. Ku-
+mar et al., “DFineNet: Ego-motion estimation and depth reﬁnement
+from sparse, noisy depth input with RGB guidance,” arXiv preprint
+arXiv:1903.06397, 2019.
+[118] X. Fei, A. Wong, and S. Soatto, “Geo-supervised visual depth predic-
+tion,” IEEE RAL, vol. 4, no. 2, pp. 1661–1668, 2019.
+[119] V. Guizilini, R. Hou, J. Li, R. Ambrus, and A. Gaidon, “Semantically-
+guided representation learning for self-supervised monocular depth,”
+arXiv preprint arXiv:2002.12319, 2020.
+[120] V. Guizilini, R. Ambrus, S. Pillai, A. Raventos, and A. Gaidon, “3D
+packing for self-supervised monocular depth estimation,” in CVPR,
+2020, pp. 2485–2494.
+[121] A. Johnston and G. Carneiro, “Self-supervised monocular trained
+depth estimation using self-attention and discrete disparity volume,”
+in CVPR, 2020, pp. 4756–4765.
+[122] N. Mayer, E. Ilg, P. Hausser, P. Fischer, D. Cremers, A. Dosovitskiy,
+and T. Brox, “A large dataset to train convolutional networks for
+disparity, optical ﬂow, and scene ﬂow estimation,” in CVPR, 2016,
+pp. 4040–4048.
+[123] V. Prasad and B. Bhowmick, “SfMLearner++: Learning monocular
+depth & ego-motion using meaningful geometric constraints,” in
+WACV, 2019, pp. 2087–2096.
+[124] M. Klodt and A. Vedaldi, “Supervising the new with the old: learning
+SfM from SfM,” in ECCV, 2018, pp. 698–713.
+[125] R. Mur-Artal and J. D. Tard´os, “ORB-SLAM2: An open-source SLAM
+system for monocular, stereo, and RGB-D cameras,” IEEE TRO,
+vol. 33, no. 5, pp. 1255–1262, 2017.
+[126] S. Vijayanarasimhan, S. Ricco, C. Schmid, R. Sukthankar, and
+K. Fragkiadaki, “SfM-Net: Learning of structure and motion from
+video,” arXiv preprint arXiv:1704.07804, 2017.
+[127] Q. Dai, V. Patil, S. Hecker, D. Dai, L. Van Gool, and K. Schindler,
+“Self-supervised object motion and depth estimation from video,”
+arXiv preprint arXiv:1912.04250, 2019.
+[128] J.-W. Bian, Z. Li, N. Wang, H. Zhan, C. Shen, M.-M. Cheng, and
+I. Reid, “Unsupervised scale-consistent depth and ego-motion learning
+from monocular video,” arXiv preprint arXiv:1908.10553, 2019.
+[129] W. Zhao, S. Liu, Y. Shu, and Y.-J. Liu, “Towards better general-
+ization: joint depth-pose learning without posenet,” arXiv preprint
+arXiv:2004.01314, 2020.
+[130] A. Kendall, M. Grimes, and R. Cipolla, “PoseNet: A convolutional
+network for real-time 6-DoF camera relocalization,” in ICCV, 2015,
+pp. 2938–2946.
+[131] Y. Zou, Z. Luo, and J.-B. Huang, “DF-Net: Unsupervised joint learning
+of depth and ﬂow using cross-task consistency,” in ECCV, 2018, pp.
+36–53.
+[132] Z. Yin and J. Shi, “GeoNet: Unsupervised learning of dense depth,
+optical ﬂow and camera pose,” in CVPR, 2018, pp. 1983–1992.
+[133] A. Ranjan, V. Jampani, L. Balles, K. Kim, D. Sun, J. Wulff, and
+M. J. Black, “Competitive collaboration: Joint unsupervised learning
+of depth, camera motion, optical ﬂow and motion segmentation,” in
+CVPR, 2019, pp. 12 240–12 249.
+[134] A. Pilzer, D. Xu, M. Puscas, E. Ricci, and N. Sebe, “Unsupervised
+adversarial depth estimation using cycled generative networks,” in
+3DV, 2018, pp. 587–595.
+[135] A. Wang, Z. Fang, Y. Gao, S. Tan, S. Wang, S. Ma, and J.-N. Hwang,
+“Adversarial learning for joint optimization of depth and ego-motion,”
+IEEE TIP, vol. 29, pp. 4130–4142, 2020.
+[136] Y. Almalioglu, M. R. U. Saputra, P. P. de Gusmao, A. Markham, and
+N. Trigoni, “GANVO: Unsupervised deep monocular visual odometry
+and depth estimation with generative adversarial networks,” in ICRA,
+2019, pp. 5474–5480.
+[137] J. Liu, Q. Li, R. Cao, W. Tang, and G. Qiu, “MiniNet: An extremely
+lightweight convolutional neural network for real-time unsupervised
+monocular depth estimation,” ISPRS JPRS, vol. 166, pp. 255–267,
+2020.
+[138] X. Guo, H. Li, S. Yi, J. Ren, and X. Wang, “Learning monocular
+depth by distilling cross-domain stereo networks,” in ECCV, 2018,
+pp. 484–500.
+[139] J. Qiu, Z. Cui, Y. Zhang, X. Zhang, S. Liu, B. Zeng, and M. Polle-
+feys, “DeepLiDAR: Deep surface normal guided depth prediction for
+outdoor scene from sparse LiDAR data and single color image,” in
+CVPR, 2019, pp. 3313–3322.
+[140] Z. Fang, X. Chen, Y. Chen, and L. V. Gool, “Towards good practice for
+CNN-based monocular depth estimation,” in WACV, 2020, pp. 1091–
+1100.
+[141] K. Sartipi, T. Do, T. Ke, K. Vuong, and S. I. Roumeliotis,
+“Deep depth estimation from visual-inertial SLAM,” arXiv preprint
+arXiv:2008.00092, 2020.
+[142] K. Xian, J. Zhang, O. Wang, L. Mai, Z. Lin, and Z. Cao, “Structure-
+guided ranking loss for single image depth prediction,” in CVPR, 2020,
+pp. 611–620.
+[143] H. Zhan, R. Garg, C. Saroj Weerasekera, K. Li, H. Agarwal, and
+I. Reid, “Unsupervised learning of monocular depth estimation and
+visual odometry with deep feature reconstruction,” in CVPR, 2018,
+pp. 340–349.
+[144] V. Casser, S. Pirk, R. Mahjourian, and A. Angelova, “Depth prediction
+without the sensors: Leveraging structure for unsupervised learning
+from monocular videos,” in AAAI, vol. 33, 2019, pp. 8001–8008.
+[145] S. Elkerdawy, H. Zhang, and N. Ray, “Lightweight monocular depth
+estimation model by joint end-to-end ﬁlter pruning,” arXiv preprint
+arXiv:1905.05212, 2019.
+[146] C. Godard, O. Mac Aodha, M. Firman, and G. J. Brostow, “Digging
+into self-supervised monocular depth estimation,” in ICCV, 2019, pp.
+3828–3838.
+[147] J. Watson, M. Firman, G. J. Brostow, and D. Turmukhambetov, “Self-
+supervised monocular depth hints,” in ICCV, 2019, pp. 2162–2171.
+[148] N. Zioulis, A. Karakottas, D. Zarpalas, F. Alvarez, and P. Daras,
+“Spherical view synthesis for self-supervised 360° depth estimation,”
+in 3DV, 2019, pp. 690–699.
+[149] M. Klingner, J.-A. Term¨ohlen, J. Mikolajczyk, and T. Fingscheidt,
+“Self-supervised monocular depth estimation: Solving the dynamic ob-
+ject problem by semantic guidance,” arXiv preprint arXiv:2007.06936,
+2020.
+[150] K.-S. Peng, G. Ditzler, and J. Rozenblit, “Edge-guided occlusion
+fading reduction for a light-weighted self-supervised monocular depth
+estimation,” arXiv preprint arXiv:1911.11705, 2019.
+[151] C. Shu, K. Yu, Z. Duan, and K. Yang, “Feature-metric loss for
+self-supervised learning of depth and egomotion,” arXiv preprint
+arXiv:2007.10603, 2020.
+[152] F. Xue, G. Zhuo, Z. Huang, W. Fu, Z. Wu, and M. H. Ang Jr, “Toward
+hierarchical self-supervised monocular absolute depth estimation for
+autonomous driving applications,” arXiv preprint arXiv:2004.05560,
+2020.
+
+22
+[153] P. Z. Ramirez, M. Poggi, F. Tosi, S. Mattoccia, and L. Di Stefano,
+“Geometry meets semantics for semi-supervised monocular depth
+estimation,” in ACCV, 2018, pp. 298–313.
+[154] A. J. Amiri, S. Y. Loo, and H. Zhang, “Semi-supervised monocular
+depth estimation with left-right consistency using deep neural net-
+work,” in ROBIO, 2019, pp. 602–607.
+[155] A. Atapour-Abarghouei and T. P. Breckon, “Real-time monocular
+depth estimation using synthetic data with domain adaptation via
+image style transfer,” in CVPR, 2018, pp. 2800–2810.
+[156] C. Zheng, T.-J. Cham, and J. Cai, “T2Net: Synthetic-to-realistic
+translation for solving single-image depth estimation tasks,” in ECCV,
+2018, pp. 767–783.
+[157] S. Zhao, H. Fu, M. Gong, and D. Tao, “Geometry-aware symmetric
+domain adaptation for monocular depth estimation,” in CVPR, 2019,
+pp. 9788–9798.
+[158] V. Patil, W. Van Gansbeke, D. Dai, and L. Van Gool, “Don’t forget the
+past: Recurrent depth estimation from monocular video,” IEEE RAL,
+vol. 5, no. 4, pp. 6813–6820, 2020.
+[159] N. dos Santos Rosa, V. Guizilini, and V. Grassi, “Sparse-to-continuous:
+Enhancing monocular depth estimation using occupancy maps,” in
+2019 19th International Conference on Advanced Robotics (ICAR),
+2019, pp. 793–800.
+[160] V. Guizilini, J. Li, R. Ambrus, S. Pillai, and A. Gaidon, “Robust semi-
+supervised monocular depth estimation with reprojected distances,” in
+CoRL, 2020, pp. 503–512.
+[161] Y. Zhao, S. Kong, D. Shin, and C. Fowlkes, “Domain decluttering:
+simplifying images to mitigate synthetic-real domain shift and improve
+depth estimation,” in CVPR, 2020, pp. 3330–3340.
+[162] H. Tian and F. Li, “Semi-supervised depth estimation from a single
+image based on conﬁdence learning,” in ICASSP, 2019, pp. 8573–
+8577.
+[163] R. Ji, K. Li, Y. Wang, X. Sun, F. Guo, X. Guo, Y. Wu, F. Huang,
+and J. Luo, “Semi-supervised adversarial monocular depth estimation,”
+IEEE TPAMI, vol. 42, no. 10, pp. 2410–2422, 2019.
+[164] M. Yue, G. Fu, M. Wu, and H. Wang, “Semi-supervised monocular
+depth estimation based on semantic supervision,” JIRS, 2020.
+[165] J. Pang, W. Sun, J. S. Ren, C. Yang, and Q. Yan, “Cascade residual
+learning: A two-stage convolutional neural network for stereo match-
+ing,” in ICCV, 2017, pp. 887–895.
+[166] A. Tonioni, M. Poggi, S. Mattoccia, and L. Di Stefano, “Unsupervised
+domain adaptation for depth prediction from images,” IEEE TPAMI,
+2019.
+[167] Y. Jing, Y. Yang, Z. Feng, J. Ye, Y. Yu, and M. Song, “Neural style
+transfer: A review,” IEEE TVCG, vol. 26, no. 11, pp. 3365–3385, 2019.
+[168] Y. Liao, L. Huang, Y. Wang, S. Kodagoda, Y. Yu, and Y. Liu, “Parse
+geometry from a line: Monocular depth estimation with partial laser
+observation,” in ICRA, 2017, pp. 5059–5066.
+[169] M. Jaritz, R. De Charette, E. Wirbel, X. Perrotton, and F. Nashashibi,
+“Sparse and dense data with CNNs: Depth completion and semantic
+segmentation,” in 3DV, 2018, pp. 52–60.
+[170] T.-H. Wang, F.-E. Wang, J.-T. Lin, Y.-H. Tsai, W.-C. Chiu, and M. Sun,
+“Plug-and-play: Improve depth prediction via sparse data propagation,”
+in ICRA, 2019, pp. 5880–5886.
+[171] Y. Chen, B. Yang, M. Liang, and R. Urtasun, “Learning joint 2D-3D
+representations for depth completion,” in ICCV, 2019, pp. 10 023–
+10 032.
+[172] E. Yurtsever, J. Lambert, A. Carballo, and K. Takeda, “A survey of
+autonomous driving: Common practices and emerging technologies,”
+IEEE Access, vol. 8, pp. 58 443–58 469, 2020.
+[173] A. G. Howard, M. Zhu, B. Chen, D. Kalenichenko, W. Wang,
+T. Weyand, M. Andreetto, and H. Adam, “MobileNets: Efﬁcient
+convolutional neural networks for mobile vision applications,” arXiv
+preprint arXiv:1704.04861, 2017.
+[174] M. Sandler, A. Howard, M. Zhu, A. Zhmoginov, and L.-C. Chen,
+“MobileNetV2: Inverted residuals and linear bottlenecks,” in CVPR,
+2018, pp. 4510–4520.
+[175] S. Oh, H.-J. S. Kim, J. Lee, and J. Kim, “RRNet: Repetition-reduction
+network for energy efﬁcient depth estimation,” IEEE Access, vol. 8,
+pp. 106 097–106 108, 2020.
+[176] X. Yin, X. Wang, X. Du, and Q. Chen, “Scale recovery for monocular
+visual odometry using depth estimated with deep convolutional neural
+ﬁelds,” in ICCV, 2017, pp. 5870–5878.
+[177] H. Luo, Y. Gao, Y. Wu, C. Liao, X. Yang, and K.-T. Cheng, “Real-
+time dense monocular SLAM with online adapted depth prediction
+network,” IEEE TMM, vol. 21, no. 2, pp. 470–483, 2018.
+[178] N. Yang, R. Wang, J. Stuckler, and D. Cremers, “Deep virtual stereo
+odometry: Leveraging deep depth prediction for monocular direct
+sparse odometry,” in ECCV, 2018, pp. 817–833.
+[179] R. d. Q. Mendes, E. G. Ribeiro, N. d. S. Rosa, and V. Grassi Jr,
+“On deep learning techniques to boost monocular depth estimation
+for autonomous navigation,” arXiv preprint arXiv:2010.06626, 2020.
+[180] J. Michels, A. Saxena, and A. Y. Ng, “High speed obstacle avoidance
+using monocular vision and reinforcement learning,” in ICML, 2005,
+pp. 593–600.
+[181] H. Alvarez, L. M. Paz, J. Sturm, and D. Cremers, “Collision avoidance
+for quadrotors with a monocular camera,” in Experimental Robotics,
+2016, pp. 195–209.
+[182] P. Chakravarty, K. Kelchtermans, T. Roussel, S. Wellens, T. Tuytelaars,
+and L. Van Eycken, “CNN-based single image obstacle avoidance on
+a quadrotor,” in ICRA, 2017, pp. 6369–6374.
+[183] Z. Zhang, M. Xiong, and H. Xiong, “Monocular depth estimation for
+UAV obstacle avoidance,” in CCIOT, 2019, pp. 43–47.
+[184] J. Lin, H. Zhu, and J. Alonso-Mora, “Robust vision-based obstacle
+avoidance for micro aerial vehicles in dynamic environments,” arXiv
+preprint arXiv:2002.04920, 2020.
+[185] T. Scharw¨achter and U. Franke, “Low-level fusion of color, texture and
+depth for robust road scene understanding,” in IV, 2015, pp. 599–604.
+[186] L. RoJas-Perez, R. Munguia-Silva, and J. Martinez-Carranza, “Real-
+time landing zone detection for UAVs using single aerial images,” in
+IMAVCC, 2018, pp. 243–248.
+[187] P. Li, M. Garratt, A. Lambert, and S. Lin, “Metric sensing and
+control of a quadrotor using a homography-based visual inertial fusion
+method,” RAS, vol. 76, pp. 1–14, 2016.
+[188] J. Wang, M. Garratt, S. Anavatti, and S. Lin, “Real-time visual
+odometry for autonomous mav navigation using rgb-d camera,” in
+ROBIO, 2015, pp. 1353–1358.
+[189] J. Engel, T. Sch¨ops, and D. Cremers, “LSD-SLAM: Large-scale direct
+monocular SLAM,” in ECCV, 2014, pp. 834–849.
+[190] S. Y. Loo, A. J. Amiri, S. Mashohor, S. H. Tang, and H. Zhang,
+“CNN-SVO: Improving the mapping in semi-direct visual odometry
+using single-image depth prediction,” in ICRA, 2019, pp. 5218–5223.
+[191] L. Matthies, R. Brockers, Y. Kuwata, and S. Weiss, “Stereo vision-
+based obstacle avoidance for micro air vehicles using disparity space,”
+in ICRA, 2014, pp. 3242–3249.
+[192] R. Brockers, A. Fragoso, B. Rothrock, C. Lee, and L. Matthies,
+“Vision-based obstacle avoidance for micro air vehicles using an
+egocylindrical depth map,” in ISER, 2016, pp. 505–514.
+[193] N. Wojke and M. H¨aselich, “Moving vehicle detection and tracking
+in unstructured environments,” in ICRA, 2012, pp. 3082–3087.
+[194] D. Z. Wang, I. Posner, and P. Newman, “What could move? ﬁnding
+cars, pedestrians and bicyclists in 3d laser data,” in ICRA, 2012, pp.
+4038–4044.
+[195] A. Cherubini, F. Spindler, and F. Chaumette, “Autonomous visual
+navigation and laser-based moving obstacle avoidance,” IEEE TITS,
+vol. 15, no. 5, pp. 2101–2110, 2014.
+[196] J. Hu, Y. Zhang, and T. Okatani, “Visualization of convolutional neural
+networks for monocular depth estimation,” in ICCV, 2019, pp. 3869–
+3878.
+[197] T. v. Dijk and G. d. Croon, “How do neural networks see depth in
+single images?” in ICCV, 2019, pp. 2183–2191.

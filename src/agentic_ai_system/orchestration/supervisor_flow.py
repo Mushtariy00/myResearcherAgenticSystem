@@ -88,6 +88,9 @@ class ResearchSupervisorFlow(Flow[SupervisorState]):
     def _run_id(self) -> str:
         return run_id(self)
 
+    def _log_stage(self, stage: str, status: str) -> None:
+        print(f"[run:{self._run_id()}] [stage:{stage}] {status}")
+
     def _kickoff_with_retry(self, stage: str, agent: Any, prompt: str, attempts: int = 3) -> Any:
         return kickoff_with_retry(self, stage, agent, prompt, attempts=attempts)
 
@@ -176,33 +179,51 @@ class ResearchSupervisorFlow(Flow[SupervisorState]):
         self._persistence.start_run(run_id(self), self.state.topic, self.state.current_year)
         self._persistence.stage_event(run_id(self), "initialize", "completed", "Flow initialized")
         print(f"Starting supervisor flow for topic: {self.state.topic}")
+        self._log_stage("initialize", "completed")
         return self.state.topic
 
     @listen(initialize)
     def literature_stage(self, _topic: str) -> LiteratureResearchOutput:
-        return run_literature_stage(self)
+        self._log_stage("literature", "started")
+        result = run_literature_stage(self)
+        self._log_stage("literature", "completed")
+        return result
 
     @listen(literature_stage)
     def pdf_fetch_stage(self, _literature_output: LiteratureResearchOutput) -> LiteratureFetchOutput:
-        # Use the literature_fetch_output from flow.state (populated by run_literature_stage)
-        if hasattr(self.state, 'literature_fetch_output') and self.state.literature_fetch_output:
-            return self.state.literature_fetch_output
-        # Fallback: return empty output if no fetch output available
-        from agentic_ai_system.schemas.fetches import LiteratureFetchOutput
-        return LiteratureFetchOutput(papers=[])
+        self._log_stage("pdf_fetch", "started")
+        if self.state.literature_output is None:
+            from agentic_ai_system.schemas.fetches import LiteratureFetchOutput
+            self._log_stage("pdf_fetch", "completed")
+            return LiteratureFetchOutput(papers=[])
+        result = run_pdf_fetch_stage(self, self.state.literature_output)
+        self._log_stage("pdf_fetch", "completed")
+        return result
 
     @listen(pdf_fetch_stage)
     def method_stage(self, _fetch_output: LiteratureFetchOutput) -> MethodStageOutput:
-        return run_method_stage(self, self.state.literature_output)
+        self._log_stage("method", "started")
+        result = run_method_stage(self, self.state.literature_output)
+        self._log_stage("method", "completed")
+        return result
 
     @listen(method_stage)
     def coding_stage(self, method_output: MethodStageOutput) -> CodingStageOutput:
-        return run_coding_stage(self, method_output)
+        self._log_stage("coding", "started")
+        result = run_coding_stage(self, method_output)
+        self._log_stage("coding", "completed")
+        return result
 
     @listen(coding_stage)
     def experiment_stage(self, coding_output: CodingStageOutput) -> ExperimentStageOutput:
-        return run_experiment_stage_flow(self, coding_output)
+        self._log_stage("experiment", "started")
+        result = run_experiment_stage_flow(self, coding_output)
+        self._log_stage("experiment", "completed")
+        return result
 
     @listen(experiment_stage)
     def writing_stage(self, experiment_output: ExperimentStageOutput) -> WritingStageOutput:
-        return run_writing_stage(self, experiment_output)
+        self._log_stage("writing", "started")
+        result = run_writing_stage(self, experiment_output)
+        self._log_stage("writing", "completed")
+        return result

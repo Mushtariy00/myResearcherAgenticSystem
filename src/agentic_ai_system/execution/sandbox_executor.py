@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import py_compile
 import re
 import subprocess
@@ -16,190 +17,193 @@ def _slugify(value: str) -> str:
 
 def _default_file_list() -> list[str]:
     return [
-        "src/lct_depth/__init__.py",
-        "src/lct_depth/conv_encoder.py",
-        "src/lct_depth/token_sparsifier.py",
-        "src/lct_depth/decoder.py",
-        "src/lct_depth/lct_depth_model.py",
-        "train_lct_depth.py",
-        "benchmark.py",
         "README.md",
+        "config/base.yaml",
+        "config/smoke.yaml",
+        "src/agentic_ai_system/__init__.py",
+        "src/agentic_ai_system/data/__init__.py",
+        "src/agentic_ai_system/data/loader.py",
+        "src/agentic_ai_system/data/transforms.py",
+        "src/agentic_ai_system/model/__init__.py",
+        "src/agentic_ai_system/model/base.py",
+        "src/agentic_ai_system/model/registry.py",
+        "src/agentic_ai_system/train/__init__.py",
+        "src/agentic_ai_system/train/loop.py",
+        "src/agentic_ai_system/train/generic_losses.py",
+        "src/agentic_ai_system/train/generic_metrics.py",
+        "src/agentic_ai_system/train/metrics.py",
+        "src/agentic_ai_system/train/evaluate.py",
     ]
 
 
-def _content_for_init() -> str:
-    return '"""Generated research package."""\n'
+def _allowed_task_files(topic: str) -> set[str]:
+    task_slug = _slugify(topic)
+    return {
+        f"src/agentic_ai_system/data/{task_slug}_loader.py",
+        f"src/agentic_ai_system/model/{task_slug}_architectures.py",
+        f"src/agentic_ai_system/train/{task_slug}_losses.py",
+        f"src/agentic_ai_system/train/{task_slug}_metrics.py",
+        f"config/{task_slug}.yaml",
+    }
 
 
-def _content_for_conv_encoder(topic: str) -> str:
-    return f'''"""Feature encoder for the {topic} scaffold."""
-
-from __future__ import annotations
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[3]
 
 
-class ConvEncoder:
-    def __init__(self) -> None:
-        self.name = "ConvEncoder"
-
-    def encode(self, sample: str) -> list[str]:
-        return [token for token in sample.lower().split() if token]
-'''
-
-
-def _content_for_token_sparsifier(topic: str) -> str:
-    return f'''"""Token sparsifier for the {topic} scaffold."""
-
-from __future__ import annotations
-
-
-class TokenSparsifier:
-    def __init__(self, keep_ratio: float = 0.3) -> None:
-        self.keep_ratio = keep_ratio
-
-    def sparsify(self, tokens: list[str]) -> list[str]:
-        if not tokens:
-            return []
-        count = max(1, int(len(tokens) * self.keep_ratio))
-        return tokens[:count]
-'''
-
-
-def _content_for_decoder(topic: str) -> str:
-    return f'''"""Output decoder for the {topic} scaffold."""
-
-from __future__ import annotations
-
-
-class DepthDecoder:
-    def __init__(self) -> None:
-        self.name = "DepthDecoder"
-
-    def decode(self, features: list[str]) -> str:
-        return " | ".join(features) if features else "no-features"
-'''
-
-
-def _content_for_lct_depth_model(topic: str, method_output: MethodStageOutput) -> str:
-    focus = method_output.implementation_focus or method_output.recommended_option or "n/a"
-    return f'''"""End-to-end depth model scaffold for {topic}."""
-
-from __future__ import annotations
-
-from .conv_encoder import ConvEncoder
-from .decoder import DepthDecoder
-from .token_sparsifier import TokenSparsifier
-
-
-class LCTDepthModel:
-    def __init__(self) -> None:
-        self.encoder = ConvEncoder()
-        self.sparsifier = TokenSparsifier()
-        self.decoder = DepthDecoder()
-        self.recommended_method = {focus!r}
-
-    def predict(self, sample: str) -> str:
-        features = self.encoder.encode(sample)
-        sparse_features = self.sparsifier.sparsify(features)
-        return self.decoder.decode(sparse_features)
-
-
-def build_model() -> LCTDepthModel:
-    return LCTDepthModel()
-'''
-
-
-def _content_for_train_script(topic: str) -> str:
-    return f'''"""Train the generated {topic} scaffold."""
-
-from __future__ import annotations
-
-from pathlib import Path
-import sys
-
-sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
-
-from lct_depth.lct_depth_model import build_model
-
-
-def main() -> None:
-    model = build_model()
-    sample = "monocular depth estimation scaffold"
-    print("trainable scaffold ready")
-    print(f"prediction: {{model.predict(sample)}}")
-
-
-if __name__ == "__main__":
-    main()
-'''
-
-
-def _content_for_benchmark(topic: str) -> str:
-    return f'''"""Benchmark the generated {topic} scaffold."""
-
-from __future__ import annotations
-
-import time
-from pathlib import Path
-import sys
-
-sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
-
-from lct_depth.lct_depth_model import build_model
-
-
-def main() -> None:
-    model = build_model()
-    sample = "monocular depth estimation scaffold benchmark"
-    t0 = time.perf_counter()
-    y = model.predict(sample)
-    elapsed_ms = (time.perf_counter() - t0) * 1000.0
-    print(f"latency_ms={{elapsed_ms:.3f}}")
-    print(f"prediction={{y}}")
-
-
-if __name__ == "__main__":
-    main()
-'''
+def _read_repo_file(rel_path: str) -> str:
+    repo_path = _repo_root() / rel_path
+    return repo_path.read_text(encoding="utf-8")
 
 
 def _content_for_readme(topic: str, method_output: MethodStageOutput) -> str:
+    focus = method_output.implementation_focus or method_output.recommended_option or "n/a"
     return (
-        "# Sandbox Artifact\n\n"
+        "# Sandbox Pipeline Scaffold\n\n"
         f"Topic: {topic}\n\n"
-        f"Recommended method: {method_output.implementation_focus or method_output.recommended_option or 'n/a'}\n\n"
-        "Run:\n"
+        f"Recommended method focus: {focus}\n\n"
+        "Run smoke test:\n"
         "```bash\n"
-        "python train_lct_depth.py\n"
-        "python benchmark.py\n"
+        "PYTHONPATH=src python -m agentic_ai_system.train.loop --config config/smoke.yaml --dry-run\n"
+        "```\n\n"
+        "Run full config:\n"
+        "```bash\n"
+        "PYTHONPATH=src python -m agentic_ai_system.train.loop --config config/base.yaml\n"
         "```\n"
     )
 
 
+def _content_for_base_config(method_output: MethodStageOutput) -> str:
+    focus = method_output.implementation_focus or method_output.recommended_option or "n/a"
+    return f"""task_type: generic
+notes: "{focus}"
+model:
+  architecture: dummy
+  kwargs:
+    input_dim: 3
+    output_dim: 1
+data:
+  synthetic: true
+  batch_size: 8
+  num_workers: 0
+  input_shape: [3, 64, 64]
+  output_shape: [1, 64, 64]
+training:
+  loss: mse
+  epochs: 2
+  learning_rate: 0.001
+  optimizer_type: adam
+evaluation:
+  metric: mse
+output:
+  experiment_dir: outputs/experiments
+"""
+
+
+def _content_for_smoke_config(method_output: MethodStageOutput) -> str:
+    focus = method_output.implementation_focus or method_output.recommended_option or "n/a"
+    return f"""task_type: generic
+notes: "smoke test for {focus}"
+model:
+  architecture: dummy
+  kwargs:
+    input_dim: 3
+    output_dim: 1
+data:
+  synthetic: true
+  batch_size: 4
+  num_workers: 0
+  input_shape: [3, 64, 64]
+  output_shape: [1, 64, 64]
+training:
+  loss: mse
+  epochs: 1
+  learning_rate: 0.001
+evaluation:
+  metric: mse
+output:
+  experiment_dir: outputs/experiments
+"""
+
+
+def _content_for_transforms() -> str:
+    return '''"""Identity transforms placeholder."""
+
+from __future__ import annotations
+
+
+def build_transforms(config: dict | None = None):
+    return lambda x: x
+'''
+
+
+def _content_for_base_model() -> str:
+    return '''"""Base model interface placeholder."""
+
+from __future__ import annotations
+
+import torch.nn as nn
+
+
+class BaseModel(nn.Module):
+    def forward(self, x):  # type: ignore[override]
+        raise NotImplementedError
+'''
+
+
+def _content_for_metrics_stub() -> str:
+    return '''"""Metrics stub for future expansion."""
+
+from __future__ import annotations
+
+from .generic_metrics import get_metric
+
+__all__ = ["get_metric"]
+'''
+
+
+def _content_for_evaluate_stub() -> str:
+    return '''"""Evaluation stub for future expansion."""
+
+from __future__ import annotations
+
+
+def evaluate(*args, **kwargs):
+    return {}
+'''
+
+
 def _content_for_file(path: str, topic: str, method_output: MethodStageOutput) -> str:
-    name = Path(path).name.lower()
-    if name == "__init__.py":
-        return _content_for_init()
-    if name == "conv_encoder.py":
-        return _content_for_conv_encoder(topic)
-    if name == "token_sparsifier.py":
-        return _content_for_token_sparsifier(topic)
-    if name == "decoder.py":
-        return _content_for_decoder(topic)
-    if name == "lct_depth_model.py":
-        return _content_for_lct_depth_model(topic, method_output)
-    if name == "train_lct_depth.py":
-        return _content_for_train_script(topic)
-    if name == "benchmark.py":
-        return _content_for_benchmark(topic)
+    normalized = path.replace("\\", "/")
+    name = Path(normalized).name.lower()
+    if normalized == "config/base.yaml":
+        return _content_for_base_config(method_output)
+    if normalized == "config/smoke.yaml":
+        return _content_for_smoke_config(method_output)
+    if normalized == "src/agentic_ai_system/data/loader.py":
+        return _read_repo_file("src/agentic_ai_system/data/loader.py")
+    if normalized == "src/agentic_ai_system/model/registry.py":
+        return _read_repo_file("src/agentic_ai_system/model/registry.py")
+    if normalized == "src/agentic_ai_system/train/loop.py":
+        return _read_repo_file("src/agentic_ai_system/train/loop.py")
+    if normalized == "src/agentic_ai_system/train/generic_losses.py":
+        return _read_repo_file("src/agentic_ai_system/train/generic_losses.py")
+    if normalized == "src/agentic_ai_system/train/generic_metrics.py":
+        return _read_repo_file("src/agentic_ai_system/train/generic_metrics.py")
+    if normalized == "src/agentic_ai_system/data/transforms.py":
+        return _content_for_transforms()
+    if normalized == "src/agentic_ai_system/model/base.py":
+        return _content_for_base_model()
+    if normalized == "src/agentic_ai_system/train/metrics.py":
+        return _content_for_metrics_stub()
+    if normalized == "src/agentic_ai_system/train/evaluate.py":
+        return _content_for_evaluate_stub()
     if name == "readme.md":
         return _content_for_readme(topic, method_output)
-    if name == "setup.py":
-        return (
-            "from setuptools import find_packages, setup\n\n"
-            "setup(name='lct_depth', version='0.1.0', package_dir={'': 'src'}, packages=find_packages('src'))\n"
-        )
+    if name == "__init__.py":
+        return '"""Generated research package."""\n'
     if name.endswith(".py"):
-        return _content_for_train_script(topic)
+        return '"""Placeholder generated by coding stage."""\n'
     return _content_for_readme(topic, method_output)
 
 
@@ -214,10 +218,11 @@ def execute_coding_stage(
     sandbox_dir = root / "sandbox" / f"{_slugify(topic)}_{timestamp}"
     sandbox_dir.mkdir(parents=True, exist_ok=True)
 
-    files = coding_output.files_to_create or _default_file_list()
-    normalized_files = list(files)
-    if any(path.startswith("src/lct_depth/") for path in normalized_files) and "src/lct_depth/__init__.py" not in normalized_files:
-        normalized_files.insert(0, "src/lct_depth/__init__.py")
+    base_files = _default_file_list()
+    allowed_files = _allowed_task_files(topic)
+    requested_files = [path for path in (coding_output.files_to_create or []) if path]
+    extra_files = [path for path in requested_files if path not in base_files and path in allowed_files]
+    normalized_files = [*base_files, *extra_files]
     created_files: list[str] = []
     validated_files: list[str] = []
     validation_errors: list[str] = []
@@ -238,22 +243,37 @@ def execute_coding_stage(
             except Exception as exc:
                 validation_errors.append(f"{file_path}: {exc}")
 
-    for runnable in ("train_lct_depth.py", "benchmark.py"):
-        script_path = sandbox_dir / runnable
-        if not script_path.exists():
-            continue
-        result = subprocess.run(
-            ["python3", runnable],
-            cwd=sandbox_dir,
-            capture_output=True,
-            text=True,
+    ignored_files = [path for path in requested_files if path not in base_files and path not in allowed_files]
+    if ignored_files:
+        validation_errors.append(
+            "ignored_unapproved_files: "
+            + ", ".join(sorted(set(ignored_files)))
         )
-        if result.returncode == 0:
-            validated_files.append(str(script_path))
-        else:
-            validation_errors.append(
-                f"{script_path}: runtime validation failed with code {result.returncode}: {result.stderr.strip()}"
-            )
+
+    smoke_cmd = [
+        "python3",
+        "-m",
+        "agentic_ai_system.train.loop",
+        "--config",
+        "config/smoke.yaml",
+        "--dry-run",
+    ]
+    env = {**os.environ, "PYTHONPATH": str(sandbox_dir / "src")}
+    result = subprocess.run(
+        smoke_cmd,
+        cwd=sandbox_dir,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if result.returncode == 0:
+        validated_files.append(str(sandbox_dir / "config/smoke.yaml"))
+    else:
+        stderr = result.stderr.strip() or result.stdout.strip()
+        validation_errors.append(
+            "smoke_test: runtime validation failed "
+            f"with code {result.returncode}: {stderr}"
+        )
 
     manifest_path = sandbox_dir / "coding_execution_manifest.json"
     manifest_path.write_text(

@@ -1,0 +1,15 @@
+{
+  "selected_indices": [
+    3,
+    4
+  ],
+  "rejected_indices": [
+    0,
+    1,
+    2,
+    5,
+    6,
+    7
+  ],
+  "selection_rationale": "Indices 3 and 4 directly address monocular depth estimation, the core of the required survey. #3 discusses recent trends and foundation models for vision\u2011based depth estimation, providing a broad overview of methods and benchmarks relevant to a 2023\u20112025 synthesis. #4 is explicitly a 'Survey on Monocular Metric Depth Estimation', focusing on metric scale depth prediction from a single RGB image, which aligns precisely with the target topic. The remaining papers are centered on monocular human pose estimation or unrelated applications and thus are not suitable for a depth\u2011estimation survey."
+}

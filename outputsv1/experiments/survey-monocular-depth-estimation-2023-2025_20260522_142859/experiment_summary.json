@@ -1,0 +1,54 @@
+{
+  "goal": "Evaluate the impact of hierarchical token pruning on monocular depth estimation accuracy, computational efficiency, and edge-case robustness for models trained on NYU Depth V2 and KITTI (2023\u20112025), targeting \u226530\u202ffps at 720p on a Jetson Orin Nano while maintaining depth error within 5\u202f% of the dense baseline.",
+  "config": {
+    "docker_image": "esa-vit-sandbox:latest",
+    "datasets": [
+      "NYU_Depth_V2",
+      "KITTI",
+      "SceneFlow_synthetic_edge"
+    ],
+    "model": "ESA_ViT",
+    "prune_rate": [
+      0.0,
+      0.4
+    ],
+    "dynamic_prune": false,
+    "curriculum": {
+      "enabled": true,
+      "start_epoch": 0,
+      "end_epoch": 20,
+      "max_prune": 0.4,
+      "schedule": "linear"
+    },
+    "training_epochs": 50,
+    "batch_size": 8,
+    "learning_rate": 0.0001,
+    "loss": [
+      "L1",
+      "SSIM"
+    ],
+    "evaluation_resolution": "720p",
+    "edge_case_test": true,
+    "target_fps": 30,
+    "target_flops_reduction": "4x",
+    "target_memory_reduction": "3x"
+  },
+  "metrics": {
+    "sandbox_created_files": 8.0,
+    "sandbox_validated_python_files": 5.0,
+    "sandbox_validation_rate": 0.625,
+    "runner_latency_ms": 0.007,
+    "absolute_relative_error_abs_rel": 0.0,
+    "root_mean_square_error_rmse": 0.0,
+    "delta_accuracy_1_25": 0.0,
+    "flops_gmac": 0.0,
+    "peak_gpu_memory_gb": 0.0,
+    "inference_fps": 0.0,
+    "token_count_per_layer": 0.0,
+    "training_loss_l1_ssim": 0.0,
+    "edge_rmse_on_synthetic_set": 0.0,
+    "model_size_mb": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840",
+  "validation_errors": []
+}

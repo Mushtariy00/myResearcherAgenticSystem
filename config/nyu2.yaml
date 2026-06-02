@@ -1,0 +1,22 @@
+task_type: nyu2
+model:
+  architecture: nyu2_simple
+  kwargs:
+    input_dim: 3
+    output_dim: 1
+    base_channels: 16
+data:
+  synthetic: false
+  root: /mnt/d/DATASET/nyu2/nyu2_metric_ready
+  split_file_template: /mnt/d/DATASET/nyu2/nyu2_metric_ready/splits/nyu/{split}.txt
+  normalize_rgb: true
+  batch_size: 4
+  num_workers: 0
+training:
+  loss: l1
+  epochs: 1
+  learning_rate: 0.001
+evaluation:
+  metric: rmse
+output:
+  experiment_dir: outputs/experiments

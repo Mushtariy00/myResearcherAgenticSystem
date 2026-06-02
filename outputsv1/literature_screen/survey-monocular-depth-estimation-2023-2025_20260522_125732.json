@@ -1,0 +1,15 @@
+{
+  "selected_indices": [
+    4
+  ],
+  "rejected_indices": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6,
+    7
+  ],
+  "selection_rationale": "Index 4 is a dedicated survey paper on monocular depth estimation, directly matching the target topic (2023\u20112025). All other entries focus on unrelated domains (human pose, colonoscopy, challenges, or single-method contributions) and do not provide a comprehensive review of monocular depth estimation, thus they are rejected."
+}

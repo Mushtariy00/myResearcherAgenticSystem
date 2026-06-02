@@ -1,0 +1,15 @@
+{
+  "selected_indices": [
+    3,
+    7,
+    4
+  ],
+  "rejected_indices": [
+    0,
+    1,
+    2,
+    5,
+    6
+  ],
+  "selection_rationale": "Indices 3, 7, and 4 correspond to surveys published in 2025 (Survey on Monocular Metric Depth Estimation), 2024 (Deep Learning-based Depth Estimation Methods from Monocular Image and Videos: A Comprehensive Survey), and 2021 (Towards Real-Time Monocular Depth Estimation for Robotics: A Survey). These papers focus explicitly on monocular depth estimation, cover recent methodological advances, and include benchmark discussions, making them directly relevant for a 2023\u20112025 literature synthesis. The remaining papers are either older (pre\u20112020) surveys, focus on binocular stereo, or target niche domains (e.g., endoscopy) that do not align with the core topic."
+}

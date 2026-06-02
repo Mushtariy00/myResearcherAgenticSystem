@@ -1,0 +1,24 @@
+{
+  "contract_version": "1",
+  "stage": "writing",
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-20T00:22:36.702290",
+  "primary_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/00_summary.md",
+  "auxiliary_paths": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/00_summary.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/01_abstract.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/02_introduction.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/03_background-related-work.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/04_benchmark-design-and-methodology.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/05_implementation-details.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/06_results.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/07_discussion.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/08_conclusion-and-future-work.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260520_002236/09_appendix.md"
+  ],
+  "summary": "Writing plan stored",
+  "status": "completed",
+  "metadata": {
+    "sections": 9
+  }
+}

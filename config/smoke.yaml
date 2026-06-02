@@ -1,0 +1,30 @@
+run:
+  dry_run: true
+  epochs: 1
+  max_batches: 2
+  seed: 42
+
+task_type: generic
+
+data:
+  batch_size: 2
+  num_workers: 0
+  source: synthetic
+  synthetic: true
+  input_shape: [3, 64, 64]
+  output_shape: [1, 64, 64]
+  input_dtype: float32
+
+model:
+  architecture: dummy
+  kwargs: {}
+
+training:
+  epochs: 1
+  optimizer_type: adam
+  learning_rate: 0.001
+  weight_decay: 0.0
+  loss: mse
+
+evaluation:
+  metric: mse

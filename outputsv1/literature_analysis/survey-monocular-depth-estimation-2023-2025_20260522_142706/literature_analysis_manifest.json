@@ -1,0 +1,62 @@
+[
+  {
+    "index": 0,
+    "title": "Survey on Monocular Metric Depth Estimation",
+    "source": "arXiv preprint arXiv:2501.11841v4  (2025)",
+    "relevance_assessment": "Highly relevant \u2013 the paper is a dedicated survey of Monocular Metric Depth Estimation (MMDE) covering the period up to 2025, discusses datasets, methodological trends (adaptive binning, transformer designs, zero\u2011shot/generalization), key models (Zoedepth, Depth Anything, UniDepth, PatchFusion, DMD, Marigold, GeoWizard), and outlines current limitations and open challenges, directly matching the requested 2023\u20112025 scope.",
+    "key_findings": [
+      "MMDE has shifted from geometry\u2011based pipelines to deep models that predict absolute depth, enabling metric\u2011scale 3D perception for SLAM, navigation, and view synthesis.",
+      "Adaptive\u2011binning techniques (AdaBins, LocalBins, BinsFormer) and transformer\u2011based architectures markedly improve depth accuracy and scale consistency.",
+      "Zero\u2011shot/generalizable models such as ZoeDepth, UniDepth and Depth Anything demonstrate strong cross\u2011domain performance by leveraging massive semi\u2011supervised data (e.g., 62\u202fM self\u2011annotated images).",
+      "Patch\u2011based inference (PatchFusion, PatchRefiner) helps preserve fine\u2011grained boundaries but incurs higher computational cost.",
+      "Generative diffusion approaches (Marigold, GeoWizard, DMD) can recover high\u2011frequency details and handle challenging materials, yet remain slower and often produce relative rather than metric depth.",
+      "Hybrid sensor prompting (sparse LiDAR cues) offers a practical route to boost metric accuracy while keeping a vision\u2011centric pipeline."
+    ],
+    "limitations": [
+      "Generalization to unseen domains still suffers from geometric blurring and loss of fine detail, especially in high\u2011resolution or outdoor scenes.",
+      "Patch\u2011based methods improve detail but scale poorly with image size, limiting real\u2011time deployment.",
+      "Diffusion\u2011based MMDE provides superior fidelity but requires multi\u2011step inference, leading to latency and higher memory usage.",
+      "Benchmarking is hindered by inconsistent datasets, training protocols, and a lack of standardized evaluation for metric depth.",
+      "Many state\u2011of\u2011the\u2011art models depend on large\u2011scale annotated or pseudo\u2011labeled data, raising concerns about data bias and robustness."
+    ],
+    "evidence_snippets": [
+      "\u201cMonocular Metric Depth Estimation (MMDE) overcomes this challenge by producing depth maps with absolute scale\u2026 This survey reviews the evolution of MMDE, from geometry\u2011based methods to state\u2011of\u2011the\u2011art deep models\u2026\u201d (Abstract)",
+      "\u201cRecent work has shifted toward Monocular Metric Depth Estimation (MMDE)\u2026 Industry leaders\u2026 have advanced MMDE through large\u2011scale datasets, high\u2011performance computing, and novel architectures\u201d (Preliminary)",
+      "\u201cAdaBins introduced dynamic depth bin allocation\u2026 refined by LocalBins\u2026 BinsFormer integrated Transformers for global\u2011local bin optimization\u201d (Section\u202f5)",
+      "\u201cZoeDepth (Bhat et\u202fal.,\u202f2023) \u2026 achieved strong cross\u2011domain generalization across indoor and outdoor datasets\u201d (Section\u202f5)",
+      "\u201cDepth Anything employs a semi\u2011supervised framework generating 62M self\u2011annotated images\u2026 enabling strong cross\u2011domain adaptation\u201d (6.1 Generalizability)",
+      "\u201cPatchFusion improves accuracy via optimized patch weighting, but inference scales with patch count, causing latency\u201d (6.2 Blurriness)",
+      "\u201cGenerative diffusion models \u2026 Marigold achieves sharper predictions \u2026 GeoWizard introduces scene\u2011aware decoupling \u2026 DMD incorporates field\u2011of\u2011view conditioning \u2026 inference inefficiency remains a bottleneck\u201d (6.2\u20116.3)",
+      "\u201cTable\u202f2 \u2026 results across six zero\u2011shot (higher\u2011is\u2011better) and two non\u2011zero\u2011shot (AbsRel, lower\u2011is\u2011better) benchmarks \u2026 the absence of standardized datasets \u2026 continues to hinder fair cross\u2011model comparison.\u201d (6.4 Analysis)",
+      "\u201cA clear research trend is zero\u2011shot generalization\u2026 approaches like ZoeDepth and UniDepth demonstrate promising transferability\u201d (Summary and Outlook)"
+    ],
+    "summary": "The survey provides a comprehensive overview of Monocular Metric Depth Estimation (MMDE) up to 2025, tracing its evolution from geometry\u2011based pipelines to deep learning models that produce absolute\u2011scale depth maps. It highlights methodological breakthroughs such as adaptive binning (AdaBins, LocalBins, BinsFormer), transformer\u2011based encoders, and large\u2011scale semi\u2011supervised training (Depth Anything, ZoeDepth, UniDepth) that enable strong zero\u2011shot generalization across indoor and outdoor domains. Patch\u2011based refinements improve boundary preservation but increase latency, while diffusion generative models (Marigold, GeoWizard, DMD) offer high\u2011frequency detail at the cost of computational efficiency. The paper identifies persistent challenges: domain generalization, fine\u2011detail loss, inference speed, and the lack of standardized benchmarks. Future directions emphasize efficient architectures, hybrid sensor prompting, and better loss designs to achieve universally accurate, fast, and metric\u2011consistent depth estimation."
+  },
+  {
+    "index": 0,
+    "title": "Deep Learning-based Depth Estimation Methods from Monocular Image and Videos: A Comprehensive Survey",
+    "source": "Full text of the paper (provided in chunks)",
+    "relevance_assessment": "Highly relevant. The paper surveys >160 deep learning based monocular depth estimation works from 2012\u20112024, presents a taxonomy (input/output modalities, network architectures, supervision levels, datasets, domain adaptation), discusses challenges, pipelines, loss functions, and future directions, directly addressing the state\u2011of\u2011the\u2011art 2023\u20112025 landscape.",
+    "key_findings": [
+      "Monocular depth estimation methods are classified by input (single image or video), output (dense/sparse, absolute/relative), architecture (CNN, ViT, RNN, GAN, hybrid), and supervision (3\u2011D supervised, self\u2011supervised, semi\u2011/weakly\u2011supervised, online learning).",
+      "Self\u2011supervised methods dominate recent research, using photometric reprojection losses with stereo or video cues, but suffer from occlusions, dynamic objects, and texture\u2011less regions.",
+      "Vision\u2011Transformer\u2011based backbones and CNN\u2011ViT hybrids improve generalization by capturing long\u2011range dependencies, yet remain computationally expensive.",
+      "Domain adaptation techniques (fine\u2011tuning, style\u2011transfer GANs) are essential for day\u2011night, indoor\u2011outdoor, and synthetic\u2011real transfers.",
+      "Key limitations include poor depth for thin/distant objects, reflective/transparent materials, reliance on accurate camera poses, and lack of explainability."
+    ],
+    "limitations": [
+      "Self\u2011supervised approaches struggle with moving objects, occlusions, and repetitive textures, often requiring masking strategies that reduce usable data.",
+      "Transformer\u2011based models have high memory/computation cost, limiting real\u2011time deployment on embedded devices.",
+      "Most surveys (including this one) focus on RGB\u2011D datasets; synthetic datasets lack realistic lighting and material properties, hindering transferability.",
+      "Current methods rarely address extreme viewpoints (aerial, fisheye, worm\u2019s\u2011eye) or sub\u2011pixel accuracy required in medical/industrial applications."
+    ],
+    "evidence_snippets": [
+      "\u201cWe present a taxonomy of existing methods that consolidate their input and output modalities, network architectures, and supervision modes.\u201d",
+      "\u201cSelf\u2011supervised monocular depth estimation methods tackle the challenge of not having enough ground\u2011truth 3D data for training\u2026 using a photometric similarity loss function\u2026\u201d",
+      "\u201cVision Transformers represent an image as a series of patches\u2026 They are known to be a better solution than the CNNs as they overcome the limited receptive field issue.\u201d",
+      "\u201cDomain adaptation is crucial\u2026 GAN\u2011based style transfer methods\u2026 adapt synthetic data to real\u2011world domains.\u201d",
+      "\u201cInaccurate results for thin, small, and distant objects\u2026 Estimating depth for such objects is challenging.\u201d"
+    ],
+    "summary": "The survey provides a comprehensive, taxonomy\u2011driven overview of deep learning\u2011based monocular depth estimation up to 2024, covering over 160 papers and detailing input/output formats, network designs, supervision strategies, datasets, and domain adaptation methods. It highlights the prominence of self\u2011supervised learning with photometric reprojection losses, the rise of Vision Transformers and hybrid CNN\u2011ViT architectures for better global context, and the importance of domain adaptation to bridge synthetic\u2011real gaps. Persistent challenges include handling dynamic scenes, occlusions, thin or reflective objects, and the computational burden of transformer models, limiting real\u2011time deployment. The paper also identifies under\u2011explored areas such as extreme viewpoints, sub\u2011pixel accuracy for medical use, and model interpretability, outlining directions for future research."
+  }
+]

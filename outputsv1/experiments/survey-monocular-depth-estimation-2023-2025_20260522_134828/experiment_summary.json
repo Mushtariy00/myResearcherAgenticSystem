@@ -1,0 +1,36 @@
+{
+  "goal": "Create a reproducible benchmark suite for evaluating monocular depth estimation models (2023\u20112025) across multiple datasets, metrics, and robustness scenarios, with automated CI validation and a server\u2011backed results store.",
+  "config": {
+    "docker_image": "mono-depth-benchmark:latest",
+    "datasets": [
+      "kitti_subset",
+      "nyu_subset",
+      "synthia_subset"
+    ],
+    "models": [
+      "baseline_resnet18",
+      "baseline_monodepth2",
+      "baseline_tinycnn"
+    ],
+    "device": "cuda:0",
+    "input_resolution": "384x384",
+    "benchmark_server_url": "http://localhost:8000",
+    "ci_workflow": ".github/workflows/ci.yml"
+  },
+  "metrics": {
+    "sandbox_created_files": 16.0,
+    "sandbox_validated_python_files": 6.0,
+    "sandbox_validation_rate": 0.375,
+    "runner_latency_ms": 0.005,
+    "threshold_accuracy_1_25_1_25_2_1_25_3": 0.0,
+    "rmse": 0.0,
+    "mae": 0.0,
+    "silog": 0.0,
+    "inference_latency_ms_per_frame": 0.0,
+    "domain_shift_score_fid": 0.0,
+    "robustness_degradation_ratio_rain_fog_night": 0.0,
+    "overall_score_weighted_aggregate": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134750",
+  "validation_errors": []
+}

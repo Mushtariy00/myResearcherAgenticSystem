@@ -1,0 +1,42 @@
+[
+  {
+    "index": 1,
+    "source_url": "https://www.semanticscholar.org/paper/18ee9dcd91f50f62973425947b1abd34cc283dbb",
+    "resolved_pdf_url": "",
+    "status": "unresolved",
+    "page_count": 0,
+    "text_length": 0,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/ai-llms_20260519_155731/paper_01.txt",
+    "error": "Could not resolve an open-access PDF URL."
+  },
+  {
+    "index": 2,
+    "source_url": "https://www.semanticscholar.org/paper/732ce53c573475f2691a7cfc716cf4f568d17360",
+    "resolved_pdf_url": "",
+    "status": "unresolved",
+    "page_count": 0,
+    "text_length": 0,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/ai-llms_20260519_155731/paper_02.txt",
+    "error": "Could not resolve an open-access PDF URL."
+  },
+  {
+    "index": 3,
+    "source_url": "https://www.semanticscholar.org/paper/2eed1fad9bbf887d4395de40f20144c4fafefd7f",
+    "resolved_pdf_url": "",
+    "status": "unresolved",
+    "page_count": 0,
+    "text_length": 0,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/ai-llms_20260519_155731/paper_03.txt",
+    "error": "Could not resolve an open-access PDF URL."
+  },
+  {
+    "index": 4,
+    "source_url": "https://arxiv.org/abs/2508.11067v1",
+    "resolved_pdf_url": "https://arxiv.org/pdf/2508.11067v1.pdf",
+    "status": "ok",
+    "page_count": 20,
+    "text_length": 110008,
+    "text_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/literature_fetch/ai-llms_20260519_155731/paper_04.txt",
+    "error": ""
+  }
+]

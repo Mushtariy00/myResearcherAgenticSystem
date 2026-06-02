@@ -1,0 +1,37 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-22T14:37:08Z",
+  "key_findings": [
+    {
+      "title": "Rise of Vision\u2011Transformer and hybrid CNN\u2011ViT backbones",
+      "source": "Deep Learning-based Depth Estimation Methods from Monocular Image and Videos: A Comprehensive Survey",
+      "summary": "Vision Transformers and CNN\u2011ViT hybrids are increasingly adopted because they capture long\u2011range dependencies and improve cross\u2011domain generalization, though they impose high memory and compute costs.",
+      "url": ""
+    },
+    {
+      "title": "Zero\u2011shot and cross\u2011domain generalization via massive semi\u2011supervised data",
+      "source": "Survey on Monocular Metric Depth Estimation",
+      "summary": "Models such as ZoeDepth, UniDepth and Depth Anything train on tens of millions of self\u2011annotated images, achieving strong zero\u2011shot performance on both indoor and outdoor benchmarks.",
+      "url": ""
+    },
+    {
+      "title": "Domain adaptation remains a bottleneck",
+      "source": "Deep Learning-based Depth Estimation Methods from Monocular Image and Videos: A Comprehensive Survey",
+      "summary": "Fine\u2011tuning, style\u2011transfer GANs, and other adaptation techniques are essential for transferring models across day\u2011night, indoor\u2011outdoor, and synthetic\u2011real domains, yet gaps in texture and illumination persist.",
+      "url": ""
+    },
+    {
+      "title": "Loss of fine\u2011grained detail on thin, distant, or reflective objects",
+      "source": "Deep Learning-based Depth Estimation Methods from Monocular Image and Videos: A Comprehensive Survey",
+      "summary": "Both self\u2011supervised and supervised approaches struggle with thin structures, far\u2011away items, and materials with specular or transparent properties, leading to blurred or inaccurate depth edges.",
+      "url": ""
+    },
+    {
+      "title": "Trade\u2011off between patch\u2011based refinement / diffusion models and real\u2011time inference",
+      "source": "Survey on Monocular Metric Depth Estimation",
+      "summary": "PatchFusion, PatchRefiner and diffusion\u2011based generators (Marigold, GeoWizard) recover high\u2011frequency details but scale poorly with image resolution, limiting deployment in latency\u2011sensitive applications.",
+      "url": ""
+    }
+  ],
+  "synthesis": "Between 2023 and 2025 monocular depth estimation has shifted toward metric\u2011scale predictions powered by large\u2011scale semi\u2011supervised training and transformer\u2011based backbones. Zero\u2011shot models such as ZoeDepth and Depth Anything demonstrate impressive cross\u2011domain performance, yet their gains are counterbalanced by the persistent need for domain adaptation techniques to bridge gaps in illumination, texture, and synthetic\u2011real disparities. Vision Transformers and hybrid CNN\u2011ViT architectures improve global context and generalization but introduce prohibitive computational overhead for embedded or real\u2011time settings. A recurring limitation across surveys is the degradation of depth quality for thin, distant, or reflective surfaces, a problem that patch\u2011based refinements and diffusion generators can mitigate at the expense of latency and memory. Consequently, the field faces a triad of challenges: achieving efficient, transformer\u2011enabled models, devising robust adaptation pipelines, and preserving fine\u2011grained detail without sacrificing speed. Addressing these gaps will be crucial for deploying monocular depth systems in autonomous navigation, AR/VR, and industrial inspection."
+}

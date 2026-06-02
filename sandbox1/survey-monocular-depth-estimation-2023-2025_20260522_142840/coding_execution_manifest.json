@@ -1,0 +1,30 @@
+{
+  "sandbox_plan": "1. **Set up isolated sandbox environment**\n   - Use a Docker container based on Ubuntu 22.04 with CUDA 12.1, cuDNN 8.9, and PyTorch 2.2.0. Install mmcv, timm, and other needed libs. Tag the image as `esa-vit-sandbox:latest`.\n\n2. **Create minimal reproducible code base**\n   - a. `models/esa_vit.py` \u2013 implement a lightweight CNN stem (3 conv layers) that outputs a low\u2011resolution token map, then a hierarchical sparse\u2011attention transformer (use `timm`'s `SwinTransformer` as a reference and replace its self\u2011attention with `torch.nn.functional.scaled_dot_product_attention` on a pruned token set). Implement token\u2011importance scoring (e.g., L2 norm of patch embeddings) and a scheduler that prunes a configurable percentage each layer.\n   - b. `utils/token_prune.py` \u2013 functions to compute importance, select top\u2011k tokens, and map pruned tokens back to spatial positions for loss computation.\n   - c. `train.py` \u2013 training script that loads the NYU Depth V2 and KITTI datasets, applies standard augmentations, and uses a simple L1 + SSIM loss. Include a `--prune_rate` flag to experiment with 30\u201150% pruning.\n   - d. `evaluate.py` \u2013 script that runs inference on the validation split, measures FLOPs (via `ptflops`), memory peak (via `torch.cuda.memory_stats`), and FPS on a 2023\u2011class mobile GPU (e.g., NVIDIA Jetson Orin Nano). Compute standard depth metrics (abs\u2011rel, RMSE, \u03b4<1.25).\n\n3. **Iterative sandbox experiments**\n   - **Step 1 \u2013 Baseline:** Run `train.py` with dense attention (prune_rate=0) to obtain a reference accuracy and resource baseline.\n   - **Step 2 \u2013 Token pruning sanity:** Set `prune_rate=0.4` and verify that the model still converges; log per\u2011epoch token count and loss.\n   - **Step 3 \u2013 Dynamic schedule:** Implement a curriculum where pruning starts at 0% and linearly increases to 40% over 20 epochs. Compare convergence speed and final metrics.\n   - **Step 4 \u2013 Edge\u2011case testing:** Create a synthetic validation set containing thin wires and transparent objects (use the SceneFlow synthetic dataset). Measure edge RMSE to see if pruning harms fine details.\n   - **Step 5 \u2013 Performance profiling:** Run `evaluate.py` on the Jetson device inside the container, record FLOPs, memory, and FPS. Aim for \u226530\u202ffps at 720p.\n\n4. **Safety and rollback**\n   - All experiments are versioned in a git repo inside the container. Tag each major run (e.g., `baseline`, `prune-40`, `curriculum`). If a run crashes due to OOM, revert to the previous tag.\n   - Use `torch.cuda.empty_cache()` after each epoch to prevent GPU memory leaks.\n\n5. **Documentation of results**\n   - Store logs in `logs/` and automatically generate a markdown summary (`report.md`) that includes tables of FLOPs, memory, FPS, and depth metrics for each configuration.\n   - Export the best\u2011performing checkpoint (`esa_vit_best.pth`) and a small inference\u2011only script (`infer.py`) for downstream integration.\n\nThe sandbox plan ensures that the ESA\u2011ViT concept is validated end\u2011to\u2011end\u2014 from token pruning implementation through resource profiling\u2014 before any external code promotion.",
+  "validation_steps": [
+    "Run `docker build -t esa-vit-sandbox .` and launch container with GPU access.",
+    "Execute `python train.py --prune_rate 0` and record baseline depth metrics and resource usage.",
+    "Execute `python train.py --prune_rate 0.4` to verify convergence with static pruning.",
+    "Execute `python train.py --dynamic_prune true --max_prune 0.4` and compare final metrics to baseline.",
+    "Run `python evaluate.py --dataset nyu_val --resolution 720p` on the target edge GPU; confirm \u226530\u202ffps, FLOPs reduction \u00d74\u20116, memory reduction \u00d73.",
+    "Run `python evaluate.py --dataset synthetic_edge_cases` and check that edge RMSE does not increase >5\u202f% compared to baseline.",
+    "Generate `report.md` and inspect that all tables and plots are correctly rendered."
+  ],
+  "created_files": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/Dockerfile",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/requirements.txt",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/models/esa_vit.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/utils/token_prune.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/train.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/evaluate.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/infer.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/report.md"
+  ],
+  "validated_files": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/models/esa_vit.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/utils/token_prune.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/train.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/evaluate.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_142840/infer.py"
+  ],
+  "validation_errors": []
+}

@@ -63,6 +63,8 @@ def main() -> None:
     patch_flow_for_streamlit()
     initialize_session_state()
     process_ui_events()
+    if st.session_state.approval_needed and not st.session_state.approval_data:
+        st.session_state.approval_needed = False
 
     st.title("🔬 Agentic Research System")
     st.markdown("### Semi-autonomous research pipeline with human approval checkpoints")
@@ -79,12 +81,19 @@ def main() -> None:
             render_approval_section()
         else:
             render_results_section()
-            render_flow_controls()
+        render_flow_controls()
+    elif st.session_state.approval_needed and st.session_state.approval_data:
+        st.header("Approval Required")
+        render_approval_section()
+        render_results_section()
+        render_flow_controls()
     else:
-        render_welcome_screen()
+        if st.session_state.flow_state is None:
+            render_welcome_screen()
         if st.session_state.flow_error:
             st.error(st.session_state.flow_error)
         render_results_section()
+        render_flow_controls()
 
     render_footer()
     if st.session_state.flow_running or st.session_state.approval_needed:

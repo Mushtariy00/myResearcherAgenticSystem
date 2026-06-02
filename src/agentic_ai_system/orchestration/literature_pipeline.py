@@ -8,13 +8,14 @@ from typing import Any
 
 from agentic_ai_system.crew import AgenticAiSystem
 from agentic_ai_system.orchestration.flow_utils import kickoff_with_retry, parse_model_output, run_id
+from agentic_ai_system.orchestration.memory_integration import save_literature_findings
 from agentic_ai_system.schemas.fetches import LiteratureFetchOutput, PaperAnalysisOutput, PaperFetchResult
 from agentic_ai_system.schemas.models import LiteratureResearchOutput, LiteratureScreenOutput, PaperFinding
 from agentic_ai_system.storage.artifact_contract import store_stage_artifact_manifest
 from agentic_ai_system.storage.literature_analysis_storage import store_literature_analysis_output
 from agentic_ai_system.storage.literature_fetch_storage import store_literature_fetch_output
 from agentic_ai_system.storage.literature_screen_storage import store_literature_screen_output
-from agentic_ai_system.storage.literature_storage import store_literature_output
+from agentic_ai_system.storage.literature_storage import load_latest_literature_output, store_literature_output
 from agentic_ai_system.tools import ArxivSearchTool, PaperFullTextFetchTool, SemanticScholarSearchTool
 from agentic_ai_system.ui.bridge import ui_update_queue
 
@@ -22,18 +23,7 @@ from agentic_ai_system.ui.bridge import ui_update_queue
 def build_literature_queries(topic: str) -> list[str]:
     base = topic.strip()
     queries = [base]
-    lowered = base.lower()
-    if "unet" in lowered or "u-net" in lowered:
-        queries.extend(
-            [
-                "U-Net segmentation model medical imaging",
-                "UNet architecture semantic segmentation",
-                "Attention U-Net nnU-Net TransU-Net",
-                "U-Net diffusion model denoising",
-            ]
-        )
-    else:
-        queries.extend([f"{base} survey", f"{base} recent advances", f"{base} benchmark"])
+    queries.extend([f"{base} survey", f"{base} recent advances", f"{base} benchmark"])
     deduped: list[str] = []
     seen: set[str] = set()
     for query in queries:
@@ -48,17 +38,10 @@ def paper_relevance_score(paper: dict[str, Any], topic: str) -> int:
     text = f"{paper.get('title', '')} {paper.get('summary', '')}".lower()
     topic_tokens = [token for token in re.findall(r"[a-z0-9\-]+", topic.lower()) if len(token) > 2]
     score = sum(1 for token in topic_tokens if token in text)
-    boosters = ["unet", "u-net", "segmentation", "medical imaging", "attention u-net", "nnu-net", "transunet"]
-    score += sum(2 for token in boosters if token in text)
     return score
 
 
 def is_topic_specific_match(paper: dict[str, Any], topic: str) -> bool:
-    text = f"{paper.get('title', '')} {paper.get('summary', '')}".lower()
-    lowered_topic = topic.lower()
-    if "unet" in lowered_topic or "u-net" in lowered_topic:
-        required_markers = ["unet", "u-net", "nnunet", "transunet", "attention u-net"]
-        return any(marker in text for marker in required_markers)
     return True
 
 
@@ -212,7 +195,7 @@ def build_literature_screen_prompt(topic: str, compact_bundle: dict[str, Any]) -
         "Rules:\n"
         "- choose at most 5 indices\n"
         "- prefer papers with direct topical relevance\n"
-        "- if nothing fits, choose the closest 1-2 and explain why\n\n"
+        "- if nothing fits, choose the closest 2-3 and explain why\n\n"
         f"Candidate bundle:\n{json.dumps(compact_bundle, ensure_ascii=True)}"
     )
 
@@ -361,6 +344,45 @@ def fallback_literature_output(topic: str, source_bundle: dict[str, Any], reason
 def run_literature_stage(flow: Any) -> LiteratureResearchOutput:
     flow._persistence.stage_event(run_id(flow), "literature", "running")
     try:
+        cached = load_latest_literature_output(flow.state.topic)
+        if cached:
+            literature_output, artifact = cached
+            if not literature_output.topic:
+                literature_output.topic = flow.state.topic
+            if not literature_output.generated_at:
+                literature_output.generated_at = datetime.now().isoformat()
+            flow.state.literature_output = literature_output
+            flow.state.literature_artifact_path = str(artifact)
+            literature_manifest = store_stage_artifact_manifest(
+                "literature",
+                flow.state.topic,
+                str(artifact),
+                "Literature synthesis loaded from cache",
+                auxiliary_paths=[str(artifact)],
+                metadata={"key_findings": len(literature_output.key_findings)},
+            )
+            flow.state.literature_manifest_path = str(literature_manifest)
+            finding_preview = "\n".join([f"- {item.title} ({item.source})" for item in literature_output.key_findings[:5]])
+            preview = (
+                f"Stored literature artifact: {artifact}\n"
+                f"Top findings:\n{finding_preview or '- no findings returned'}\n\n"
+                f"Synthesis: {literature_output.synthesis[:350]}"
+            )
+            flow._approval_gate("literature", preview)
+            save_literature_findings(
+                topic=flow.state.topic,
+                run_id=run_id(flow),
+                papers=[item.model_dump() for item in literature_output.key_findings],
+                screening_rationale=(
+                    flow.state.literature_screen_output.selection_rationale
+                    if flow.state.literature_screen_output
+                    else None
+                ),
+            )
+            flow._persistence.stage_event(run_id(flow), "literature", "cached", f"artifact={artifact}")
+            ui_update_queue.put({"type": "stage_completed", "stage": "literature", "timestamp": datetime.now().isoformat()})
+            return literature_output
+
         crew_system = AgenticAiSystem()
         source_bundle = collect_literature_bundle(flow.state.topic)
         
@@ -501,12 +523,22 @@ def run_literature_stage(flow: Any) -> LiteratureResearchOutput:
             str(artifact),
             "Literature synthesis stored",
             auxiliary_paths=[str(artifact)],
-            metadata={"key_findings": len(literature_output.key_findings)},
+             metadata={"key_findings": len(literature_output.key_findings)},
         )
         flow.state.literature_manifest_path = str(literature_manifest)
         finding_preview = "\n".join([f"- {item.title} ({item.source})" for item in literature_output.key_findings[:5]])
         preview = f"Stored literature artifact: {artifact}\nTop findings:\n{finding_preview or '- no findings returned'}\n\nSynthesis: {literature_output.synthesis[:350]}"
         flow._approval_gate("literature", preview)
+        save_literature_findings(
+            topic=flow.state.topic,
+            run_id=run_id(flow),
+            papers=[item.model_dump() for item in literature_output.key_findings],
+            screening_rationale=(
+                flow.state.literature_screen_output.selection_rationale
+                if flow.state.literature_screen_output
+                else None
+            ),
+        )
         flow._persistence.stage_event(run_id(flow), "literature", "completed", f"artifact={artifact}")
         ui_update_queue.put({"type": "stage_completed", "stage": "literature", "timestamp": datetime.now().isoformat()})
         return literature_output

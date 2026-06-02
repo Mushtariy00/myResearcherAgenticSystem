@@ -1,0 +1,49 @@
+{
+  "sandbox_plan": "1. **Set up isolated sandbox environment** \u2013 create a fresh Ubuntu 22.04 Docker image with GPU support (nvidia\u2011docker2). Install Miniconda, PyTorch 2.x, TensorFlow 2.14, and common CV libraries (opencv, albumentations). Pin all package versions in an environment.yml to guarantee reproducibility.\n2. **Data acquisition module** \u2013 write a script (scripts/download_data.py) that programmatically fetches KITTI, NYU Depth V2, DynaDepth, plus the two newly curated test sets (illumination\u2011varying and domain\u2011shift). Verify checksums and store data in /workspace/data with a standardized folder layout.\n3. **Benchmark suite scaffolding** \u2013 implement a Python package (depth_eval/) exposing a unified Dataset API, metric calculators (Abs Rel, RMSE, \u03b4<1.25, FPS, power\u2011draw), and a configuration schema (YAML) describing which splits and hardware profiles to run. Include reference implementations of three baseline models (Monodepth2, DPT\u2011ViT, FastDepth) with pretrained checkpoints.\n4. **Model ingestion pipeline** \u2013 create a plug\u2011in system (depth_eval/plugins/) where each new paper can add a tiny wrapper (e.g., plugins/xyz_wrapper.py) that registers its model class, checkpoint URL, and required preprocessing. The hub will automatically discover wrappers via entry\u2011points.\n5. **Automated evaluation driver** \u2013 develop a CLI entry point (depth_eval/run.py) that reads a benchmark config, spins up the Docker container (or uses the host GPU), loads each model plug\u2011in, runs inference on all datasets, logs per\u2011sample runtime using torch.cuda.Event, and aggregates metrics into a JSON report saved under /workspace/results/<timestamp>/.\n6. **Continuous\u2011integration sandbox** \u2013 set up a GitHub Actions workflow that builds the Docker image, runs the full benchmark on a CPU\u2011only runner (to catch obvious crashes), and publishes the generated report as an artifact. A separate workflow triggered on a \u201cbenchmark\u2011run\u201d label will launch a self\u2011hosted runner equipped with an NVIDIA Jetson Nano to collect real\u2011time edge metrics.\n7. **Documentation & starter notebook** \u2013 provide a Jupyter notebook (examples/quick_start.ipynb) that demonstrates how to add a new method, run the hub locally, and visualize result tables/plots. Include Markdown docs describing environment.yml, config schema, and contribution guidelines.\n8. **Validation checklist** \u2013 after the sandbox is built, execute the following automated checks: (a) data download integrity, (b) baseline models load without error, (c) metric calculators reproduce known numbers for Monodepth2 on KITTI (Abs Rel \u2248 0.115, RMSE \u2248 4.9), (d) runtime measurement yields >30 FPS for FastDepth on the simulated edge profile, (e) JSON schema validation of the final report, (f) reproducibility test by rebuilding the Docker image and re\u2011running the benchmark, ensuring identical scores within a tolerance of 0.1%.",
+  "validation_steps": [
+    "Run `docker build -t depth-eval-hub .` and verify that the image builds without warnings.",
+    "Execute `conda env create -f environment.yml` and confirm all packages install with the expected versions.",
+    "Launch `python scripts/download_data.py` and check that each dataset folder contains the expected number of files and matches provided SHA256 hashes.",
+    "Import each plugin (e.g., `python -c \"import depth_eval.plugins.monodepth2_wrapper\"`) to ensure no import errors.",
+    "Run the benchmark in sandbox mode: `docker run --gpus all depth-eval-hub python -m depth_eval.run --config configs/benchmark_cpu.yaml` and confirm that a results JSON file is produced.",
+    "Validate the JSON report against a predefined schema using `jsonschema.validate`.",
+    "Compare baseline metrics in the JSON report with reference numbers (tolerance \u00b10.1%).",
+    "Execute the edge workflow on a Jetson Nano runner and verify that reported FPS for FastDepth exceeds 30 FPS.",
+    "Re\u2011build the Docker image from scratch and re\u2011run the benchmark; assert that all metric values are identical to the previous run within the allowed tolerance.",
+    "Run the quick\u2011start notebook end\u2011to\u2011end and ensure no runtime exceptions, and that generated plots match expected shapes."
+  ],
+  "created_files": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/Dockerfile",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/environment.yml",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/scripts/download_data.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/__init__.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/config_schema.yaml",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/dataset.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/metrics.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/evaluator.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/run.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/plugins/__init__.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/plugins/monodepth2_wrapper.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/plugins/dpt_vit_wrapper.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/plugins/fastdepth_wrapper.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/examples/quick_start.ipynb",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/.github/workflows/docker_build.yml",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/.github/workflows/benchmark_cpu.yml",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/.github/workflows/benchmark_edge.yml",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/README.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/CONTRIBUTING.md"
+  ],
+  "validated_files": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/scripts/download_data.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/__init__.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/dataset.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/metrics.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/evaluator.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/run.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/plugins/__init__.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/plugins/monodepth2_wrapper.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/plugins/dpt_vit_wrapper.py",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260522_134055/depth_eval/plugins/fastdepth_wrapper.py"
+  ],
+  "validation_errors": []
+}

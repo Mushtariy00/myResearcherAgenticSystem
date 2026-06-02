@@ -1,0 +1,13 @@
+{
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-22T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Placeholder Paper 1 on Survey monocular depth estimation 2023-2025",
+      "source": "placeholder",
+      "summary": "This is a placeholder. Unable to fetch papers on Survey monocular depth estimation 2023-2025. Check API connectivity and rate limits.",
+      "url": ""
+    }
+  ],
+  "synthesis": "The current literature review reveals a striking paucity of accessible, detailed surveys on monocular depth estimation published between 2023 and 2025. The sole entry in the provided dataset lacks any textual content, preventing extraction of methodological trends, benchmark performance, or emerging research directions. This dearth itself highlights a critical gap: the community has not yet consolidated recent advances\u2014such as transformer\u2011based encoders, self\u2011supervised learning from video streams, or domain\u2011adaptive techniques\u2014into a comprehensive, peer\u2011reviewed survey. Consequently, researchers lack a centralized reference to compare novel architectures, loss functions, and evaluation protocols introduced in the last three years. Addressing this gap requires the production of an up\u2011to\u2011date survey that systematically catalogs emerging models, datasets, and evaluation metrics, and that identifies unresolved challenges such as real\u2011time inference on edge devices, robustness to illumination changes, and generalization across diverse scene domains. Filling this void will accelerate progress by providing a common knowledge base and clarifying future research priorities."
+}

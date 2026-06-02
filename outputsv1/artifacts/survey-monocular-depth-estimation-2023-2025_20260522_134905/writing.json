@@ -1,0 +1,28 @@
+{
+  "contract_version": "1",
+  "stage": "writing",
+  "topic": "Survey monocular depth estimation 2023-2025",
+  "generated_at": "2026-05-22T13:49:05.885678",
+  "primary_path": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/00_summary.md",
+  "auxiliary_paths": [
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/00_summary.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/01_abstract.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/02_introduction.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/03_related-work.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/04_benchmark-design-and-architecture.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/05_datasets-and-pre-processing.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/06_models-evaluated.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/07_evaluation-metrics.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/08_experimental-protocol.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/09_results-and-analysis.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/10_ablation-studies.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/11_discussion.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/12_conclusion-and-future-work.md",
+    "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/outputs/writing/survey-monocular-depth-estimation-2023-2025_20260522_134905/13_appendices.md"
+  ],
+  "summary": "Writing plan stored",
+  "status": "completed",
+  "metadata": {
+    "sections": 13
+  }
+}

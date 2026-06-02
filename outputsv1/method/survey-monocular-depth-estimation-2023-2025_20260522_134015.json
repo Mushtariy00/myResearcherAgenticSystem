@@ -1,0 +1,29 @@
+{
+  "research_gaps": [
+    "Absence of a systematic, up\u2011to\u2011date survey covering monocular depth estimation advances (2023\u20112025) including transformer\u2011based encoders, self\u2011supervised video learning, and domain adaptation.",
+    "Lack of a unified benchmark suite that evaluates recent models on real\u2011time edge inference, illumination robustness, and cross\u2011domain generalization.",
+    "No consolidated taxonomy of loss functions, architectural modules, and dataset splits that links methodological choices to specific performance trade\u2011offs."
+  ],
+  "proposals": [
+    {
+      "name": "Comprehensive Survey & Benchmark Paper (CSB\u20112025)",
+      "rationale": "Compile all peer\u2011reviewed monocular depth works from 2023\u20112025, categorize by architecture (CNN, ViT, hybrid), supervision regime (supervised, self\u2011supervised, semi\u2011supervised), and deployment constraints (real\u2011time, edge, cloud). Augment the survey with a standardized benchmark covering KITTI, NYU Depth V2, DynaDepth, and newly curated illumination\u2011varying and domain\u2011shift test sets.",
+      "expected_benefit": "Provides the community a single reference point, accelerates literature navigation, and establishes baseline scores for future methods under consistent evaluation protocols.",
+      "risk": "High authoring effort; risk of rapid obsolescence if new models appear after publication; requires coordination with dataset owners for test\u2011set releases."
+    },
+    {
+      "name": "Open\u2011Source Evaluation Hub (DepthEval\u2011Hub)",
+      "rationale": "Develop a reproducible, containerized platform (Docker + CLI) that automatically downloads recent model checkpoints, runs them on the unified benchmark, and reports metrics (Abs Rel, RMSE, FPS, power). Include plug\u2011in support for future models and enable community contribution via GitHub.",
+      "expected_benefit": "Ensures consistent, transparent performance reporting, lowers barrier for reproducibility, and facilitates rapid comparison of emerging methods.",
+      "risk": "Maintenance overhead; potential incompatibility with proprietary codebases; requires sustained community engagement to keep the hub updated."
+    },
+    {
+      "name": "Meta\u2011Analysis of Real\u2011Time Edge Performance",
+      "rationale": "Focus a short\u2011form systematic review on methods achieving >30 FPS on typical edge hardware (e.g., Jetson Nano, Snapdragon). Extract architectural tricks (quantization, pruning, efficient attention) and quantify trade\u2011offs between speed and accuracy across 2023\u20112025 papers.",
+      "expected_benefit": "Delivers actionable design guidelines for practitioners targeting embedded deployment, filling a niche not covered by broader surveys.",
+      "risk": "Limited scope may overlook broader methodological insights; depends on availability of detailed runtime reports in original papers."
+    }
+  ],
+  "recommended_option": "Comprehensive Survey & Benchmark Paper (CSB\u20112025)",
+  "implementation_focus": ""
+}

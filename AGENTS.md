@@ -132,6 +132,23 @@ my_flow/
 └── pyproject.toml
 ```
 
+### Flow Project (alternative layout)
+```
+my_flow/
+├── src/my_flow/
+│   ├── crews/                 # Multiple crew definitions
+│   │   └── content_crew/
+│   │       ├── config/
+│   │       │   ├── agents.yaml
+│   │       │   └── tasks.yaml
+│   │       └── content_crew.py
+│   ├── tools/                 # Custom tools
+│   ├── main.py                # Flow orchestration
+│   └── ...
+├── .env
+└── pyproject.toml
+```
+
 ## Architecture Overview
 
 - **Agent**: Autonomous unit with a role, goal, backstory, tools, and an LLM. Makes decisions and executes tasks.

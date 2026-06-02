@@ -1,0 +1,36 @@
+{
+  "goal": "Validate feasibility of the Sparse Adaptive Binning Transformer (SA\u2011ABT) for monocular depth estimation across indoor and outdoor datasets, ensuring it meets memory (<4\u202fGB) and latency (<30\u202fms per 1080p frame) constraints while preserving gradient flow through the adaptive binning head.",
+  "config": {
+    "docker_image": "nvidia/cuda:12.2-cudnn8-runtime-ubuntu22.04",
+    "python_version": "3.11",
+    "pytorch_version": "2.3",
+    "datasets": [
+      "KITTI-Depth",
+      "NYU-Depth-V2",
+      "RelDepth"
+    ],
+    "batch_size": 4,
+    "epochs": 2,
+    "learning_rate": 0.0001,
+    "optimizer": "AdamW",
+    "window_size": 14,
+    "global_tokens": 16,
+    "num_bins": 64,
+    "device": "cuda",
+    "seed": 42
+  },
+  "metrics": {
+    "sandbox_created_files": 6.0,
+    "sandbox_validated_python_files": 3.0,
+    "sandbox_validation_rate": 0.5,
+    "runner_latency_ms": 0.005,
+    "per_batch_training_time_ms": 0.0,
+    "per_frame_inference_latency_ms": 0.0,
+    "gpu_memory_usage_gb": 0.0,
+    "training_l1_loss": 0.0,
+    "adaptive_binning_gradient_norm": 0.0,
+    "validation_l1_loss": 0.0
+  },
+  "sandbox_dir": "/home/mushtariy/projects/crewAI_agenticsys/agentic_ai_system/sandbox/survey-monocular-depth-estimation-2023-2025_20260523_125143",
+  "validation_errors": []
+}

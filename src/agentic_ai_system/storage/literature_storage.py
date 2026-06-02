@@ -28,3 +28,27 @@ def store_literature_output(
         encoding="utf-8",
     )
     return filepath
+
+
+def load_latest_literature_output(
+    topic: str,
+    base_dir: Path | None = None,
+) -> tuple[LiteratureResearchOutput, Path] | None:
+    root = base_dir or Path.cwd()
+    directory = root / "outputs" / "literature"
+    if not directory.exists():
+        return None
+    slug = _slugify(topic)
+    candidates = sorted(
+        directory.glob(f"{slug}_*.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    for path in candidates:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            output = LiteratureResearchOutput.model_validate(payload)
+            return output, path
+        except Exception:
+            continue
+    return None

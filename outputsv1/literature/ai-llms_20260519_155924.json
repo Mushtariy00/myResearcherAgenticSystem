@@ -1,0 +1,37 @@
+{
+  "topic": "AI LLMs",
+  "generated_at": "2026-05-19T12:34:56Z",
+  "key_findings": [
+    {
+      "title": "Bias is a Math Problem, AI Bias is a Technical Problem: 10-year Literature Review of AI/LLM Bias Research Reveals Narrow [Gender-Centric] Conceptions of \u2018Bias\u2019, and Academia-Industry Gap",
+      "source": "arXiv:2508.11067v1 (2025)",
+      "summary": "82% (155/189) of surveyed papers did not define \u201cbias\u201d, relying on implicit or purely mathematical definitions.",
+      "url": ""
+    },
+    {
+      "title": "Bias is a Math Problem, AI Bias is a Technical Problem: 10-year Literature Review of AI/LLM Bias Research Reveals Narrow [Gender-Centric] Conceptions of \u2018Bias\u2019, and Academia-Industry Gap",
+      "source": "arXiv:2508.11067v1 (2025)",
+      "summary": "79.9% (151/189) of papers focus on gender bias\u2014mostly binary gender\u2011occupation associations\u2014while race, age, religion, and nationality receive far less attention.",
+      "url": ""
+    },
+    {
+      "title": "Bias is a Math Problem, AI Bias is a Technical Problem: 10-year Literature Review of AI/LLM Bias Research Reveals Narrow [Gender-Centric] Conceptions of \u2018Bias\u2019, and Academia-Industry Gap",
+      "source": "arXiv:2508.11067v1 (2025)",
+      "summary": "Only 10.6% (20/189) of papers provide actionable implementation recommendations, highlighting a pronounced academia\u2011industry \u201clast\u2011mile\u201d gap.",
+      "url": ""
+    },
+    {
+      "title": "Bias is a Math Problem, AI Bias is a Technical Problem: 10-year Literature Review of AI/LLM Bias Research Reveals Narrow [Gender-Centric] Conceptions of \u2018Bias\u2019, and Academia-Industry Gap",
+      "source": "arXiv:2508.11067v1 (2025)",
+      "summary": "When definitions are given, bias is framed as inherently negative; few acknowledge neutral or potentially beneficial aspects.",
+      "url": ""
+    },
+    {
+      "title": "Bias is a Math Problem, AI Bias is a Technical Problem: 10-year Literature Review of AI/LLM Bias Research Reveals Narrow [Gender-Centric] Conceptions of \u2018Bias\u2019, and Academia-Industry Gap",
+      "source": "arXiv:2508.11067v1 (2025)",
+      "summary": "Binary gender constructions dominate; 138 papers use binary categories, and 114 explicitly note this as a limitation.",
+      "url": ""
+    }
+  ],
+  "synthesis": "A systematic review of 189 AI/LLM bias papers uncovers three interrelated shortcomings. First, the majority (82%) omit explicit definitions of bias, treating it as an abstract technical flaw rather than a socially situated construct. Second, research is overwhelmingly centered on binary gender\u2011occupation stereotypes, with nearly 80% of studies focusing on gender bias and minimal attention to race, age, religion, or nationality, reflecting dataset constraints and a narrow conceptual lens. Third, only about one in ten papers offer concrete guidance for deploying mitigation strategies, exposing a stark academia\u2011industry gap that hampers real\u2011world impact. When bias is defined, it is typically cast as wholly negative, overlooking nuanced or potentially advantageous dimensions. These patterns reveal a field that needs broader, intersectional definitions of bias, diversified evaluation across under\u2011studied identities, and stronger emphasis on actionable recommendations to bridge scholarly insights with industry practice."
+}

@@ -12,6 +12,30 @@ This document is designed to be directly converted into a class presentation.
 
 ---
 
+## 1.1 Project status (current snapshot)
+
+**Done**
+1. Supervisor flow with stage sequencing and approval gates.
+2. Literature pipeline: search → screen → fetch open-access text → analyze → synthesize, with artifacts persisted.
+3. Method stage: gap analysis + proposals + recommendation with artifact manifest.
+4. Coding stage: sandbox scaffold generation + validation checks + manifest.
+5. Experiment stage: summary generation and metrics placeholders.
+6. Writing stage: section plan outputs and draft stubs.
+7. Persistence: run/event/approval logging in SQLite + per-stage artifact manifests.
+8. Optional Streamlit UI wiring for approvals and stage updates.
+
+**Not done yet**
+1. PDF fetch stage is not wired into the supervisor flow; the waterfall fetch function exists but is unused.
+2. PDF waterfall integration (Unpaywall/OpenAlex) is not connected in the literature pipeline (only open-access URL resolution).
+3. Agent memory integration is stubbed (save/recall calls are placeholders).
+4. Coding stage does not yet implement the planned gates (env manifest, data contract, pipeline_manifest) or diff-only scaffolding.
+5. Experiment stage does not execute real training runs or evaluation harnesses.
+6. Writing stage does not generate full prose drafts (only structured outlines).
+7. Topic relevance filter is a no-op (accepts all results).
+8. Run IDs are not unique (defaulting to "unknown" in run persistence).
+
+---
+
 ## 2. Problem statement (why this system exists)
 
 Traditional LLM workflows are often:
@@ -138,12 +162,14 @@ Implemented in:
 Execution helper:
 `execution/sandbox_executor.py`
 
-Behavior:
-1. Agent generates coding plan
-2. Deterministic scaffold files are generated in `sandbox/...`
-3. Python compile checks run
-4. Runtime smoke scripts run (`train_lct_depth.py`, `benchmark.py`)
-5. Manifest saved with created/validated/error files
+Plan-aligned behavior (from `coding_stage_plan.md`):
+1. **Hard gates before coding**: method proposal locked, env manifest verified, data contract signed.
+2. **Layer 0 scaffold**: config/data/model/train stubs with smoke test (`python train/loop.py --config config/smoke.yaml --dry-run`) and diff-only changes.
+3. **Layer 1 data integration**: agent wires loaders after human-defined schema; writes `data_report.json`; parity check vs. synthetic.
+4. **Layer 2 baseline model**: zero baseline first, then approved architecture wired via config-driven registry; human review of forward pass.
+5. **Layer 3 training loop hardening**: determinism, safety checks, checkpointing, structured logs, dry-run flag.
+6. **Layer 4 evaluation harness**: agent wiring + human-defined metrics; outputs `eval_report.json` and `eval_summary.md`.
+7. **Handoff**: `pipeline_manifest.json` with approved entry points for Experiment stage.
 
 Key value:
 1. Converts plan into runnable artifacts

@@ -6,6 +6,9 @@ methods, and approvals.
 """
 from __future__ import annotations
 
+import json
+import os
+import urllib.request
 from typing import Any
 
 
@@ -215,29 +218,29 @@ def _memory_save(
     concepts: str | None = None,
     files: str | None = None,
 ) -> None:
-    """Internal wrapper for agentmemory-memory_save tool."""
-    # In production, this would call:
-    # agentmemory-memory_save(
-    #     content=content,
-    #     type=type,
-    #     concepts=concepts,
-    #     files=files,
-    # )
-    pass
+    """Internal wrapper for agentmemory REST remember endpoint."""
+    if not _memory_enabled():
+        return
+    payload: dict[str, object] = {
+        "content": content,
+        "type": type,
+    }
+    if concepts:
+        payload["concepts"] = concepts
+    if files:
+        payload["files"] = files
+    _post_json("/agentmemory/remember", payload)
 
 
 def _memory_recall(
     query: str,
     limit: int = 10,
 ) -> list[str]:
-    """Internal wrapper for agentmemory-memory_recall tool."""
-    # In production, this would call:
-    # results = agentmemory-memory_recall(
-    #     query=query,
-    #     limit=limit,
-    # )
-    # return results
-    return []
+    """Internal wrapper for agentmemory REST smart-search endpoint."""
+    if not _memory_enabled():
+        return []
+    response = _post_json("/agentmemory/smart-search", {"query": query, "limit": limit})
+    return _normalize_memory_results(response)
 
 
 def _memory_lesson_save(
@@ -247,13 +250,64 @@ def _memory_lesson_save(
     project: str | None = None,
     tags: str | None = None,
 ) -> None:
-    """Internal wrapper for agentmemory-memory_lesson_save tool."""
-    # In production, this would call:
-    # agentmemory-memory_lesson_save(
-    #     content=content,
-    #     confidence=confidence,
-    #     context=context,
-    #     project=project,
-    #     tags=tags,
-    # )
-    pass
+    """Internal wrapper for agentmemory lesson storage via remember endpoint."""
+    if not _memory_enabled():
+        return
+    payload: dict[str, object] = {
+        "content": content,
+        "type": "lesson",
+        "confidence": confidence,
+    }
+    if context:
+        payload["context"] = context
+    if project:
+        payload["project"] = project
+    if tags:
+        payload["tags"] = tags
+    _post_json("/agentmemory/remember", payload)
+
+
+def _memory_enabled() -> bool:
+    enabled = os.getenv("AGENTMEMORY_ENABLED", "").strip().lower()
+    return enabled in {"1", "true", "yes", "on"}
+
+
+def _agentmemory_base_url() -> str:
+    return os.getenv("AGENTMEMORY_URL", "http://localhost:3111").rstrip("/")
+
+
+def _agentmemory_headers() -> dict[str, str]:
+    headers = {"Content-Type": "application/json"}
+    secret = os.getenv("AGENTMEMORY_SECRET", "").strip()
+    if secret:
+        headers["Authorization"] = f"Bearer {secret}"
+    return headers
+
+
+def _post_json(path: str, payload: dict[str, object]) -> Any:
+    url = f"{_agentmemory_base_url()}{path}"
+    data = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(url, data=data, headers=_agentmemory_headers(), method="POST")
+    with urllib.request.urlopen(request, timeout=10) as response:
+        body = response.read()
+    if not body:
+        return {}
+    return json.loads(body.decode("utf-8"))
+
+
+def _normalize_memory_results(response: Any) -> list[str]:
+    if isinstance(response, dict):
+        results = response.get("results") or response.get("memories") or response.get("items")
+    else:
+        results = response
+    if not isinstance(results, list):
+        return []
+    normalized: list[str] = []
+    for item in results:
+        if isinstance(item, str):
+            normalized.append(item)
+        elif isinstance(item, dict):
+            normalized.append(str(item.get("content") or item.get("text") or item))
+        else:
+            normalized.append(str(item))
+    return normalized
