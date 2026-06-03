@@ -91,7 +91,7 @@ class ResearchSupervisorFlow(Flow[SupervisorState]):
     def _log_stage(self, stage: str, status: str) -> None:
         print(f"[run:{self._run_id()}] [stage:{stage}] {status}")
 
-    def _kickoff_with_retry(self, stage: str, agent: Any, prompt: str, attempts: int = 3) -> Any:
+    def _kickoff_with_retry(self, stage: str, agent: Any, prompt: str, attempts: int = 5) -> Any:
         return kickoff_with_retry(self, stage, agent, prompt, attempts=attempts)
 
     def _extract_json_candidate(self, raw_output: str) -> str:

@@ -53,7 +53,17 @@ def process_ui_events() -> None:
                 st.session_state.approval_needed = False
                 st.session_state.approval_data = None
                 st.session_state.flow_error = msg.get("error", "Unknown flow error.")
+            elif msg_type == "llm_error":
+                st.session_state.llm_error = {
+                    "stage": msg["stage"],
+                    "attempt": msg["attempt"],
+                    "total_attempts": msg["total_attempts"],
+                    "delay": msg["delay"],
+                    "error": msg["error"],
+                    "timestamp": msg["timestamp"]
+                }
             elif msg_type == "stage_completed":
+                st.session_state.llm_error = None
                 advance_stage(msg["stage"])
     except queue.Empty:
         pass

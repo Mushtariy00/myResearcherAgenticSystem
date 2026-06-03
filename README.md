@@ -2,6 +2,12 @@
 
 Agentic research pipeline with a CLI-first supervisor flow, optional Streamlit UI, and modular stage helpers for literature, method, coding, experiment, and writing.
 
+## Start here (every session)
+1. `PROJECT_OVERVIEW.md`
+2. `PROJECT_STATUS.md`
+3. Latest entry in `SESSION_LOG.md`
+4. For deep docs, see `docs/DOC_INDEX.md`
+
 ## Installation
 
 Ensure you have Python >=3.10 <3.14 installed on your system. This project uses [UV](https://docs.astral.sh/uv/) for dependency management and package handling, offering a seamless setup and execution experience.

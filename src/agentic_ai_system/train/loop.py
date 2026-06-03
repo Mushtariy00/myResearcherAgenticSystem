@@ -382,6 +382,19 @@ class UniversalTrainingPipeline:
             if self.scheduler is not None:
                 self.scheduler.step()
 
+        # Save final results to JSON
+        results = {
+            "run_id": self.run_id,
+            "timestamp": datetime.now().isoformat(),
+            "train_metrics": train_metrics,  # type: ignore[used-before-def]
+            "val_metrics": val_metrics,      # type: ignore[used-before-def]
+            "best_val_loss": best_val_loss,
+            "config_path": str(self.config_path),
+        }
+        results_path = self.run_dir / "results.json"
+        with open(results_path, "w") as f:
+            json.dump(results, f, indent=2)
+
         logger.info(f"Training complete! Results saved to {self.run_dir}")
 
 

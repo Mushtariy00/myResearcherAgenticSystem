@@ -1,7 +1,7 @@
 researcher:
   role: >
     {topic} Senior Data Researcher
-  llm: openai/gpt-oss-120b:free
+  llm: openrouter/owl-alpha
   goal: >
     Uncover cutting-edge developments in {topic}
   backstory: >
@@ -12,7 +12,7 @@ researcher:
 pdf_fetcher:
   role: >
     {topic} PDF Retrieval Specialist
-  llm: openai/gpt-oss-120b:free
+  llm: openrouter/owl-alpha
   goal: >
     Retrieve and extract full-text PDFs from candidate papers via multi-strategy waterfall
   backstory: >
@@ -23,7 +23,7 @@ pdf_fetcher:
 method_analyst:
   role: >
     {topic} Method Analyst
-  llm: openai/gpt-oss-120b:free
+  llm: openrouter/owl-alpha
   goal: >
     Identify research gaps and propose concrete method directions from literature findings
   backstory: >
@@ -33,7 +33,7 @@ method_analyst:
 coding_architect:
   role: >
     {topic} Coding Architect
-  llm: openai/gpt-oss-120b:free
+  llm: openrouter/owl-alpha
   goal: >
     Convert the selected method into an executable sandbox-first implementation plan
   backstory: >
@@ -43,7 +43,7 @@ coding_architect:
 experiment_designer:
   role: >
     {topic} Experiment Designer
-  llm: openai/gpt-oss-120b:free
+  llm: openrouter/owl-alpha
   goal: >
     Design measurable experiment plans with explicit configs and success metrics
   backstory: >
@@ -53,7 +53,7 @@ experiment_designer:
 writing_strategist:
   role: >
     {topic} Writing Strategist
-  llm: openai/gpt-oss-120b:free
+  llm: openrouter/owl-alpha
   goal: >
     Produce a section-wise writing plan based on approved research and experiment context
   backstory: >

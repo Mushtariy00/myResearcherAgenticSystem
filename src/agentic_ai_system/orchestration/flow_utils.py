@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import json
 import re
+from datetime import datetime
 from time import sleep
 from typing import Any, TypeVar
 
@@ -10,6 +11,7 @@ import json5
 from pydantic import BaseModel
 
 from agentic_ai_system.orchestration.exceptions import CheckpointRejected
+from agentic_ai_system.ui.bridge import ui_update_queue
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
@@ -18,7 +20,7 @@ def run_id(flow: Any) -> str:
     return str(getattr(flow.state, "id", "unknown"))
 
 
-def kickoff_with_retry(flow: Any, stage: str, agent: Any, prompt: str, attempts: int = 3) -> Any:
+def kickoff_with_retry(flow: Any, stage: str, agent: Any, prompt: str, attempts: int = 5) -> Any:
     last_error: Exception | None = None
     for attempt in range(1, attempts + 1):
         try:
@@ -32,14 +34,40 @@ def kickoff_with_retry(flow: Any, stage: str, agent: Any, prompt: str, attempts:
             return agent.kickoff(prompt)
         except Exception as exc:
             last_error = exc
+            err_msg = str(exc).lower()
+            is_service_unavailable = "503" in err_msg or "service unavailable" in err_msg or "overloaded" in err_msg or "healthy upstream" in err_msg
+            
             flow._persistence.stage_event(
                 run_id(flow),
                 stage,
                 "error",
                 f"LLM kickoff failed attempt {attempt}: {exc}",
             )
+            
             if attempt < attempts:
-                sleep(min(2 ** (attempt - 1), 4))
+                # Exponential backoff: 2, 4, 8, 16 seconds...
+                # If 503, add extra delay
+                base_delay = 2 ** attempt
+                if is_service_unavailable:
+                    base_delay += 5
+                
+                delay = min(base_delay, 30)
+                msg = f"LLM error (attempt {attempt}/{attempts}). Retrying in {delay}s: {exc}"
+                print(f"[run:{run_id(flow)}] [stage:{stage}] {msg}")
+                
+                # Push to UI
+                ui_update_queue.put({
+                    "type": "llm_error",
+                    "stage": stage,
+                    "attempt": attempt,
+                    "total_attempts": attempts,
+                    "delay": delay,
+                    "error": str(exc),
+                    "timestamp": datetime.now().isoformat()
+                })
+                
+                sleep(delay)
+    
     raise RuntimeError(f"{stage} failed after {attempts} attempts: {last_error}")
 
 

@@ -47,6 +47,15 @@ def render_sidebar() -> tuple[str, str, bool]:
 
 
 def render_progress_indicators() -> None:
+    if st.session_state.llm_error:
+        err = st.session_state.llm_error
+        st.warning(
+            f"⚠️ **LLM Retry in Progress** ({err['stage'].upper()})\n\n"
+            f"Attempt {err['attempt']}/{err['total_attempts']} failed. "
+            f"Retrying in {err['delay']}s...\n\n"
+            f"*Error: {err['error']}*"
+        )
+
     cols = st.columns(len(STAGE_ORDER))
     for index, stage in enumerate(STAGE_ORDER):
         with cols[index]:
