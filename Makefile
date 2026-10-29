@@ -9,7 +9,7 @@ export ARP_UID := $(shell id -u)
 export ARP_GID := $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor setup env up down ps logs migrate migration api gateway worker web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
+.PHONY: help doctor setup env up down ps logs migrate migration bootstrap-admin client api gateway worker fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -31,8 +31,18 @@ env: .env ## Create .env (app settings) from .env.example
 	cp .env.example $@
 	@echo "Created $@ - paste your OpenRouter key into ARP_OPENROUTER_API_KEY."
 
-migrate: .env ## Apply database migrations
+migrate: .env ## Apply database migrations (ours, then Better Auth's auth schema)
 	$(ALEMBIC) upgrade head
+	pnpm --filter @agentic/web auth:migrate
+
+bootstrap-admin: .env ## Create the first admin (prompts for a password): make bootstrap-admin email=you@lab.kr name="Your Name"
+	@test -n "$(email)" -a -n "$(name)" || { echo 'usage: make bootstrap-admin email=you@lab.kr name="Your Name"'; exit 1; }
+	@read -rsp "Password for $(email) (at least 12 characters): " pw && echo && \
+		BOOTSTRAP_ADMIN_PASSWORD="$$pw" pnpm --silent --filter @agentic/web bootstrap-admin -- --email "$(email)" --name "$(name)"
+
+client: ## Regenerate the TypeScript API client from FastAPI's OpenAPI
+	pnpm --filter @agentic/web gen:openapi
+	pnpm --filter @agentic/web gen:client
 
 migration: .env ## Create a migration from model changes: make migration m="add x"
 	$(ALEMBIC) revision --autogenerate -m "$(m)"
@@ -55,6 +65,9 @@ api: ## Run the API with reload on 127.0.0.1:8000 (browse via http://localhost:8
 
 gateway: .env ## Run the internal LLM gateway on 127.0.0.1:8100 (workers call it; holds the OpenRouter key)
 	uv run --package agentic-gateway uvicorn agentic_gateway.app:app --reload --host 127.0.0.1 --port 8100
+
+fake-openrouter: ## Run a fake OpenRouter on 127.0.0.1:8199 (set ARP_OPENROUTER_BASE_URL=http://127.0.0.1:8199/api/v1)
+	uv run uvicorn fake_openrouter_server:app --app-dir apps/gateway/tests --host 127.0.0.1 --port 8199
 
 worker: .env ## Run the Temporal worker (run workflows and stage activities)
 	uv run --package agentic-worker python -m agentic_worker

@@ -1,0 +1,439 @@
+{
+  "common": {
+    "appName": "Agentic Research Platform",
+    "appShortName": "ARP",
+    "tagline": "A research pipeline where people approve every stage",
+    "loading": "Loading…",
+    "loadFailed": "Could not load this",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "close": "Close",
+    "creating": "Creating…",
+    "notifications": "Notifications"
+  },
+  "nav": {
+    "main": "Main",
+    "dashboard": "Dashboard",
+    "admin": "Admin",
+    "language": "Language",
+    "languages": {
+      "en": "English",
+      "ko": "한국어"
+    },
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "userMenu": "Account menu",
+    "signOut": "Sign out",
+    "signOutFailed": "Could not sign out. Try again.",
+    "roles": {
+      "admin": "Lab admin",
+      "user": "Member"
+    },
+    "skipToContent": "Skip to content"
+  },
+  "auth": {
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "newPassword": "New password",
+      "confirmPassword": "Repeat the new password"
+    },
+    "login": {
+      "title": "Sign in",
+      "description": "Use the email and password from your lab invitation.",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "help": "No account, or forgot your password? Ask a lab admin for a new link."
+    },
+    "reset": {
+      "title": "Set your password",
+      "description": "Choose a password for your account. This link works only once.",
+      "submit": "Save password",
+      "submitting": "Saving…",
+      "hint": "At least {min} characters. A short sentence is easy to remember.",
+      "tooShort": "The password needs at least {min} characters.",
+      "mismatch": "The two passwords do not match.",
+      "failed": "Password not saved",
+      "invalidTitle": "This link no longer works",
+      "invalidDescription": "It was already used or it has expired. Ask a lab admin for a new one.",
+      "backToLogin": "Back to sign in",
+      "doneTitle": "Password saved",
+      "doneDescription": "You can now sign in with your new password.",
+      "goToLogin": "Sign in"
+    },
+    "errors": {
+      "INVALID_EMAIL_OR_PASSWORD": "Wrong email or password.",
+      "INVALID_EMAIL": "Enter a valid email address.",
+      "INVALID_TOKEN": "This link is invalid or has expired. Ask a lab admin for a new one.",
+      "TOKEN_EXPIRED": "This link has expired. Ask a lab admin for a new one.",
+      "PASSWORD_TOO_SHORT": "The password is too short.",
+      "PASSWORD_TOO_LONG": "The password is too long.",
+      "USER_ALREADY_EXISTS": "Someone already uses this email.",
+      "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL": "Someone already uses this email.",
+      "BANNED_USER": "This account is suspended. Contact a lab admin.",
+      "USER_NOT_FOUND": "No user has this email.",
+      "INVALID_ORIGIN": "The request was blocked for security reasons. Reload the page and try again.",
+      "MISSING_OR_NULL_ORIGIN": "The request was blocked for security reasons. Reload the page and try again.",
+      "YOU_ARE_NOT_ALLOWED_TO_CREATE_USERS": "Only lab admins can invite people.",
+      "YOU_ARE_NOT_ALLOWED_TO_LIST_USERS": "Only lab admins can manage users.",
+      "TOO_MANY_REQUESTS": "Too many attempts. Wait a moment and try again.",
+      "UNKNOWN": "Something went wrong. Try again."
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back, {name}.",
+    "projects": "My projects",
+    "emptyTitle": "No projects yet",
+    "emptyDescription": "Create a project, or ask a project owner to add you to theirs.",
+    "confidential": "Confidential",
+    "noDescription": "No description",
+    "createdAt": "Created {date}",
+    "create": {
+      "open": "New project",
+      "title": "New project",
+      "description": "You will be its owner and can add members afterwards.",
+      "name": "Name",
+      "descriptionLabel": "Description (optional)",
+      "descriptionPlaceholder": "What is this project about?",
+      "submit": "Create project",
+      "created": "Project “{name}” created."
+    }
+  },
+  "budget": {
+    "title": "My LLM budget",
+    "description": "Paid-model spending this month (UTC).",
+    "used": "Budget used",
+    "noBudget": "No paid budget: your runs use free models.",
+    "remaining": "{amount} left this month.",
+    "resets": "Resets on the 1st of each month (UTC). When it runs out, runs switch to free models."
+  },
+  "project": {
+    "title": "Project",
+    "back": "All projects",
+    "confidential": "Confidential: only providers that keep no data are used, so fewer free models are available.",
+    "viewerNotice": "You are a viewer in this project: you can follow its runs but not start them.",
+    "newRun": {
+      "title": "New run",
+      "description": "Start the pipeline on a research topic. You approve each stage before the next one starts.",
+      "topic": "Research topic",
+      "topicPlaceholder": "e.g. Monocular depth estimation on NYU Depth V2",
+      "policy": "LLM models",
+      "policies": {
+        "auto": {
+          "label": "Auto",
+          "description": "Paid models while your budget allows, then free models."
+        },
+        "free": {
+          "label": "Free only",
+          "description": "Never spends money. Free models are slower and rate-limited."
+        }
+      },
+      "cap": "Cost cap for this run (USD, optional)",
+      "capPlaceholder": "No cap",
+      "capHint": "Paid calls stop at this amount; the run continues on free models.",
+      "submit": "Start run",
+      "starting": "Starting…",
+      "started": "Run started."
+    },
+    "runs": {
+      "title": "Runs",
+      "empty": "No runs yet.",
+      "topic": "Topic",
+      "status": "Status",
+      "policy": "Models",
+      "cap": "Cost cap",
+      "created": "Started",
+      "noCap": "None"
+    },
+    "members": {
+      "title": "Members",
+      "description": "People who can see this project.",
+      "descriptionOwner": "Add people with the email they were invited with.",
+      "empty": "No members yet.",
+      "addTitle": "Add a member",
+      "email": "Email",
+      "emailPlaceholder": "name@lab.example",
+      "role": "Role",
+      "roleHints": {
+        "owner": "Manages members and can approve any run.",
+        "researcher": "Starts runs and approves their own.",
+        "viewer": "Can look, but cannot start or approve runs."
+      },
+      "add": "Add member",
+      "adding": "Adding…",
+      "added": "{name} can now open this project."
+    }
+  },
+  "roles": {
+    "owner": "Owner",
+    "researcher": "Researcher",
+    "viewer": "Viewer",
+    "admin": "Lab admin",
+    "user": "Member"
+  },
+  "runStatus": {
+    "queued": "Queued",
+    "running": "Running",
+    "awaiting_approval": "Awaiting approval",
+    "completed": "Completed",
+    "rejected": "Rejected",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "paused_budget": "Paused (budget)"
+  },
+  "stageStatus": {
+    "pending": "Waiting",
+    "running": "Running",
+    "output_ready": "Needs review",
+    "approved": "Approved",
+    "changes_requested": "Changes requested",
+    "rejected": "Rejected",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "invalidated": "Outdated",
+    "skipped": "Not run"
+  },
+  "stages": {
+    "literature": "Literature",
+    "method": "Method",
+    "coding": "Coding",
+    "experiment": "Experiment",
+    "writing": "Writing"
+  },
+  "decisions": {
+    "approve": "Approved",
+    "request_changes": "Changes requested",
+    "reject": "Rejected"
+  },
+  "tiers": {
+    "paid": "paid",
+    "free": "free"
+  },
+  "run": {
+    "title": "Run",
+    "backToProject": "Back to project",
+    "errorTitle": "The run reported an error",
+    "pausedTitle": "Paused: the lab's LLM balance is used up",
+    "pausedDescription": "Admins have been alerted. The run resumes when the balance is topped up.",
+    "meta": {
+      "created": "Started {date}",
+      "policy": "Models: {policy}",
+      "cap": "Cost cap: {amount}",
+      "noCap": "No cost cap"
+    },
+    "timeline": {
+      "title": "Stages",
+      "attempt": "Attempt {attempt}"
+    },
+    "events": {
+      "title": "Live events",
+      "empty": "No events yet.",
+      "reconnect": "Reconnect",
+      "state": {
+        "connecting": "Connecting…",
+        "live": "Live",
+        "reconnecting": "Reconnecting…",
+        "ended": "Run finished",
+        "error": "Live updates unavailable"
+      },
+      "runCreated": "Run created: {topic}",
+      "runStatus": "Status: {status}",
+      "stageStarted": "{stage} started",
+      "stageOutputReady": "{stage} output is ready for review",
+      "stageDecided": "{stage}: {decision}",
+      "stageFailed": "{stage} failed",
+      "llmCall": "LLM call · {model} ({tier})",
+      "attempt": "attempt {attempt}",
+      "degraded": "placeholder (degraded)",
+      "switchedToFree": "switched to free models",
+      "replayed": "reused a response already paid for"
+    },
+    "approval": {
+      "title": "Review the {stage} output",
+      "titleReadOnly": "{stage} output waiting for review",
+      "description": "Approve to continue, request changes to get a new attempt, or reject to stop the run.",
+      "readOnly": "The run owner or a project owner decides on this output.",
+      "version": "Version",
+      "model": "Model",
+      "unknownModel": "unknown",
+      "produced": "Produced",
+      "hash": "SHA-256",
+      "outputLabel": "Stage output (JSON)",
+      "degradedTitle": "Placeholder output (degraded)",
+      "degradedDescription": "The stage could not produce a full result, so this is a fallback or partial placeholder. Check it carefully before approving.",
+      "degradedReason": "Reason:",
+      "comment": "Comment",
+      "commentPlaceholder": "What should change, or what the next stage should know",
+      "commentHint": "Optional when approving or rejecting; required when requesting changes.",
+      "commentRequired": "Say what should change before requesting changes.",
+      "approve": "Approve",
+      "requestChanges": "Request changes",
+      "reject": "Reject",
+      "sending": "Sending…",
+      "sent": {
+        "approve": "Approved. The next stage will start.",
+        "request_changes": "Changes requested. A new attempt will start.",
+        "reject": "Rejected. The run will stop."
+      },
+      "conflictToast": "This output changed while you were reviewing it.",
+      "conflictTitle": "The output changed",
+      "conflictDescription": "Your decision was not recorded: a newer output replaced the one you reviewed, or someone already decided. Review what is shown now.",
+      "updatedTitle": "A new version arrived",
+      "updatedDescription": "Version {version} replaced the output you were reading. Read it before deciding.",
+      "updatedAcknowledge": "I have read it",
+      "rejectConfirmTitle": "Reject this output?",
+      "rejectConfirmDescription": "Rejecting stops the whole run. This cannot be undone.",
+      "rejectConfirm": "Reject and stop",
+      "keepReviewing": "Keep reviewing"
+    },
+    "cancel": {
+      "button": "Cancel run",
+      "cancelling": "Cancelling…",
+      "confirmTitle": "Cancel this run?",
+      "confirmDescription": "Work in progress stops and the run cannot be resumed. Money already spent stays charged.",
+      "confirm": "Cancel run",
+      "keepRunning": "Keep running",
+      "requested": "Cancellation requested."
+    }
+  },
+  "admin": {
+    "title": "Administration",
+    "description": "Invite lab members, set monthly LLM budgets and control paid models.",
+    "link": {
+      "inviteTitle": "Invitation created",
+      "resetTitle": "New password link",
+      "description": "{email} sets a password with this link. It works once and expires in {hours} hours.",
+      "emailed": "We emailed the link to {email}.",
+      "notEmailed": "The email could not be sent. Share the link below yourself, through a private channel.",
+      "label": "Set-password link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "warning": "Until it is used, anyone with this link can take over the account. Do not post it publicly."
+    },
+    "invite": {
+      "title": "Invite someone",
+      "description": "Creates the account and sends a single-use link to set the password.",
+      "name": "Name",
+      "email": "Email",
+      "role": "Lab role",
+      "submit": "Send invitation",
+      "sending": "Inviting…"
+    },
+    "paidModels": {
+      "title": "Paid models",
+      "description": "Kill switch for the whole lab. When off, every run uses free models, whatever the budgets.",
+      "on": "Paid models allowed",
+      "off": "Paid models off: free models only",
+      "enabledToast": "Paid models are allowed again.",
+      "disabledToast": "Paid models are off. Runs now use free models only."
+    },
+    "users": {
+      "title": "Users",
+      "description": "Monthly budgets are in USD and reset on the 1st (UTC).",
+      "user": "User",
+      "role": "Role",
+      "budget": "Monthly budget",
+      "spent": "Spent this month",
+      "joined": "Joined",
+      "actions": "Actions",
+      "newLink": "Password link",
+      "banned": "Suspended",
+      "budgetSaved": "Budget saved.",
+      "saveBudget": "Save budget"
+    }
+  },
+  "errors": {
+    "auth": {
+      "required": "Your session has ended. Sign in again.",
+      "unavailable": "The sign-in service is unavailable. Try again shortly."
+    },
+    "csrf": {
+      "origin_mismatch": "The request was blocked for security reasons. Reload the page and try again."
+    },
+    "permission": {
+      "denied": "You do not have permission to do that."
+    },
+    "project": {
+      "not_found": "Project not found, or you are not a member."
+    },
+    "run": {
+      "not_found": "Run not found.",
+      "already_finished": "This run has already finished."
+    },
+    "user": {
+      "not_found": "No user has this email. Ask a lab admin to invite them first."
+    },
+    "stage_output": {
+      "not_found": "That stage output no longer exists."
+    },
+    "approval": {
+      "stale": "The output changed since you opened it. Review the latest version.",
+      "duplicate": "A decision on this output was already recorded.",
+      "rejected_by_workflow": "The workflow no longer accepts a decision on this output.",
+      "expired": "Nobody decided in time, so the run was cancelled."
+    },
+    "orchestrator": {
+      "unavailable": "The workflow engine is unavailable, so the run could not start. Try again later."
+    },
+    "db": {
+      "unavailable": "The database is unavailable. Try again shortly."
+    },
+    "stage": {
+      "error": "A stage failed. The event log may say more.",
+      "too_many_attempts": "The stage was retried too many times (at most 3 attempts).",
+      "invalid_output": "A stage returned output that does not match its expected format."
+    },
+    "lab_balance": {
+      "exhausted": "The lab's LLM balance is used up."
+    },
+    "free_models": {
+      "disabled": "This project does not allow free models, and paid models are not available."
+    },
+    "free_quota": {
+      "exhausted": "The lab's free-model quota is used up for now. Try again later."
+    },
+    "validation": {
+      "failed": "Some fields are not valid. Check them and try again."
+    },
+    "network": {
+      "error": "Cannot reach the server. Check your connection."
+    },
+    "server": {
+      "error": "The server had a problem. Try again shortly."
+    },
+    "unknown": "Something went wrong. Try again."
+  },
+  "degradedReasons": {
+    "stage": {
+      "placeholder": "this stage is not implemented yet, so it returned a stand-in result."
+    },
+    "literature": {
+      "search_pending": "the literature search is not connected yet."
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page does not exist, or you do not have access to it.",
+    "back": "Go to the dashboard"
+  },
+  "errorPage": {
+    "title": "Something went wrong",
+    "description": "This page hit an unexpected error.",
+    "retry": "Try again"
+  },
+  "email": {
+    "invite": {
+      "subject": "You're invited to {appName}",
+      "body": "Hello {name},\n\nAn administrator created an account for you on {appName}. Open this link to choose your password:\n\n{url}\n\nThe link works once and expires in {hours} hours. If you did not expect this email, you can ignore it."
+    },
+    "reset": {
+      "subject": "Set a new password for {appName}",
+      "body": "Hello {name},\n\nUse this link to set a new password for your {appName} account:\n\n{url}\n\nThe link works once and expires in {hours} hours. If you did not ask for this, you can ignore this email."
+    }
+  }
+}

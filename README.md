@@ -49,22 +49,24 @@ legacy/             the old system, for reference while porting
    ```bash
    make setup
    ```
-4. **Start the infrastructure** (Postgres, Valkey, Temporal, Mailpit, proxy):
+4. **Start the infrastructure** (Postgres, Valkey, Temporal, Mailpit, proxy), create `.env`, and
+   migrate the database:
    ```bash
-   make up
+   make up && make env && make migrate
    ```
-5. **Run the API and the web app** in two terminals:
+   Paste your OpenRouter key into `ARP_OPENROUTER_API_KEY` in `.env`.
+5. **Create the first admin.** It prompts for a password:
    ```bash
-   make api
+   make bootstrap-admin email=you@lab.kr name="Your Name"
    ```
-   ```bash
-   make web
-   ```
-6. **Open the app** at http://localhost:8080. The page shows "API: ok" when the proxy, the API and
-   the web app are all wired up.
+6. **Run the services**, one terminal each: `make api`, `make gateway`, `make worker`, `make web`.
+   With no OpenRouter quota left, run `make fake-openrouter` and start the gateway with
+   `ARP_OPENROUTER_BASE_URL=http://127.0.0.1:8199/api/v1 make gateway`.
+7. **Open the app** at http://localhost:8080. Sign in, create a project, start a run, and approve
+   or cancel it.
    - Temporal UI: http://localhost:8233
-   - Mailpit: http://localhost:8025
-7. **Run the GPU spike:**
+   - Mailpit (invite emails): http://localhost:8025
+8. **Run the GPU spike:**
    ```bash
    make sandbox-smoke
    ```
