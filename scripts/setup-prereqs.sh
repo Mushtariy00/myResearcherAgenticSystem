@@ -49,7 +49,12 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
 step "uv (Python toolchain)"
-command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+if ! command -v uv >/dev/null; then
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+elif [[ "$(printf '%s\n%s\n' 0.13 "$(uv --version | grep -oE '[0-9]+\.[0-9]+' | head -1)" | sort -V | head -1)" != "0.13" ]]; then
+  uv self update  # an older standalone uv is already installed
+fi
 
 step "Node 24 LTS (fnm) and pnpm $PNPM_VERSION"
 if ! command -v fnm >/dev/null && [[ ! -x "$HOME/.local/share/fnm/fnm" ]]; then

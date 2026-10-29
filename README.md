@@ -75,6 +75,6 @@ legacy/             the old system, for reference while porting
 
 ## Phase 0 exit criteria
 - `make up` is healthy within the memory budget, and CI is green.
-- `make sandbox-smoke` passes all 5 checks. `make sandbox-epoch` trains one full NYU2 epoch in the
+- `make sandbox-smoke` passes all 6 checks. `make sandbox-epoch` trains one full NYU2 epoch in the
   hardened container. Copy the dataset to the Linux disk first and set `DATASET_DIR`; reading
   from `D:` is slow.

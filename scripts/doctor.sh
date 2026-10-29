@@ -3,13 +3,21 @@
 set -uo pipefail
 
 ok=0
-check() {  # check <label> <command...>
+check() {  # check <label> <command...>   (prints the command's last output line, e.g. after a pull)
   local label="$1"; shift
   if output="$("$@" 2>&1)"; then
-    printf '  \033[32m✓\033[0m %-28s %s\n' "$label" "$(head -1 <<<"$output")"
+    printf '  \033[32m✓\033[0m %-28s %s\n' "$label" "$(grep -v '^\s*$' <<<"$output" | tail -1)"
   else
-    printf '  \033[31m✗\033[0m %-28s %s\n' "$label" "$(head -1 <<<"$output")"
+    printf '  \033[31m✗\033[0m %-28s %s\n' "$label" "$(grep -v '^\s*$' <<<"$output" | tail -1)"
     ok=1
+  fi
+}
+warn_unless() {  # warn_unless <label> <command...>   (recommended, not required)
+  local label="$1"; shift
+  if "$@" >/dev/null 2>&1; then
+    printf '  \033[32m✓\033[0m %s\n' "$label"
+  else
+    printf '  \033[33m!\033[0m %s\n' "$label"
   fi
 }
 version_at_least() {  # version_at_least <minimum> <command...>
@@ -33,7 +41,8 @@ check "GPU inside a container"   docker run --rm --gpus all ubuntu:24.04 nvidia-
 
 echo "Machine"
 mem_gb="$(awk '/MemTotal/ {printf "%.1f", $2/1048576}' /proc/meminfo)"
-check "memory >= 9 GiB (have $mem_gb)" awk -v m="$mem_gb" 'BEGIN { exit (m >= 9) ? 0 : 1 }'
+warn_unless "memory $mem_gb GiB (recommended >= 9: set memory=10GB in %UserProfile%\\.wslconfig)" \
+  awk -v m="$mem_gb" 'BEGIN { exit (m >= 9) ? 0 : 1 }'
 dataset="${DATASET_DIR:-/mnt/d/DATASET/nyu2/nyu2_metric_ready}"
 check "NYU2 dataset"             test -d "$dataset/h5"
 

@@ -12,7 +12,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     TORCH_HOME=/tmp/torch
 
 COPY requirements.txt /opt/harness/requirements.txt
-RUN pip install --no-cache-dir -r /opt/harness/requirements.txt
+# The base image is Ubuntu 24.04 with torch pip-installed into the system Python (PEP 668 marks it
+# "externally managed"). This image has one purpose and never apt-installs Python packages later,
+# so installing next to torch is safe.
+RUN pip install --no-cache-dir --break-system-packages -r /opt/harness/requirements.txt
 
 COPY harness /opt/harness/harness
 COPY configs /opt/harness/configs

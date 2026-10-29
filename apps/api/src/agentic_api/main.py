@@ -38,7 +38,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @router.get("/stages", tags=["runs"], operation_id="listStages")
     async def list_stages() -> list[StageInfo]:
         return [
-            StageInfo(id=stage.value, position=index, auto_approvable=stage not in NEVER_AUTO_APPROVE)
+            StageInfo(
+                id=stage.value, position=index, auto_approvable=stage not in NEVER_AUTO_APPROVE
+            )
             for index, stage in enumerate(STAGE_ORDER)
         ]
 

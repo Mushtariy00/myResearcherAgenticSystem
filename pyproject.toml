@@ -26,6 +26,9 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "S", "ASYNC", "RUF"]
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S101"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["agentic_api", "agentic_core"]
+
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
@@ -35,4 +38,5 @@ exclude = ["**/.venv", "**/node_modules", "legacy", "sandbox"]
 [tool.pytest.ini_options]
 testpaths = ["apps/api/tests", "packages/core/tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = "--import-mode=importlib"

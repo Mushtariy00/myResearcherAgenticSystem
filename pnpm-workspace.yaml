@@ -1,2 +1,5 @@
 packages:
   - apps/web
+
+# pnpm holds back releases younger than a day (supply-chain guard). Pin versions that have aged
+# rather than adding exceptions here.

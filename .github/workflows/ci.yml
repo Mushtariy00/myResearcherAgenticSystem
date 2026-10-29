@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 # Actions use version tags for now; Renovate pins them to commit SHAs (renovate.json).
-# Switch to `uv sync --locked` / `pnpm install --frozen-lockfile` once uv.lock and pnpm-lock.yaml are committed.
+# Installs are locked: CI fails if uv.lock or pnpm-lock.yaml is out of date.
 jobs:
   python:
     runs-on: ubuntu-24.04
@@ -22,7 +22,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.13.6"
-      - run: uv sync --all-packages
+      - run: uv sync --all-packages --locked
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pyright
@@ -36,7 +36,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - run: pnpm install
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm --filter @agentic/web typecheck
       - run: pnpm --filter @agentic/web build

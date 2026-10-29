@@ -24,7 +24,10 @@ export function ApiStatus() {
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          setState({ kind: "error", message: error instanceof Error ? error.message : String(error) });
+          setState({
+            kind: "error",
+            message: error instanceof Error ? error.message : String(error),
+          });
         }
       });
     return () => controller.abort();
