@@ -84,6 +84,10 @@ class Project(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     privacy: Mapped[Privacy] = mapped_column(str_enum(Privacy), default=Privacy.STANDARD)
     allow_free_models: Mapped[bool] = mapped_column(default=True)
+    # Approve stages automatically (never coding: agentic_core.stages.NEVER_AUTO_APPROVE).
+    auto_approve: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
+    # Unanswered approvals cancel the run after this many days.
+    approval_expiry_days: Mapped[int] = mapped_column(Integer, default=7, server_default="7")
     created_by: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = _created_at()
 
@@ -151,6 +155,8 @@ class StageOutput(Base):
     model: Mapped[str | None] = mapped_column(String(128), nullable=True)
     degraded: Mapped[bool] = mapped_column(default=False)
     degraded_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Set on versions a reviewer wrote (approve with edits): that reviewer's user id.
+    edited_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = _created_at()
 
 
@@ -247,3 +253,14 @@ class Setting(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class NotificationRead(Base):
+    """Read state of in-app notifications. Notifications themselves are derived from run state,
+    keyed like "approval:<stage_output_id>" or "run.finished:<run_id>"."""
+
+    __tablename__ = "notification_reads"
+
+    user_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    notification_key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    read_at: Mapped[datetime] = _created_at()

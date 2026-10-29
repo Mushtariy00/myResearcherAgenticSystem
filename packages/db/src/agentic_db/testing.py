@@ -28,7 +28,9 @@ def database_url() -> str:
     if not base:
         pytest.skip("Set ARP_DATABASE_URL (the dev Postgres) to run database tests")
     url = make_url(base)
-    test_url = url.set(database=f"{url.database}_test")
+    # ARP_TEST_DB_NAME lets parallel test sessions (several agents or CI jobs) use separate
+    # databases; each session drops and recreates its own.
+    test_url = url.set(database=os.environ.get("ARP_TEST_DB_NAME") or f"{url.database}_test")
     admin_dsn = url.set(drivername="postgresql").render_as_string(hide_password=False)
     name = sql.Identifier(str(test_url.database))
     try:

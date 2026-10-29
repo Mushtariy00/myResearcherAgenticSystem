@@ -5,6 +5,7 @@ Workflow inputs are dataclasses (Temporal's default JSON converter handles them)
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Any
 
 TASK_QUEUE = "arp-main"
 RUN_WORKFLOW = "RunWorkflow"
@@ -24,6 +25,8 @@ def events_channel(run_id: object) -> str:
 @dataclass(frozen=True)
 class RunInput:
     run_id: str
+    # Set by a retry: the run restarts at this stage and keeps the approved outputs before it.
+    start_stage: str | None = None
 
 
 @dataclass(frozen=True)
@@ -36,6 +39,9 @@ class DecisionInput:
     decision: str  # agentic_core.enums.Decision value
     actor_id: str
     comment: str = ""
+    # Approve with edits (decision="approve" only): the reviewer's corrected output. It is stored
+    # as a new version of the stage output, and that version is the one approved.
+    edited_data: dict[str, Any] | None = None
 
 
 class EventType(StrEnum):
@@ -47,5 +53,7 @@ class EventType(StrEnum):
     STAGE_OUTPUT_READY = "stage.output_ready"
     STAGE_DECIDED = "stage.decided"
     STAGE_FAILED = "stage.failed"
+    STAGE_INVALIDATED = "stage.invalidated"  # a retry of an earlier stage made this output stale
+    RUN_RETRIED = "run.retried"
     LLM_CALL = "llm.call"
     LOG = "log"

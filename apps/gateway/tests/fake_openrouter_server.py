@@ -22,7 +22,12 @@ async def models() -> dict[str, Any]:
     text = {"input_modalities": ["text"], "output_modalities": ["text"]}
     return {
         "data": [
-            {"id": FREE_MODEL, "pricing": {"prompt": "0", "completion": "0"}, "context_length": 64_000, "architecture": text},
+            {
+                "id": FREE_MODEL,
+                "pricing": {"prompt": "0", "completion": "0"},
+                "context_length": 64_000,
+                "architecture": text,
+            },
             {
                 "id": PAID_MODEL,
                 "pricing": {"prompt": "0.0000005", "completion": "0.0000015"},
@@ -51,7 +56,8 @@ async def chat(request: Request) -> dict[str, Any]:
         "subtopics": ["Datasets", "Architectures", "Evaluation metrics"],
     }
     # CrewAI agents expect the ReAct "Final Answer:" format when no tools are used.
-    content = f"Thought: I now know the final answer\nFinal Answer: ```json\n{json.dumps(plan)}\n```"
+    answer = json.dumps(plan)
+    content = f"Thought: I now know the final answer\nFinal Answer: ```json\n{answer}\n```"
     model = body.get("model", FREE_MODEL)
     paid = not str(model).endswith(":free")
     return {
