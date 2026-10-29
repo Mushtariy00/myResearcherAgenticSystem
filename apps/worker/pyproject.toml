@@ -1,0 +1,23 @@
+[project]
+name = "agentic-worker"
+version = "0.1.0"
+description = "Temporal worker: run workflows (approvals, cancel) and stage activities (CrewAI agents)."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "agentic-core",
+    "agentic-db",
+    "crewai==1.15.33",
+    "httpx>=0.28,<0.29",
+    "json5>=0.10,<1",
+    "pydantic-settings>=2.10,<3",
+    "redis>=6,<8",
+    "temporalio>=1.35,<2",
+]
+
+[tool.uv.sources]
+agentic-core = { workspace = true }
+agentic-db = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"

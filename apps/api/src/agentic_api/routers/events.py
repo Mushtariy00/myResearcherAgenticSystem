@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from agentic_api.auth import CurrentUser, current_user
 from agentic_api.authz import get_db, load_run
+from agentic_core.contracts import events_channel
 from agentic_core.enums import RunStatus
 from agentic_db.models import Run, RunEvent
 
@@ -21,11 +22,6 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["runs"])
 HEARTBEAT_SECONDS = 15.0
 BATCH = 500
-
-
-def wake_channel(run_id: uuid.UUID | str) -> str:
-    """Valkey channel workers publish to after committing a run event."""
-    return f"run-events:{run_id}"
 
 
 def _format(event: RunEvent) -> str:
@@ -60,7 +56,7 @@ async def _stream(request: Request, run_id: uuid.UUID, after: int) -> AsyncItera
     sessions = request.app.state.sessions
     pubsub = request.app.state.valkey.pubsub()
     try:
-        await pubsub.subscribe(wake_channel(run_id))
+        await pubsub.subscribe(events_channel(run_id))
     except Exception:  # Valkey down: fall back to polling
         log.warning("valkey unavailable; SSE for run %s falls back to polling", run_id)
         pubsub = None

@@ -16,6 +16,11 @@ def workflow_id_for(run_id: str) -> str:
     return f"run-{run_id}"
 
 
+def events_channel(run_id: object) -> str:
+    """Valkey channel published after a run event commits; it only wakes SSE streams."""
+    return f"run-events:{run_id}"
+
+
 @dataclass(frozen=True)
 class RunInput:
     run_id: str
