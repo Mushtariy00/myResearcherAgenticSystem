@@ -1,0 +1,48 @@
+{
+  "admin": {
+    "title": "Administration",
+    "description": "Invite lab members, set monthly LLM budgets and control paid models.",
+    "link": {
+      "inviteTitle": "Invitation created",
+      "resetTitle": "New password link",
+      "description": "{email} sets a password with this link. It works once and expires in {hours} hours.",
+      "emailed": "We emailed the link to {email}.",
+      "notEmailed": "The email could not be sent. Share the link below yourself, through a private channel.",
+      "label": "Set-password link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "warning": "Until it is used, anyone with this link can take over the account. Do not post it publicly."
+    },
+    "invite": {
+      "title": "Invite someone",
+      "description": "Creates the account and sends a single-use link to set the password.",
+      "name": "Name",
+      "email": "Email",
+      "role": "Lab role",
+      "submit": "Send invitation",
+      "sending": "Inviting…"
+    },
+    "paidModels": {
+      "title": "Paid models",
+      "description": "Kill switch for the whole lab. When off, every run uses free models, whatever the budgets.",
+      "on": "Paid models allowed",
+      "off": "Paid models off: free models only",
+      "enabledToast": "Paid models are allowed again.",
+      "disabledToast": "Paid models are off. Runs now use free models only."
+    },
+    "users": {
+      "title": "Users",
+      "description": "Monthly budgets are in USD and reset on the 1st (UTC).",
+      "user": "User",
+      "role": "Role",
+      "budget": "Monthly budget",
+      "spent": "Spent this month",
+      "joined": "Joined",
+      "actions": "Actions",
+      "newLink": "Password link",
+      "banned": "Suspended",
+      "budgetSaved": "Budget saved.",
+      "saveBudget": "Save budget"
+    }
+  }
+}

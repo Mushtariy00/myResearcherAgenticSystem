@@ -1,24 +1,19 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
-
-/** Pages anyone may open. Everything else needs a session cookie. */
-const PUBLIC_PATHS = ["/login", "/reset-password"];
+import { isPublicPath, loginPathFor } from "@/lib/ui-version";
 
 /**
- * Optimistic gate: without a session cookie, protected pages redirect to /login before
- * rendering. The (app) layout then verifies the session itself, and FastAPI checks every
- * API call, so a forged or expired cookie gets no further than this.
+ * Optimistic gate: without a session cookie, protected pages redirect to the sign-in page of
+ * their version (Classic or Studio) before rendering. The (app) layouts then verify the session
+ * themselves, and FastAPI checks every API call, so a forged or expired cookie gets no further.
  */
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
-  if (PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+  if (isPublicPath(pathname) || getSessionCookie(request)) {
     return NextResponse.next();
   }
-  if (getSessionCookie(request)) {
-    return NextResponse.next();
-  }
-  const login = new URL("/login", request.url);
-  if (pathname !== "/") {
+  const login = new URL(loginPathFor(pathname), request.url);
+  if (pathname !== "/" && pathname !== "/studio/dashboard") {
     login.searchParams.set("next", `${pathname}${search}`);
   }
   return NextResponse.redirect(login);

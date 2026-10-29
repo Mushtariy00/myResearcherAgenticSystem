@@ -1,0 +1,89 @@
+{
+  "run": {
+    "title": "Run",
+    "backToProject": "Back to project",
+    "errorTitle": "The run reported an error",
+    "pausedTitle": "Paused: the lab's LLM balance is used up",
+    "pausedDescription": "Admins have been alerted. The run resumes when the balance is topped up.",
+    "meta": {
+      "created": "Started {date}",
+      "policy": "Models: {policy}",
+      "cap": "Cost cap: {amount}",
+      "noCap": "No cost cap"
+    },
+    "timeline": {
+      "title": "Stages",
+      "attempt": "Attempt {attempt}"
+    },
+    "events": {
+      "title": "Live events",
+      "empty": "No events yet.",
+      "reconnect": "Reconnect",
+      "state": {
+        "connecting": "Connecting…",
+        "live": "Live",
+        "reconnecting": "Reconnecting…",
+        "ended": "Run finished",
+        "error": "Live updates unavailable"
+      },
+      "runCreated": "Run created: {topic}",
+      "runStatus": "Status: {status}",
+      "stageStarted": "{stage} started",
+      "stageOutputReady": "{stage} output is ready for review",
+      "stageDecided": "{stage}: {decision}",
+      "stageFailed": "{stage} failed",
+      "llmCall": "LLM call · {model} ({tier})",
+      "attempt": "attempt {attempt}",
+      "degraded": "placeholder (degraded)",
+      "switchedToFree": "switched to free models",
+      "replayed": "reused a response already paid for"
+    },
+    "approval": {
+      "title": "Review the {stage} output",
+      "titleReadOnly": "{stage} output waiting for review",
+      "description": "Approve to continue, request changes to get a new attempt, or reject to stop the run.",
+      "readOnly": "The run owner or a project owner decides on this output.",
+      "version": "Version",
+      "model": "Model",
+      "unknownModel": "unknown",
+      "produced": "Produced",
+      "hash": "SHA-256",
+      "outputLabel": "Stage output (JSON)",
+      "degradedTitle": "Placeholder output (degraded)",
+      "degradedDescription": "The stage could not produce a full result, so this is a fallback or partial placeholder. Check it carefully before approving.",
+      "degradedReason": "Reason:",
+      "comment": "Comment",
+      "commentPlaceholder": "What should change, or what the next stage should know",
+      "commentHint": "Optional when approving or rejecting; required when requesting changes.",
+      "commentRequired": "Say what should change before requesting changes.",
+      "approve": "Approve",
+      "requestChanges": "Request changes",
+      "reject": "Reject",
+      "sending": "Sending…",
+      "sent": {
+        "approve": "Approved. The next stage will start.",
+        "request_changes": "Changes requested. A new attempt will start.",
+        "reject": "Rejected. The run will stop."
+      },
+      "conflictToast": "This output changed while you were reviewing it.",
+      "conflictTitle": "The output changed",
+      "conflictDescription": "Your decision was not recorded: a newer output replaced the one you reviewed, or someone already decided. Review what is shown now.",
+      "updatedTitle": "A new version arrived",
+      "updatedDescription": "Version {version} replaced the output you were reading. Read it before deciding.",
+      "updatedAcknowledge": "I have read it",
+      "rejectConfirmTitle": "Reject this output?",
+      "rejectConfirmDescription": "Rejecting stops the whole run. This cannot be undone.",
+      "rejectConfirm": "Reject and stop",
+      "keepReviewing": "Keep reviewing"
+    },
+    "cancel": {
+      "button": "Cancel run",
+      "cancelling": "Cancelling…",
+      "confirmTitle": "Cancel this run?",
+      "confirmDescription": "Work in progress stops and the run cannot be resumed. Money already spent stays charged.",
+      "confirm": "Cancel run",
+      "keepRunning": "Keep running",
+      "requested": "Cancellation requested."
+    }
+  }
+}

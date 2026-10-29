@@ -21,8 +21,18 @@ export function safeNextPath(value: string | null | undefined, fallback = "/"): 
   } catch {
     return fallback;
   }
-  if (url.origin !== BASE || url.pathname.startsWith("/api/") || url.pathname === "/login") {
+  // Dot segments are resolved first: "/.//evil.example" normalises to "//evil.example", which a
+  // browser reads as another host, so the check runs on the normalised path.
+  const path = url.pathname;
+  if (
+    url.origin !== BASE ||
+    path.startsWith("//") ||
+    path.startsWith("/\\") ||
+    path.startsWith("/api/") ||
+    path === "/login" ||
+    path === "/studio/login"
+  ) {
     return fallback;
   }
-  return `${url.pathname}${url.search}${url.hash}`;
+  return `${path}${url.search}${url.hash}`;
 }

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RunDetail, StageOutputOut } from "@/client";
 import { client } from "@/client/client.gen";
 import { configureApiClient } from "@/lib/api-client";
-import messages from "../../../messages/en.json";
+import { enMessages as messages } from "@/test/messages";
 import { ApprovalPanel } from "./approval-panel";
 
 const output: StageOutputOut = {

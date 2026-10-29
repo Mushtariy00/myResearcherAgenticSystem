@@ -1,0 +1,67 @@
+{
+  "project": {
+    "title": "Project",
+    "back": "All projects",
+    "confidential": "Confidential: only providers that keep no data are used, so fewer free models are available.",
+    "viewerNotice": "You are a viewer in this project: you can follow its runs but not start them.",
+    "newRun": {
+      "title": "New run",
+      "description": "Start the pipeline on a research topic. You approve each stage before the next one starts.",
+      "topic": "Research topic",
+      "topicPlaceholder": "e.g. Monocular depth estimation on NYU Depth V2",
+      "policy": "LLM models",
+      "policies": {
+        "auto": {
+          "label": "Auto",
+          "description": "Paid models while your budget allows, then free models."
+        },
+        "free": {
+          "label": "Free only",
+          "description": "Never spends money. Free models are slower and rate-limited."
+        }
+      },
+      "cap": "Cost cap for this run (USD, optional)",
+      "capPlaceholder": "No cap",
+      "capHint": "Paid calls stop at this amount; the run continues on free models.",
+      "submit": "Start run",
+      "starting": "Starting…",
+      "started": "Run started."
+    },
+    "runs": {
+      "title": "Runs",
+      "empty": "No runs yet.",
+      "topic": "Topic",
+      "status": "Status",
+      "policy": "Models",
+      "cap": "Cost cap",
+      "created": "Started",
+      "noCap": "None"
+    },
+    "members": {
+      "title": "Members",
+      "description": "People who can see this project.",
+      "descriptionOwner": "Add people with the email they were invited with.",
+      "empty": "No members yet.",
+      "addTitle": "Add a member",
+      "email": "Email",
+      "emailPlaceholder": "name@lab.example",
+      "role": "Role",
+      "roleHints": {
+        "owner": "Manages members and can approve any run.",
+        "researcher": "Starts runs and approves their own.",
+        "viewer": "Can look, but cannot start or approve runs."
+      },
+      "add": "Add member",
+      "adding": "Adding…",
+      "added": "{name} can now open this project."
+    }
+  },
+  "budget": {
+    "title": "My LLM budget",
+    "description": "Paid-model spending this month (UTC).",
+    "used": "Budget used",
+    "noBudget": "No paid budget: your runs use free models.",
+    "remaining": "{amount} left this month.",
+    "resets": "Resets on the 1st of each month (UTC). When it runs out, runs switch to free models."
+  }
+}

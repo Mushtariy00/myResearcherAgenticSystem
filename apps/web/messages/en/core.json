@@ -1,0 +1,221 @@
+{
+  "common": {
+    "appName": "Agentic Research Platform",
+    "appShortName": "ARP",
+    "tagline": "A research pipeline where people approve every stage",
+    "loading": "Loading…",
+    "loadFailed": "Could not load this",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "close": "Close",
+    "creating": "Creating…",
+    "notifications": "Notifications"
+  },
+  "nav": {
+    "main": "Main",
+    "dashboard": "Dashboard",
+    "admin": "Admin",
+    "language": "Language",
+    "languages": {
+      "en": "English",
+      "ko": "한국어"
+    },
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "userMenu": "Account menu",
+    "signOut": "Sign out",
+    "signOutFailed": "Could not sign out. Try again.",
+    "roles": {
+      "admin": "Lab admin",
+      "user": "Member"
+    },
+    "skipToContent": "Skip to content"
+  },
+  "auth": {
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "newPassword": "New password",
+      "confirmPassword": "Repeat the new password"
+    },
+    "login": {
+      "title": "Sign in",
+      "description": "Use the email and password from your lab invitation.",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "help": "No account, or forgot your password? Ask a lab admin for a new link."
+    },
+    "reset": {
+      "title": "Set your password",
+      "description": "Choose a password for your account. This link works only once.",
+      "submit": "Save password",
+      "submitting": "Saving…",
+      "hint": "At least {min} characters. A short sentence is easy to remember.",
+      "tooShort": "The password needs at least {min} characters.",
+      "mismatch": "The two passwords do not match.",
+      "failed": "Password not saved",
+      "invalidTitle": "This link no longer works",
+      "invalidDescription": "It was already used or it has expired. Ask a lab admin for a new one.",
+      "backToLogin": "Back to sign in",
+      "doneTitle": "Password saved",
+      "doneDescription": "You can now sign in with your new password.",
+      "goToLogin": "Sign in"
+    },
+    "errors": {
+      "INVALID_EMAIL_OR_PASSWORD": "Wrong email or password.",
+      "INVALID_EMAIL": "Enter a valid email address.",
+      "INVALID_TOKEN": "This link is invalid or has expired. Ask a lab admin for a new one.",
+      "TOKEN_EXPIRED": "This link has expired. Ask a lab admin for a new one.",
+      "PASSWORD_TOO_SHORT": "The password is too short.",
+      "PASSWORD_TOO_LONG": "The password is too long.",
+      "USER_ALREADY_EXISTS": "Someone already uses this email.",
+      "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL": "Someone already uses this email.",
+      "BANNED_USER": "This account is suspended. Contact a lab admin.",
+      "USER_NOT_FOUND": "No user has this email.",
+      "INVALID_ORIGIN": "The request was blocked for security reasons. Reload the page and try again.",
+      "MISSING_OR_NULL_ORIGIN": "The request was blocked for security reasons. Reload the page and try again.",
+      "YOU_ARE_NOT_ALLOWED_TO_CREATE_USERS": "Only lab admins can invite people.",
+      "YOU_ARE_NOT_ALLOWED_TO_LIST_USERS": "Only lab admins can manage users.",
+      "TOO_MANY_REQUESTS": "Too many attempts. Wait a moment and try again.",
+      "UNKNOWN": "Something went wrong. Try again."
+    }
+  },
+  "roles": {
+    "owner": "Owner",
+    "researcher": "Researcher",
+    "viewer": "Viewer",
+    "admin": "Lab admin",
+    "user": "Member"
+  },
+  "runStatus": {
+    "queued": "Queued",
+    "running": "Running",
+    "awaiting_approval": "Awaiting approval",
+    "completed": "Completed",
+    "rejected": "Rejected",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "paused_budget": "Paused (budget)"
+  },
+  "stageStatus": {
+    "pending": "Waiting",
+    "running": "Running",
+    "output_ready": "Needs review",
+    "approved": "Approved",
+    "changes_requested": "Changes requested",
+    "rejected": "Rejected",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "invalidated": "Outdated",
+    "skipped": "Not run"
+  },
+  "stages": {
+    "literature": "Literature",
+    "method": "Method",
+    "coding": "Coding",
+    "experiment": "Experiment",
+    "writing": "Writing"
+  },
+  "decisions": {
+    "approve": "Approved",
+    "request_changes": "Changes requested",
+    "reject": "Rejected"
+  },
+  "tiers": {
+    "paid": "paid",
+    "free": "free"
+  },
+  "errors": {
+    "auth": {
+      "required": "Your session has ended. Sign in again.",
+      "unavailable": "The sign-in service is unavailable. Try again shortly."
+    },
+    "csrf": {
+      "origin_mismatch": "The request was blocked for security reasons. Reload the page and try again."
+    },
+    "permission": {
+      "denied": "You do not have permission to do that."
+    },
+    "project": {
+      "not_found": "Project not found, or you are not a member."
+    },
+    "run": {
+      "not_found": "Run not found.",
+      "already_finished": "This run has already finished."
+    },
+    "user": {
+      "not_found": "No user has this email. Ask a lab admin to invite them first."
+    },
+    "stage_output": {
+      "not_found": "That stage output no longer exists."
+    },
+    "approval": {
+      "stale": "The output changed since you opened it. Review the latest version.",
+      "duplicate": "A decision on this output was already recorded.",
+      "rejected_by_workflow": "The workflow no longer accepts a decision on this output.",
+      "expired": "Nobody decided in time, so the run was cancelled."
+    },
+    "orchestrator": {
+      "unavailable": "The workflow engine is unavailable, so the run could not start. Try again later."
+    },
+    "db": {
+      "unavailable": "The database is unavailable. Try again shortly."
+    },
+    "stage": {
+      "error": "A stage failed. The event log may say more.",
+      "too_many_attempts": "The stage was retried too many times (at most 3 attempts).",
+      "invalid_output": "A stage returned output that does not match its expected format."
+    },
+    "lab_balance": {
+      "exhausted": "The lab's LLM balance is used up."
+    },
+    "free_models": {
+      "disabled": "This project does not allow free models, and paid models are not available."
+    },
+    "free_quota": {
+      "exhausted": "The lab's free-model quota is used up for now. Try again later."
+    },
+    "validation": {
+      "failed": "Some fields are not valid. Check them and try again."
+    },
+    "network": {
+      "error": "Cannot reach the server. Check your connection."
+    },
+    "server": {
+      "error": "The server had a problem. Try again shortly."
+    },
+    "unknown": "Something went wrong. Try again."
+  },
+  "degradedReasons": {
+    "stage": {
+      "placeholder": "this stage is not implemented yet, so it returned a stand-in result."
+    },
+    "literature": {
+      "search_pending": "the literature search is not connected yet."
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page does not exist, or you do not have access to it.",
+    "back": "Go to the dashboard"
+  },
+  "errorPage": {
+    "title": "Something went wrong",
+    "description": "This page hit an unexpected error.",
+    "retry": "Try again"
+  },
+  "email": {
+    "invite": {
+      "subject": "You're invited to {appName}",
+      "body": "Hello {name},\n\nAn administrator created an account for you on {appName}. Open this link to choose your password:\n\n{url}\n\nThe link works once and expires in {hours} hours. If you did not expect this email, you can ignore it."
+    },
+    "reset": {
+      "subject": "Set a new password for {appName}",
+      "body": "Hello {name},\n\nUse this link to set a new password for your {appName} account:\n\n{url}\n\nThe link works once and expires in {hours} hours. If you did not ask for this, you can ignore this email."
+    }
+  }
+}

@@ -1,5 +1,6 @@
-import en from "../../messages/en.json" with { type: "json" };
-import ko from "../../messages/ko.json" with { type: "json" };
+// The email and common namespaces live in the core area (see src/i18n/messages.ts).
+import en from "../../messages/en/core.json" with { type: "json" };
+import ko from "../../messages/ko/core.json" with { type: "json" };
 import { sendMail } from "./mailer.ts";
 import type { SetPasswordPurpose } from "./reset-link.ts";
 

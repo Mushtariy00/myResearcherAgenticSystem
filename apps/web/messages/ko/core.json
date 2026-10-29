@@ -1,0 +1,221 @@
+{
+  "common": {
+    "appName": "Agentic Research Platform",
+    "appShortName": "ARP",
+    "tagline": "모든 단계를 사람이 승인하는 연구 파이프라인",
+    "loading": "불러오는 중…",
+    "loadFailed": "불러오지 못했습니다",
+    "retry": "다시 시도",
+    "cancel": "취소",
+    "close": "닫기",
+    "creating": "만드는 중…",
+    "notifications": "알림"
+  },
+  "nav": {
+    "main": "주 메뉴",
+    "dashboard": "대시보드",
+    "admin": "관리",
+    "language": "언어",
+    "languages": {
+      "en": "English",
+      "ko": "한국어"
+    },
+    "theme": "테마",
+    "themes": {
+      "light": "라이트",
+      "dark": "다크",
+      "system": "시스템 설정"
+    },
+    "userMenu": "계정 메뉴",
+    "signOut": "로그아웃",
+    "signOutFailed": "로그아웃하지 못했습니다. 다시 시도해 주세요.",
+    "roles": {
+      "admin": "랩 관리자",
+      "user": "구성원"
+    },
+    "skipToContent": "본문으로 건너뛰기"
+  },
+  "auth": {
+    "fields": {
+      "email": "이메일",
+      "password": "비밀번호",
+      "newPassword": "새 비밀번호",
+      "confirmPassword": "새 비밀번호 확인"
+    },
+    "login": {
+      "title": "로그인",
+      "description": "랩 초대로 받은 이메일과 비밀번호를 입력하세요.",
+      "submit": "로그인",
+      "submitting": "로그인 중…",
+      "help": "계정이 없거나 비밀번호를 잊으셨나요? 랩 관리자에게 새 링크를 요청하세요."
+    },
+    "reset": {
+      "title": "비밀번호 설정",
+      "description": "계정에 사용할 비밀번호를 정해 주세요. 이 링크는 한 번만 사용할 수 있습니다.",
+      "submit": "비밀번호 저장",
+      "submitting": "저장하는 중…",
+      "hint": "{min}자 이상이어야 합니다. 짧은 문장으로 정하면 기억하기 쉽습니다.",
+      "tooShort": "비밀번호는 {min}자 이상이어야 합니다.",
+      "mismatch": "두 비밀번호가 일치하지 않습니다.",
+      "failed": "비밀번호를 저장하지 못했습니다",
+      "invalidTitle": "사용할 수 없는 링크입니다",
+      "invalidDescription": "이미 사용했거나 만료된 링크입니다. 랩 관리자에게 새 링크를 요청하세요.",
+      "backToLogin": "로그인으로 돌아가기",
+      "doneTitle": "비밀번호를 저장했습니다",
+      "doneDescription": "이제 새 비밀번호로 로그인할 수 있습니다.",
+      "goToLogin": "로그인하기"
+    },
+    "errors": {
+      "INVALID_EMAIL_OR_PASSWORD": "이메일 또는 비밀번호가 올바르지 않습니다.",
+      "INVALID_EMAIL": "올바른 이메일 주소를 입력하세요.",
+      "INVALID_TOKEN": "링크가 유효하지 않거나 만료되었습니다. 랩 관리자에게 새 링크를 요청하세요.",
+      "TOKEN_EXPIRED": "링크가 만료되었습니다. 랩 관리자에게 새 링크를 요청하세요.",
+      "PASSWORD_TOO_SHORT": "비밀번호가 너무 짧습니다.",
+      "PASSWORD_TOO_LONG": "비밀번호가 너무 깁니다.",
+      "USER_ALREADY_EXISTS": "이미 사용 중인 이메일입니다.",
+      "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL": "이미 사용 중인 이메일입니다.",
+      "BANNED_USER": "정지된 계정입니다. 랩 관리자에게 문의하세요.",
+      "USER_NOT_FOUND": "이 이메일을 쓰는 사용자가 없습니다.",
+      "INVALID_ORIGIN": "보안상의 이유로 요청이 차단되었습니다. 페이지를 새로 고친 뒤 다시 시도하세요.",
+      "MISSING_OR_NULL_ORIGIN": "보안상의 이유로 요청이 차단되었습니다. 페이지를 새로 고친 뒤 다시 시도하세요.",
+      "YOU_ARE_NOT_ALLOWED_TO_CREATE_USERS": "랩 관리자만 사용자를 초대할 수 있습니다.",
+      "YOU_ARE_NOT_ALLOWED_TO_LIST_USERS": "랩 관리자만 사용자를 관리할 수 있습니다.",
+      "TOO_MANY_REQUESTS": "시도 횟수가 너무 많습니다. 잠시 후 다시 시도하세요.",
+      "UNKNOWN": "문제가 발생했습니다. 다시 시도해 주세요."
+    }
+  },
+  "roles": {
+    "owner": "소유자",
+    "researcher": "연구원",
+    "viewer": "열람자",
+    "admin": "랩 관리자",
+    "user": "구성원"
+  },
+  "runStatus": {
+    "queued": "대기 중",
+    "running": "실행 중",
+    "awaiting_approval": "승인 대기",
+    "completed": "완료",
+    "rejected": "반려됨",
+    "failed": "실패",
+    "cancelled": "취소됨",
+    "paused_budget": "일시 중지(예산)"
+  },
+  "stageStatus": {
+    "pending": "대기",
+    "running": "진행 중",
+    "output_ready": "검토 필요",
+    "approved": "승인됨",
+    "changes_requested": "수정 요청됨",
+    "rejected": "반려됨",
+    "failed": "실패",
+    "cancelled": "취소됨",
+    "invalidated": "무효화됨",
+    "skipped": "실행 안 함"
+  },
+  "stages": {
+    "literature": "문헌 조사",
+    "method": "방법론",
+    "coding": "코딩",
+    "experiment": "실험",
+    "writing": "논문 작성"
+  },
+  "decisions": {
+    "approve": "승인",
+    "request_changes": "수정 요청",
+    "reject": "반려"
+  },
+  "tiers": {
+    "paid": "유료",
+    "free": "무료"
+  },
+  "errors": {
+    "auth": {
+      "required": "세션이 만료되었습니다. 다시 로그인하세요.",
+      "unavailable": "인증 서비스를 사용할 수 없습니다. 잠시 후 다시 시도하세요."
+    },
+    "csrf": {
+      "origin_mismatch": "보안상의 이유로 요청이 차단되었습니다. 페이지를 새로 고친 뒤 다시 시도하세요."
+    },
+    "permission": {
+      "denied": "이 작업을 할 권한이 없습니다."
+    },
+    "project": {
+      "not_found": "프로젝트를 찾을 수 없거나 구성원이 아닙니다."
+    },
+    "run": {
+      "not_found": "실행을 찾을 수 없습니다.",
+      "already_finished": "이미 끝난 실행입니다."
+    },
+    "user": {
+      "not_found": "이 이메일을 쓰는 사용자가 없습니다. 먼저 랩 관리자에게 초대를 요청하세요."
+    },
+    "stage_output": {
+      "not_found": "해당 단계 결과가 더 이상 없습니다."
+    },
+    "approval": {
+      "stale": "결과를 연 뒤에 내용이 바뀌었습니다. 최신 버전을 검토하세요.",
+      "duplicate": "이 결과에 대한 결정이 이미 기록되었습니다.",
+      "rejected_by_workflow": "워크플로가 더 이상 이 결과에 대한 결정을 받지 않습니다.",
+      "expired": "정해진 기간 안에 아무도 결정하지 않아 실행이 취소되었습니다."
+    },
+    "orchestrator": {
+      "unavailable": "워크플로 엔진을 사용할 수 없어 실행을 시작하지 못했습니다. 나중에 다시 시도하세요."
+    },
+    "db": {
+      "unavailable": "데이터베이스를 사용할 수 없습니다. 잠시 후 다시 시도하세요."
+    },
+    "stage": {
+      "error": "단계가 실패했습니다. 이벤트 기록에서 자세한 내용을 확인할 수 있습니다.",
+      "too_many_attempts": "단계를 너무 여러 번 다시 시도했습니다(최대 3회).",
+      "invalid_output": "단계 결과가 정해진 형식과 맞지 않습니다."
+    },
+    "lab_balance": {
+      "exhausted": "랩의 LLM 잔액이 모두 소진되었습니다."
+    },
+    "free_models": {
+      "disabled": "이 프로젝트는 무료 모델을 허용하지 않으며, 유료 모델도 사용할 수 없습니다."
+    },
+    "free_quota": {
+      "exhausted": "랩의 무료 모델 사용량이 지금은 모두 소진되었습니다. 나중에 다시 시도하세요."
+    },
+    "validation": {
+      "failed": "올바르지 않은 입력이 있습니다. 확인한 뒤 다시 시도하세요."
+    },
+    "network": {
+      "error": "서버에 연결할 수 없습니다. 네트워크 연결을 확인하세요."
+    },
+    "server": {
+      "error": "서버에 문제가 생겼습니다. 잠시 후 다시 시도하세요."
+    },
+    "unknown": "문제가 발생했습니다. 다시 시도해 주세요."
+  },
+  "degradedReasons": {
+    "stage": {
+      "placeholder": "이 단계는 아직 구현되지 않아 임시 결과를 돌려주었습니다."
+    },
+    "literature": {
+      "search_pending": "문헌 검색이 아직 연결되지 않았습니다."
+    }
+  },
+  "notFound": {
+    "title": "페이지를 찾을 수 없습니다",
+    "description": "페이지가 없거나 접근 권한이 없습니다.",
+    "back": "대시보드로 가기"
+  },
+  "errorPage": {
+    "title": "문제가 발생했습니다",
+    "description": "페이지에서 예상하지 못한 오류가 발생했습니다.",
+    "retry": "다시 시도"
+  },
+  "email": {
+    "invite": {
+      "subject": "{appName}에 초대되었습니다",
+      "body": "{name}님, 안녕하세요.\n\n관리자가 {appName} 계정을 만들었습니다. 아래 링크를 열어 비밀번호를 설정해 주세요.\n\n{url}\n\n이 링크는 한 번만 사용할 수 있으며 {hours}시간 후에 만료됩니다. 요청하지 않은 메일이라면 무시하셔도 됩니다."
+    },
+    "reset": {
+      "subject": "{appName} 새 비밀번호 설정",
+      "body": "{name}님, 안녕하세요.\n\n아래 링크에서 {appName} 계정의 새 비밀번호를 설정할 수 있습니다.\n\n{url}\n\n이 링크는 한 번만 사용할 수 있으며 {hours}시간 후에 만료됩니다. 요청하지 않으셨다면 이 메일을 무시하셔도 됩니다."
+    }
+  }
+}

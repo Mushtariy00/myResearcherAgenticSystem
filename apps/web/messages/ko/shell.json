@@ -1,0 +1,11 @@
+{
+  "shell": {
+    "version": {
+      "label": "화면 버전",
+      "classic": "클래식",
+      "studio": "스튜디오",
+      "switchToStudio": "스튜디오로 보기",
+      "switchToClassic": "클래식으로 보기"
+    }
+  }
+}

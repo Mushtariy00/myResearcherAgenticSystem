@@ -1,0 +1,11 @@
+{
+  "shell": {
+    "version": {
+      "label": "Interface",
+      "classic": "Classic",
+      "studio": "Studio",
+      "switchToStudio": "Open in Studio",
+      "switchToClassic": "Open in Classic"
+    }
+  }
+}

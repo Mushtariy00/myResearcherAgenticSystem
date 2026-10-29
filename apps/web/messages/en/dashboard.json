@@ -1,0 +1,22 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back, {name}.",
+    "projects": "My projects",
+    "emptyTitle": "No projects yet",
+    "emptyDescription": "Create a project, or ask a project owner to add you to theirs.",
+    "confidential": "Confidential",
+    "noDescription": "No description",
+    "createdAt": "Created {date}",
+    "create": {
+      "open": "New project",
+      "title": "New project",
+      "description": "You will be its owner and can add members afterwards.",
+      "name": "Name",
+      "descriptionLabel": "Description (optional)",
+      "descriptionPlaceholder": "What is this project about?",
+      "submit": "Create project",
+      "created": "Project “{name}” created."
+    }
+  }
+}

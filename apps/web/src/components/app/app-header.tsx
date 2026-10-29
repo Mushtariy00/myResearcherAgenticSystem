@@ -10,6 +10,7 @@ import { useCurrentUser } from "./current-user";
 import { LocaleSwitcher } from "./locale-switcher";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
+import { VersionSwitch } from "./version-switch";
 
 function NavLink({ href, children }: { href: string; children: ReactNode }) {
   const pathname = usePathname();
@@ -48,6 +49,7 @@ export function AppHeader() {
           {user.role === "admin" && <NavLink href="/admin">{t("nav.admin")}</NavLink>}
         </nav>
         <div className="ml-auto flex items-center gap-1">
+          <VersionSwitch />
           <LocaleSwitcher />
           <ThemeToggle />
           <UserMenu />

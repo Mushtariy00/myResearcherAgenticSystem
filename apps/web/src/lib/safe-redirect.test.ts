@@ -21,12 +21,25 @@ describe("safeNextPath", () => {
     }
   });
 
+  it("refuses dot segments that normalise to another host", () => {
+    // new URL("/.//evil.example", base).pathname is "//evil.example": protocol-relative.
+    for (const value of [
+      "/.//evil.example",
+      "/x/..//evil.example",
+      "/./\\evil.example",
+      "/%2e//evil.example",
+    ]) {
+      expect(safeNextPath(value), value).toBe("/");
+    }
+  });
+
   it("keeps percent-encoded characters encoded (they stay part of the path)", () => {
     expect(safeNextPath("/%0d%0aSet-Cookie:x")).toBe("/%0d%0aSet-Cookie:x");
   });
 
-  it("does not loop back to the login page or into API routes", () => {
+  it("does not loop back to a login page or into API routes", () => {
     expect(safeNextPath("/login")).toBe("/");
+    expect(safeNextPath("/studio/login")).toBe("/");
     expect(safeNextPath("/api/auth/sign-out")).toBe("/");
   });
 
