@@ -17,6 +17,20 @@ concurrency:
 jobs:
   python:
     runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: arp
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: arp
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U arp -d arp"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      # Database tests create and migrate a throwaway `arp_test` database on this service.
+      ARP_DATABASE_URL: postgresql+psycopg://arp:ci-only@127.0.0.1:5432/arp
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6

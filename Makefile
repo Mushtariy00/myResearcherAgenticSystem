@@ -1,11 +1,15 @@
 SHELL := /usr/bin/env bash
 COMPOSE := docker compose -f infra/compose/compose.yaml --env-file infra/compose/.env --profile dev
+ALEMBIC := uv run alembic -c packages/db/alembic.ini
+# Settings for the services run on the host (created from .env.example by `make env`).
+-include .env
+export
 # Temporal's dev server writes its state as the host user (see infra/compose/compose.yaml).
 export ARP_UID := $(shell id -u)
 export ARP_GID := $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor setup up down ps logs api web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
+.PHONY: help doctor setup env up down ps logs migrate migration api web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -20,6 +24,18 @@ setup: ## Install Python and web dependencies (writes uv.lock / pnpm-lock.yaml)
 infra/compose/.env:
 	cp infra/compose/.env.example $@
 	@echo "Created $@ - change the dev password if you like."
+
+env: .env ## Create .env (app settings) from .env.example
+
+.env:
+	cp .env.example $@
+	@echo "Created $@ - paste your OpenRouter key into ARP_OPENROUTER_API_KEY."
+
+migrate: .env ## Apply database migrations
+	$(ALEMBIC) upgrade head
+
+migration: .env ## Create a migration from model changes: make migration m="add x"
+	$(ALEMBIC) revision --autogenerate -m "$(m)"
 
 up: infra/compose/.env ## Start dev infrastructure (Postgres, Valkey, Temporal, Mailpit, proxy)
 	mkdir -p .data/temporal
