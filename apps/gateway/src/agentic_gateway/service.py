@@ -19,8 +19,11 @@ from agentic_db.models import LlmCall, Project, Setting
 from agentic_db.spend import month_spend, monthly_budget, run_spend
 from agentic_gateway.catalog import Catalog, ModelInfo
 from agentic_gateway.openrouter import (
+    KNOWN_UPSTREAM_ERRORS,
     AccountBalanceError,
+    AuthError,
     ChatResult,
+    FreeDailyLimitError,
     KeyLimitError,
     OpenRouterClient,
     UpstreamError,
@@ -31,7 +34,8 @@ from agentic_gateway.quota import FreeQuota
 DEFAULT_MAX_OUTPUT_TOKENS = 2048
 CHARS_PER_TOKEN = 3.5  # conservative: overestimating tokens only makes the reservation larger
 DEFAULT_PAID_MODELS = ("google/gemini-2.5-flash", "openai/gpt-4.1-mini")
-DEFAULT_FREE_MODELS = ("openai/gpt-oss-120b:free", "openrouter/owl-alpha")
+# Free models change often; unlisted ones are skipped and the catalog fills in text models.
+DEFAULT_FREE_MODELS = ("google/gemma-4-31b-it:free", "nvidia/nemotron-3-ultra-550b-a55b:free")
 PAID_MODELS_SETTING = "paid_models_enabled"
 
 
@@ -118,11 +122,11 @@ class Router:
                     await self._finish(call_id, LlmCallState.RELEASED, "key_limit")
                     switched = True
                     break
-                except (UpstreamError, UpstreamRateLimitError) as exc:
+                except (UpstreamError, UpstreamRateLimitError, FreeDailyLimitError) as exc:
                     await self._finish(call_id, LlmCallState.RELEASED, type(exc).__name__)
                     continue
-                except AccountBalanceError:
-                    await self._finish(call_id, LlmCallState.RELEASED, "account_balance")
+                except (AccountBalanceError, AuthError) as exc:
+                    await self._finish(call_id, LlmCallState.RELEASED, type(exc).__name__)
                     raise
                 return await self._settle(call_id, result, LlmTier.PAID, result.cost_usd, False)
 
@@ -143,8 +147,9 @@ class Router:
                 await self._finish(call_id, LlmCallState.RELEASED, type(exc).__name__)
                 last_error = exc
                 continue
-            except AccountBalanceError:
-                await self._finish(call_id, LlmCallState.RELEASED, "account_balance")
+            except (AccountBalanceError, AuthError, FreeDailyLimitError) as exc:
+                # The daily cap is account-wide: other free models would fail the same way.
+                await self._finish(call_id, LlmCallState.RELEASED, type(exc).__name__)
                 raise
             return await self._settle(call_id, result, LlmTier.FREE, Decimal(0), switched)
         if isinstance(last_error, UpstreamRateLimitError):
@@ -250,7 +255,7 @@ class Router:
                 deny_data_collection=deny,
                 request_timeout=self._timeout,
             )
-        except (KeyLimitError, AccountBalanceError, UpstreamError, UpstreamRateLimitError):
+        except KNOWN_UPSTREAM_ERRORS:
             raise  # the caller releases the reservation: these responses cost nothing
         except BaseException:
             # Cancelled or crashed mid-call: the provider may still bill it. Keep counting the
@@ -324,8 +329,10 @@ class Router:
         needed = prompt_tokens + max_output
 
         def fits(info: ModelInfo) -> bool:
-            return info.is_free == free and (
-                info.context_length == 0 or info.context_length >= needed
+            return (
+                info.text_io
+                and info.is_free == free
+                and (info.context_length == 0 or info.context_length >= needed)
             )
 
         chain = [m for m in preferred if m in models and fits(models[m])]

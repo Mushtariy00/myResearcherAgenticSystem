@@ -211,6 +211,23 @@ async def test_cancel_while_waiting_for_review(client: Client, db: Factory) -> N
     assert stage_run.status == StageStatus.CANCELLED
 
 
+async def test_cancel_while_a_stage_is_running(
+    client: Client, db: Factory, runner: FakeRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Found by the live run: this used to be recorded as 'failed'."""
+    monkeypatch.setattr("agentic_worker.activities.HEARTBEAT_SECONDS", 0.1)
+    runner.block_stage = "literature"
+    run_id, handle = await start(client, db)
+    await asyncio.wait_for(runner.blocked.wait(), timeout=20)
+    await handle.cancel()
+    with pytest.raises(WorkflowFailureError):
+        await handle.result()
+    assert (await run_status(db, run_id))[0] == RunStatus.CANCELLED
+    async with db() as session:
+        stage_run = (await session.scalars(select(StageRun))).one()
+    assert stage_run.status == StageStatus.CANCELLED
+
+
 async def test_failing_stage_fails_the_run_honestly(
     client: Client, db: Factory, runner: FakeRunner
 ) -> None:

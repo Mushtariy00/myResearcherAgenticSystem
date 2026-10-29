@@ -5,6 +5,7 @@ import pytest
 from pydantic import SecretStr
 
 from agentic_gateway.app import create_app
+from agentic_gateway.openrouter import AuthError, FreeDailyLimitError
 from agentic_gateway.quota import QuotaExhaustedError
 from agentic_gateway.service import Router
 from agentic_gateway.settings import GatewaySettings
@@ -51,3 +52,26 @@ async def test_quota_exhaustion_is_429_with_retry_after(
     assert response.status_code == 429
     assert response.headers["retry-after"] == "42"
     assert response.json() == {"detail": "free_quota.exhausted", "retry_after": 42.0}
+
+
+async def test_daily_limit_and_bad_key_map_to_clear_errors(
+    client: httpx.AsyncClient, router: Router, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def daily(_: object) -> None:
+        raise FreeDailyLimitError(3600)
+
+    monkeypatch.setattr(router, "complete", daily)
+    response = await client.post(
+        "/v1/complete", json=BODY, headers={"authorization": "Bearer secret"}
+    )
+    assert (response.status_code, response.json()["detail"]) == (429, "free_quota.daily_exhausted")
+    assert response.headers["retry-after"] == "3600"
+
+    async def bad_key(_: object) -> None:
+        raise AuthError("No auth credentials found")
+
+    monkeypatch.setattr(router, "complete", bad_key)
+    response = await client.post(
+        "/v1/complete", json=BODY, headers={"authorization": "Bearer secret"}
+    )
+    assert (response.status_code, response.json()["detail"]) == (502, "upstream.auth_failed")

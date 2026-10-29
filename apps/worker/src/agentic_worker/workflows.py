@@ -10,7 +10,7 @@ from typing import Any
 
 from temporalio import workflow
 from temporalio.common import RetryPolicy
-from temporalio.exceptions import ActivityError, ApplicationError
+from temporalio.exceptions import ActivityError, ApplicationError, is_cancelled_exception
 
 with workflow.unsafe.imports_passed_through():
     from agentic_core.contracts import (
@@ -39,10 +39,12 @@ STAGE_STEP = timedelta(minutes=30)
 DB_RETRY = RetryPolicy(
     initial_interval=timedelta(seconds=1), maximum_interval=timedelta(seconds=30)
 )
+# About 15 minutes of backoff for transient failures. Rate limits retry after the gateway's
+# Retry-After instead (next_retry_delay), e.g. at the free tier's daily reset.
 STAGE_RETRY = RetryPolicy(
     initial_interval=timedelta(seconds=5),
-    maximum_interval=timedelta(minutes=10),
-    maximum_attempts=20,
+    maximum_interval=timedelta(minutes=5),
+    maximum_attempts=8,
     non_retryable_error_types=["StageFailed", "LabBalanceExhausted", "FreeModelsDisabled"],
 )
 DECISIONS = frozenset(d.value for d in Decision)
@@ -91,6 +93,10 @@ class RunWorkflow:
         except TimeoutError:
             return await self._finish(inp.run_id, RunStatus.CANCELLED, "approval.expired")
         except ActivityError as error:
+            if is_cancelled_exception(error):
+                # Cancelled while an activity ran: Temporal reports it as an activity error.
+                await self._finish(inp.run_id, RunStatus.CANCELLED)
+                raise asyncio.CancelledError from error
             return await self._finish(inp.run_id, RunStatus.FAILED, _error_code(error))
 
     async def _run_attempt(

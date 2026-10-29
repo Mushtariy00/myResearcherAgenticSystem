@@ -1,6 +1,7 @@
 """A fake OpenRouter (catalog + chat) and an in-memory counter for the free quota."""
 
 import json
+import time
 import uuid
 from collections import defaultdict
 from typing import Any
@@ -30,6 +31,40 @@ KEY_LIMIT = (
 )
 NO_CREDITS = (402, {"error": {"code": 402, "message": "Insufficient credits"}})
 OVERLOADED = (503, {"error": {"code": 503, "message": "overloaded"}})
+# Real responses seen on 2026-10-30 (messages shortened).
+FORBIDDEN = (403, {"error": {"code": 403, "message": "only available on agentic harnesses"}})
+UNAUTHORIZED = (401, {"error": {"code": 401, "message": "No auth credentials found"}})
+
+# A zero-priced model that outputs audio (like google/lyria-*): must never be chosen.
+AUDIO = "music/lyria-like"
+CATALOG["data"].append(
+    {
+        "id": AUDIO,
+        "pricing": {"prompt": "0", "completion": "0"},
+        "context_length": 2_000_000,
+        "architecture": {"input_modalities": ["text"], "output_modalities": ["audio"]},
+    }
+)
+
+
+def daily_limit(reset_in_seconds: float) -> tuple[int, dict[str, Any]]:
+    """OpenRouter's 429 when the account's free requests for the UTC day are used up."""
+    reset_ms = int((time.time() + reset_in_seconds) * 1000)
+    headers = {
+        "X-RateLimit-Limit": "50",
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": str(reset_ms),
+    }
+    return (
+        429,
+        {
+            "error": {
+                "code": 429,
+                "message": "Rate limit exceeded: free-models-per-day",
+                "metadata": {"headers": headers, "limit_source": "openrouter_free_tier_daily"},
+            }
+        },
+    )
 
 
 class FakeOpenRouter:

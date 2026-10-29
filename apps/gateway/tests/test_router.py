@@ -10,10 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from agentic_core.enums import LlmCallState, LlmPolicy, LlmTier, Privacy
 from agentic_db.models import Budget, LlmCall, Project, Setting
 from agentic_db.spend import month_spend
-from agentic_gateway.openrouter import AccountBalanceError
+from agentic_gateway.openrouter import AccountBalanceError, AuthError, FreeDailyLimitError
 from agentic_gateway.quota import FreeQuota, QuotaExhaustedError
 from agentic_gateway.service import CompletionRequest, FreeModelsDisabledError, Router
 from gateway_testkit import (
+    AUDIO,
+    FORBIDDEN,
     FREE_A,
     FREE_B,
     KEY_LIMIT,
@@ -21,8 +23,10 @@ from gateway_testkit import (
     OVERLOADED,
     PAID,
     PAID_BACKUP,
+    UNAUTHORIZED,
     FakeCounter,
     FakeOpenRouter,
+    daily_limit,
 )
 
 Factory = async_sessionmaker[AsyncSession]
@@ -188,3 +192,41 @@ async def test_projects_can_forbid_free_models(router: Router, db: Factory) -> N
         await session.commit()
     with pytest.raises(FreeModelsDisabledError):
         await router.complete(request(project_id=project.id))
+
+
+async def test_model_restricted_to_other_apps_is_skipped(
+    router: Router, upstream: FakeOpenRouter
+) -> None:
+    upstream.plan[FREE_A].append(FORBIDDEN)  # seen live: 403 "only available on agentic harnesses"
+    assert (await router.complete(request())).model == FREE_B
+
+
+async def test_daily_free_limit_waits_for_the_reset_without_trying_other_models(
+    router: Router, upstream: FakeOpenRouter, db: Factory
+) -> None:
+    upstream.plan[FREE_A].append(daily_limit(3600))
+    with pytest.raises(FreeDailyLimitError) as exc:
+        await router.complete(request())
+    assert 3500 < exc.value.retry_after <= 3600  # from X-RateLimit-Reset, not a guess
+    assert upstream.calls == [FREE_A]  # the cap is account-wide: other free models would burn too
+    assert [c.state for c in await calls(db)] == [LlmCallState.RELEASED]
+
+
+async def test_free_fallback_never_picks_non_text_models(router: Router, db: Factory) -> None:
+    fallback = Router(
+        db,
+        router._catalog,
+        router._client,
+        router._quota,
+        free_models=["gone/model:free"],  # not in the catalog: fall back to the catalog's own list
+    )
+    chain = await fallback._chain(["gone/model:free"], 100, 1000, free=True)
+    assert AUDIO not in chain
+    assert set(chain) == {FREE_A, FREE_B}
+
+
+async def test_bad_key_is_a_configuration_error(router: Router, upstream: FakeOpenRouter) -> None:
+    upstream.plan[FREE_A].append(UNAUTHORIZED)
+    with pytest.raises(AuthError):
+        await router.complete(request())
+    assert upstream.calls == [FREE_A]

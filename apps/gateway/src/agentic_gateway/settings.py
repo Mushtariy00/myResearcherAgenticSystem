@@ -16,10 +16,11 @@ class GatewaySettings(BaseSettings):
     # Comma-separated overrides; otherwise routing.DEFAULT_PAID_MODELS / catalog free models.
     paid_models: str = ""
     free_models: str = ""
-    # Free tier: 20 requests/min per account, 1,000/day once the account bought $10 of credits.
+    # Free tier per account: 20 requests/min and 50/day; 1,000/day once the account has bought
+    # $10 of credits in total. Raise these two after topping up.
     free_requests_per_minute: int = 20
-    free_requests_per_day: int = 1000
-    free_requests_per_user_per_day: int = 300  # fair share so one person can't drain the lab
+    free_requests_per_day: int = 50
+    free_requests_per_user_per_day: int = 50  # fair share so one person can't drain the lab
     request_timeout_seconds: float = 120.0
     lease_seconds: int = 300
 

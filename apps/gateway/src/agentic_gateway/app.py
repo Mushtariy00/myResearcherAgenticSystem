@@ -19,7 +19,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from agentic_core.enums import LlmPolicy, LlmTier
 from agentic_db import create_engine, session_factory
 from agentic_gateway.catalog import Catalog
-from agentic_gateway.openrouter import AccountBalanceError, OpenRouterClient, UpstreamRateLimitError
+from agentic_gateway.openrouter import (
+    AccountBalanceError,
+    AuthError,
+    FreeDailyLimitError,
+    OpenRouterClient,
+    UpstreamRateLimitError,
+)
 from agentic_gateway.quota import Counter, FreeQuota, QuotaExhaustedError
 from agentic_gateway.service import (
     CompletionRequest,
@@ -154,12 +160,11 @@ def create_app(settings: GatewaySettings | None = None, *, router: Router | None
                     json_mode=body.json_mode,
                 )
             )
-        except (QuotaExhaustedError, UpstreamRateLimitError) as exc:
-            code = (
-                "free_quota.exhausted"
-                if isinstance(exc, QuotaExhaustedError)
-                else "upstream.rate_limited"
-            )
+        except (QuotaExhaustedError, UpstreamRateLimitError, FreeDailyLimitError) as exc:
+            code = {
+                QuotaExhaustedError: "free_quota.exhausted",
+                FreeDailyLimitError: "free_quota.daily_exhausted",
+            }.get(type(exc), "upstream.rate_limited")
             return JSONResponse(
                 {"detail": code, "retry_after": exc.retry_after},
                 status_code=429,
@@ -167,6 +172,9 @@ def create_app(settings: GatewaySettings | None = None, *, router: Router | None
             )
         except AccountBalanceError:
             return JSONResponse({"detail": "lab_balance.exhausted"}, status_code=402)
+        except AuthError:
+            log.error("OpenRouter rejected the API key (HTTP 401); check ARP_OPENROUTER_API_KEY")
+            return JSONResponse({"detail": "upstream.auth_failed"}, status_code=502)
         except FreeModelsDisabledError:
             return JSONResponse({"detail": "free_models.disabled"}, status_code=403)
         except NoModelAvailableError:

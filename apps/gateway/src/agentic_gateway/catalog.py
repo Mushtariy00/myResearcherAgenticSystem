@@ -16,6 +16,8 @@ class ModelInfo:
     prompt_usd_per_token: Decimal
     completion_usd_per_token: Decimal
     context_length: int
+    # Reads and writes text. Zero-priced music/image models exist and must never be picked.
+    text_io: bool = True
 
     @property
     def is_free(self) -> bool:
@@ -34,12 +36,19 @@ def parse_models(payload: dict[str, Any]) -> dict[str, ModelInfo]:
     models: dict[str, ModelInfo] = {}
     for item in payload.get("data", []):
         pricing = item.get("pricing") or {}
+        architecture = item.get("architecture") or {}
+        inputs = architecture.get("input_modalities")
+        outputs = architecture.get("output_modalities")
+        if inputs is None or outputs is None:  # older catalog shape: "text+image->text"
+            source, _, target = str(architecture.get("modality") or "text->text").partition("->")
+            inputs, outputs = source.split("+"), (target or "text").split("+")
         try:
             models[item["id"]] = ModelInfo(
                 id=item["id"],
                 prompt_usd_per_token=Decimal(str(pricing.get("prompt", "0"))),
                 completion_usd_per_token=Decimal(str(pricing.get("completion", "0"))),
                 context_length=int(item.get("context_length") or 0),
+                text_io="text" in inputs and "text" in outputs,
             )
         except (KeyError, ArithmeticError, ValueError):
             continue
