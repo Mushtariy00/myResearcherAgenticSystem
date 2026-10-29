@@ -5,13 +5,18 @@ description = "FastAPI service for the Agentic Research Platform."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "agentic-core",
+    "agentic-db",
     "fastapi>=0.162,<0.163",
+    "httpx>=0.28,<0.29",
     "pydantic-settings>=2.10,<3",
+    "redis>=6,<8",
+    "temporalio>=1.35,<2",
     "uvicorn[standard]>=0.35,<1",
 ]
 
 [tool.uv.sources]
 agentic-core = { workspace = true }
+agentic-db = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.13,<0.14"]

@@ -29,16 +29,19 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "S", "ASYNC", "RUF"]
 "packages/db/migrations/versions/*" = ["E501", "W291"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentic_*"]
+known-first-party = ["agentic_*", "api_testkit"]
 
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
 include = ["apps/api", "packages/core", "packages/db"]
 exclude = ["**/.venv", "**/node_modules", "legacy", "sandbox"]
+extraPaths = ["apps/api/tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["apps/api/tests", "packages/core/tests", "packages/db/tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "--import-mode=importlib"
+# Test helper modules (uniquely named) importable from test files.
+pythonpath = ["apps/api/tests"]
