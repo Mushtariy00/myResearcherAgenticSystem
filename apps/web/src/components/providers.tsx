@@ -6,16 +6,22 @@ import { type ReactNode, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { configureApiClient } from "@/lib/api-client";
 import { toApiError } from "@/lib/api-error";
+import { loginPathFor } from "@/lib/ui-version";
 
 configureApiClient();
 
-/** An expired or revoked session makes the API answer 401: go back to the login page. */
+/**
+ * An expired or revoked session makes the API answer 401: go back to the sign-in page of the
+ * interface (Classic or Studio) the user is in.
+ */
 function redirectOnUnauthorized(error: unknown): void {
   if (typeof window === "undefined" || toApiError(error).status !== 401) {
     return;
   }
-  const next = `${window.location.pathname}${window.location.search}`;
-  window.location.assign(`/login?next=${encodeURIComponent(next)}`);
+  const { pathname, search } = window.location;
+  window.location.assign(
+    `${loginPathFor(pathname)}?next=${encodeURIComponent(`${pathname}${search}`)}`,
+  );
 }
 
 function makeQueryClient(): QueryClient {
