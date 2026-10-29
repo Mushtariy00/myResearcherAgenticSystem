@@ -22,7 +22,7 @@ from pydantic import (
     model_validator,
 )
 
-from agentic_core.stages import Stage
+from agentic_core.stages import STAGE_ORDER, Stage
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 Sha256Hex = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
@@ -50,6 +50,35 @@ RelativePath = Annotated[NonEmptyStr, AfterValidator(_relative_posix_path)]
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+# --- Run options --------------------------------------------------------------------------------
+
+SearchSource = Literal["arxiv", "semantic_scholar", "openalex", "crossref", "core"]
+
+
+class RunConfig(StrictModel):
+    """Options chosen in the new-run wizard, stored in ``runs.config``."""
+
+    year_from: int = Field(default=2018, ge=1990, le=2100)
+    year_to: int = Field(default=2026, ge=1990, le=2100)
+    sources: list[SearchSource] = Field(
+        default_factory=lambda: ["arxiv", "semantic_scholar", "openalex"], min_length=1
+    )
+    max_papers: int = Field(default=20, ge=5, le=50)
+    # The run stops after the last listed stage; always a prefix of STAGE_ORDER.
+    stages: list[Stage] = Field(default_factory=lambda: list(STAGE_ORDER), min_length=1)
+    dataset: str | None = "nyu2"
+
+    @model_validator(mode="after")
+    def _consistent(self) -> "RunConfig":
+        if self.year_from > self.year_to:
+            raise ValueError("year_from must not be after year_to")
+        if len(set(self.sources)) != len(self.sources):
+            raise ValueError("sources must be unique")
+        if tuple(self.stages) != STAGE_ORDER[: len(self.stages)]:
+            raise ValueError("stages must start with literature and follow the pipeline order")
+        return self
 
 
 # --- Literature -------------------------------------------------------------------------------

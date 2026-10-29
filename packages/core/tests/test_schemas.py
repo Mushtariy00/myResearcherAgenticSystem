@@ -9,6 +9,7 @@ from agentic_core.schemas import (
     ExperimentOutput,
     LiteratureOutput,
     MethodOutput,
+    RunConfig,
     WritingOutput,
     validate_stage_output,
 )
@@ -204,6 +205,27 @@ def test_code_paths_and_citation_keys_are_unique() -> None:
     writing = VALID[Stage.WRITING]
     with pytest.raises(ValidationError, match="unique"):
         WritingOutput.model_validate({**writing, "citations": writing["citations"] * 2})
+
+
+def test_run_config_defaults_and_rules() -> None:
+    config = RunConfig()
+    assert config.stages == list(Stage)
+    assert RunConfig.model_validate({"stages": ["literature", "method"]}).stages == [
+        Stage.LITERATURE,
+        Stage.METHOD,
+    ]
+    for bad in (
+        {"stages": ["method"]},  # must start with literature
+        {"stages": ["literature", "coding"]},  # no gaps
+        {"stages": []},
+        {"year_from": 2025, "year_to": 2020},
+        {"sources": ["arxiv", "arxiv"]},
+        {"sources": ["demo"]},  # demo is an output label, not a searchable source
+        {"max_papers": 500},
+        {"demo_stage_seconds": 5},  # internal knobs are not wizard options
+    ):
+        with pytest.raises(ValidationError):
+            RunConfig.model_validate(bad)
 
 
 def test_missing_metrics_stay_null_instead_of_zero() -> None:
