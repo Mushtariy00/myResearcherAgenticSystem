@@ -9,7 +9,7 @@ export ARP_UID := $(shell id -u)
 export ARP_GID := $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor setup env up down ps logs migrate migration api web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
+.PHONY: help doctor setup env up down ps logs migrate migration api gateway web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -52,6 +52,9 @@ logs: ## Follow infrastructure logs
 
 api: ## Run the API with reload on 127.0.0.1:8000 (browse via http://localhost:8080)
 	uv run --package agentic-api uvicorn agentic_api.main:app --reload --host 127.0.0.1 --port 8000
+
+gateway: .env ## Run the internal LLM gateway on 127.0.0.1:8100 (workers call it; holds the OpenRouter key)
+	uv run --package agentic-gateway uvicorn agentic_gateway.app:app --reload --host 127.0.0.1 --port 8100
 
 web: ## Run the Next.js dev server on 127.0.0.1:3000 (browse via http://localhost:8080)
 	pnpm --filter @agentic/web dev

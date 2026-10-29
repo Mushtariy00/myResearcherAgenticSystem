@@ -7,6 +7,7 @@ members = [
     "agentic-api",
     "agentic-core",
     "agentic-db",
+    "agentic-gateway",
 ]
 
 [manifest.dependency-groups]
@@ -73,6 +74,31 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.20,<2" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.1,<2.2" },
+]
+
+[[package]]
+name = "agentic-gateway"
+version = "0.1.0"
+source = { editable = "apps/gateway" }
+dependencies = [
+    { name = "agentic-core" },
+    { name = "agentic-db" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "pydantic-settings" },
+    { name = "redis" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "agentic-core", editable = "packages/core" },
+    { name = "agentic-db", editable = "packages/db" },
+    { name = "fastapi", specifier = ">=0.162,<0.163" },
+    { name = "httpx", specifier = ">=0.28,<0.29" },
+    { name = "pydantic-settings", specifier = ">=2.10,<3" },
+    { name = "redis", specifier = ">=6,<8" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.35,<1" },
 ]
 
 [[package]]

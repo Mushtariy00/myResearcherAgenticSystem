@@ -39,6 +39,23 @@ async def month_spend(session: AsyncSession, user_id: str, now: datetime | None 
     return Decimal(settled_usd or 0) + Decimal(reserved_usd or 0)
 
 
+async def run_spend(session: AsyncSession, run_id: object) -> Decimal:
+    """Settled cost plus open reservations for one run's paid calls (for the per-run cap)."""
+    settled = select(func.coalesce(func.sum(LlmCall.cost_usd), 0)).where(
+        LlmCall.run_id == run_id,
+        LlmCall.tier == LlmTier.PAID,
+        LlmCall.state == LlmCallState.SETTLED,
+    )
+    reserved = select(func.coalesce(func.sum(LlmCall.reserved_usd), 0)).where(
+        LlmCall.run_id == run_id,
+        LlmCall.tier == LlmTier.PAID,
+        LlmCall.state.in_(_COMMITTED_STATES),
+    )
+    settled_usd = (await session.execute(settled)).scalar_one()
+    reserved_usd = (await session.execute(reserved)).scalar_one()
+    return Decimal(settled_usd or 0) + Decimal(reserved_usd or 0)
+
+
 async def monthly_budget(session: AsyncSession, user_id: str) -> Decimal:
     budget = await session.get(Budget, user_id)
     return budget.monthly_usd if budget else Decimal(0)
