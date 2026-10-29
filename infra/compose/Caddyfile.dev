@@ -1,0 +1,22 @@
+# Dev reverse proxy: one origin (http://localhost:8080) for the browser, like production.
+#   /api/v1/*  → FastAPI on 127.0.0.1:8000 (unbuffered, so SSE streams flush immediately)
+#   everything → Next.js on 127.0.0.1:3000 (pages and Better Auth's /api/auth/*)
+{
+	auto_https off
+	admin off
+}
+
+:8080 {
+	bind 127.0.0.1
+
+	handle /api/v1/* {
+		reverse_proxy 127.0.0.1:8000 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		encode zstd gzip
+		reverse_proxy 127.0.0.1:3000
+	}
+}

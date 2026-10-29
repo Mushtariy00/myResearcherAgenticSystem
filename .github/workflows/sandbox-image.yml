@@ -1,0 +1,26 @@
+name: sandbox-image
+
+# Builds the GPU sandbox image when its sources change (no GPU needed to build).
+on:
+  push:
+    branches: [v2]
+    paths: ["sandbox/**", ".github/workflows/sandbox-image.yml"]
+  pull_request:
+    paths: ["sandbox/**", ".github/workflows/sandbox-image.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build
+        run: docker build -t arp-sandbox-pytorch:ci sandbox/pytorch
+      - name: Harness loads and validates the smoke config (CPU)
+        run: >
+          docker run --rm --network none --read-only --tmpfs /tmp --entrypoint python arp-sandbox-pytorch:ci
+          -c "import yaml, pathlib; from harness.config import ExperimentConfig;
+          ExperimentConfig.model_validate(yaml.safe_load(pathlib.Path('/opt/harness/configs/nyu2-smoke.yaml').read_text()));
+          print('config ok')"

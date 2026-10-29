@@ -1,23 +1,38 @@
-[project]
-name = "agentic_ai_system"
-version = "0.1.0"
-description = "agentic-ai-system using crewAI"
-authors = [{ name = "Your Name", email = "you@example.com" }]
-requires-python = ">=3.10,<3.14"
-dependencies = [
-    "crewai[tools]==1.14.4",
-    "streamlit>=1.40,<2.0"
+# uv workspace root (virtual: no package of its own).
+# Members are listed explicitly because apps/web is a pnpm package, not a Python one.
+[tool.uv.workspace]
+members = ["apps/api", "packages/core"]
+
+[tool.uv]
+required-version = ">=0.13"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28,<0.29",
+    "pyright>=1.1.414",
+    "pytest>=9.2,<10",
+    "pytest-asyncio>=1.0,<2",
+    "ruff>=0.17,<0.18",
 ]
 
-[project.scripts]
-agentic_ai_system = "agentic_ai_system.main:run_flow"
-run_crew = "agentic_ai_system.main:run_flow"
-run_flow = "agentic_ai_system.main:run_flow"
-run_ui = "agentic_ai_system.run_ui:main"
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["legacy", "sandbox"]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "S", "ASYNC", "RUF"]
 
-[tool.crewai]
-type = "crew"
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+include = ["apps/api", "packages/core"]
+exclude = ["**/.venv", "**/node_modules", "legacy", "sandbox"]
+
+[tool.pytest.ini_options]
+testpaths = ["apps/api/tests", "packages/core/tests"]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib"

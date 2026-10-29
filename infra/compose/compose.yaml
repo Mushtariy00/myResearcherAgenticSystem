@@ -1,0 +1,96 @@
+# Dev infrastructure for the Agentic Research Platform (Phase 0).
+# Run through the Makefile (`make up`), which creates .data/ and exports ARP_UID/ARP_GID.
+# Every service has a memory limit: the dev box has 7.7 GiB for everything (see docs/PLAN.md).
+# Ports bind to 127.0.0.1 only. Image tags are pinned; Renovate pins digests later (Phase 4).
+name: arp
+
+x-defaults: &defaults
+  restart: unless-stopped
+  logging:
+    driver: local
+    options:
+      max-size: "10m"
+
+services:
+  postgres:
+    <<: *defaults
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?copy .env.example to .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?copy .env.example to .env}
+      POSTGRES_DB: ${POSTGRES_DB:-arp}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # Postgres 18 images keep data under /var/lib/postgresql/<major>/docker.
+      - pgdata:/var/lib/postgresql
+    shm_size: 128m
+    mem_limit: 512m
+    oom_score_adj: -800  # keep the database alive if the box runs out of memory
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  valkey:
+    <<: *defaults
+    image: valkey/valkey:9.1.3-alpine
+    # Rate-limit buckets must never be evicted, so memory is capped with noeviction.
+    command: ["valkey-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - valkeydata:/data
+    mem_limit: 192m
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  temporal:
+    <<: *defaults
+    # Temporal CLI dev server (SQLite, includes the Web UI on :8233). Prod uses the server + Postgres.
+    image: temporalio/temporal:1.9.1
+    command: ["server", "start-dev", "--ip", "0.0.0.0", "--db-filename", "/data/temporal.db"]
+    # The image runs as uid 1000; match the host user so it can write the bind-mounted state.
+    user: "${ARP_UID:-1000}:${ARP_GID:-1000}"
+    ports:
+      - "127.0.0.1:7233:7233"  # gRPC (workers, API)
+      - "127.0.0.1:8233:8233"  # Web UI
+    volumes:
+      - type: bind
+        source: ../../.data/temporal
+        target: /data
+        bind:
+          create_host_path: false
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  mailpit:
+    <<: *defaults
+    profiles: ["dev"]
+    image: axllent/mailpit:v1.32.0
+    ports:
+      - "127.0.0.1:8025:8025"  # web inbox for invite / notification emails
+      - "127.0.0.1:1025:1025"  # SMTP
+    mem_limit: 64m
+
+  proxy:
+    <<: *defaults
+    profiles: ["dev"]
+    image: caddy:2.11.7
+    # Host networking so Caddy reaches the API and Next.js dev servers on 127.0.0.1 (WSL2 / Linux).
+    network_mode: host
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+    mem_limit: 64m
+
+volumes:
+  pgdata:
+  valkeydata:

@@ -1,0 +1,21 @@
+# Phase 0 spike: a short, bounded NYU2 run that proves GPU training works inside the sandbox.
+task: nyu2_depth
+seed: 42
+require_gpu: true
+model:
+  architecture: nyu2_simple
+  kwargs:
+    base_channels: 16
+data:
+  dataset: nyu2
+  root: /data/nyu2
+  split_file_template: "{root}/splits/nyu/{split}.txt"
+  batch_size: 4
+  num_workers: 2
+training:
+  loss: l1
+  epochs: 1
+  learning_rate: 0.001
+  optimizer: adam
+  max_train_steps: 200
+  max_val_steps: 50

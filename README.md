@@ -1,69 +1,80 @@
-# AgenticAiSystem
+# Agentic Research Platform (v2)
 
-Agentic research pipeline with a CLI-first supervisor flow, optional Streamlit UI, and modular stage helpers for literature, method, coding, experiment, and writing.
+A multi-user web platform that turns a research topic into reviewed outputs:
+literature → method → coding → experiment → writing. A human approves each stage, and experiments
+run on a GPU in locked-down containers.
 
-## Start here (every session)
-1. `PROJECT_OVERVIEW.md`
-2. `PROJECT_STATUS.md`
-3. Latest entry in `SESSION_LOG.md`
-4. For deep docs, see `docs/DOC_INDEX.md`
+This branch (`v2`) is a production rebuild of the CrewAI + Streamlit prototype on `main`.
+- **What and why:** [docs/PLAN.md](docs/PLAN.md).
+- **Key decisions:** [docs/adr/](docs/adr/).
+- **Old code:** kept read-only in [legacy/](legacy/) while its logic is ported. It is deleted
+  after Phase 3.
 
-## Installation
+**Status:** Phase 0 (foundations and risk spikes).
 
-Ensure you have Python >=3.10 <3.14 installed on your system. This project uses [UV](https://docs.astral.sh/uv/) for dependency management and package handling, offering a seamless setup and execution experience.
+## Stack
+| Part | Choice |
+|---|---|
+| Front end | Next.js 16.4 · React 19 · TypeScript 6 · shadcn/ui · TanStack Query · next-intl (en/ko) |
+| API | FastAPI 0.162 · Pydantic 2 · SQLAlchemy 2 + Alembic (Phase 1) |
+| Workflows | Temporal (approvals, cancel, retries; runs survive restarts) |
+| Agents | CrewAI 1.15 inside Temporal activities, through a budget-aware OpenRouter gateway |
+| Data | PostgreSQL 18 · Valkey 9 · filesystem volume (S3-compatible later) |
+| GPU | Hardened Docker + NVIDIA Container Toolkit, PyTorch 2.14 / CUDA 12.6 image |
 
-First, if you haven't already, install uv:
-
-```bash
-pip install uv
+## Layout
+```text
+apps/api            FastAPI service            (Python, uv workspace member)
+apps/web            Next.js front end          (pnpm workspace member)
+packages/core       shared stages + strict stage-output schemas
+sandbox/pytorch     GPU training image + harness (data, metrics, loop)
+infra/compose       dev infrastructure (compose.yaml, Caddyfile.dev)
+scripts/            setup, doctor, sandbox smoke test
+docs/               plan and ADRs
+legacy/             the old system, for reference while porting
 ```
 
-Next, navigate to your project directory and install the dependencies:
+## Getting started (WSL2 Ubuntu 24.04)
+1. **One-time setup.** Run the script yourself; it asks for your sudo password:
+   ```bash
+   bash scripts/setup-prereqs.sh
+   ```
+   It installs Docker, the NVIDIA Container Toolkit, uv, Node 24 and pnpm. Then open a new
+   terminal. Giving WSL more memory is recommended; the script prints how.
+2. **Check the machine:**
+   ```bash
+   make doctor
+   ```
+3. **Install dependencies.** This creates `uv.lock` and `pnpm-lock.yaml`, which you commit:
+   ```bash
+   make setup
+   ```
+4. **Start the infrastructure** (Postgres, Valkey, Temporal, Mailpit, proxy):
+   ```bash
+   make up
+   ```
+5. **Run the API and the web app** in two terminals:
+   ```bash
+   make api
+   ```
+   ```bash
+   make web
+   ```
+6. **Open the app** at http://localhost:8080. The page shows "API: ok" when the proxy, the API and
+   the web app are all wired up.
+   - Temporal UI: http://localhost:8233
+   - Mailpit: http://localhost:8025
+7. **Run the GPU spike:**
+   ```bash
+   make sandbox-smoke
+   ```
+   It proves that the hardened container sees the GPU, has no network or secrets, and trains on
+   NYU2 with real metrics.
 
-(Optional) Lock the dependencies and install them by using the CLI command:
-```bash
-crewai install
-```
-### Customizing
+`make help` lists every target.
 
-**Add your `OPENAI_API_KEY` into the `.env` file**
-
-- Modify `src/agentic_ai_system/config/agents.yaml` to define your agents
-- Modify `src/agentic_ai_system/orchestration/supervisor_flow.py` to change stage logic and approvals
-- Modify `src/agentic_ai_system/main.py` to add custom inputs for your entrypoints
-
-## Running the Project
-
-To run the CLI-first supervisor flow with approval checkpoints:
-
-```bash
-$ run_flow "Survey monocular depth estimation 2023-2025"
-```
-
-To run the Streamlit UI:
-
-```bash
-$ run_ui
-```
-
-The current default model is configured as `openai/gpt-oss-120b:free` (set via `MODEL` / agent `llm` config).
-Literature outputs from the supervisor flow are persisted to `outputs/literature/*.json`.
-Flow run metadata, stage events, and approvals are persisted to `outputs/flow_runs.db`.
-Coding-stage sandbox artifacts are written to `sandbox/<topic>_<timestamp>/`.
-Experiment-stage execution summaries are written to `outputs/experiments/<topic>_<timestamp>/`.
-Writing-stage section drafts are written to `outputs/writing/<topic>_<timestamp>/`.
-Generated artifacts stay in `sandbox/` and `outputs/`; the repo root is not used for stage outputs.
-
-## Understanding the system
-
-The system is composed of modular stage helpers plus CrewAI agents used by the supervisor flow. The `config/agents.yaml` file defines agent roles, while the supervisor flow coordinates them with explicit checkpoints.
-
-## Support
-
-For support, questions, or feedback regarding AgenticAiSystem or crewAI.
-- Visit our [documentation](https://docs.crewai.com)
-- Reach out to us through our [GitHub repository](https://github.com/joaomdmoura/crewai)
-- [Join our Discord](https://discord.com/invite/X4JWnZnxPb)
-- [Chat with our docs](https://chatg.pt/DWjSBZn)
-
-Let's create wonders together with the power and simplicity of crewAI.
+## Phase 0 exit criteria
+- `make up` is healthy within the memory budget, and CI is green.
+- `make sandbox-smoke` passes all 5 checks. `make sandbox-epoch` trains one full NYU2 epoch in the
+  hardened container. Copy the dataset to the Linux disk first and set `DATASET_DIR`; reading
+  from `D:` is slow.
