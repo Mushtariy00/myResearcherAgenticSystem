@@ -17,6 +17,16 @@ export const KNOWN_ERROR_CODES = [
   "approval.duplicate",
   "approval.rejected_by_workflow",
   "run.already_finished",
+  "run.not_retryable",
+  "stage.not_reached",
+  "stage.not_found",
+  "decision.invalid",
+  "decision.edit_requires_approve",
+  "decision.invalid_edit",
+  "member.last_owner",
+  "member.not_found",
+  "paper.not_found",
+  "artifact.not_found",
   "orchestrator.unavailable",
   "db.unavailable",
   // Stored on runs and stages by the worker (apps/worker).
@@ -105,7 +115,16 @@ export function runErrorKey(value: string | null | undefined): ErrorCode | null 
 }
 
 /** Why a stage output is flagged `degraded` (translated under `degradedReasons.*`). */
-export const KNOWN_DEGRADED_REASONS = ["stage.placeholder", "literature.search_pending"] as const;
+export const KNOWN_DEGRADED_REASONS = [
+  "stage.placeholder",
+  "literature.search_pending",
+  // Demo outputs: the stage is not built yet, its output is generated (agentic_core.demo).
+  "literature.demo_search",
+  "stage.demo",
+] as const;
+
+/** Degraded reasons that mean "generated demo data", shown with a Demo badge. */
+export const DEMO_DEGRADED_REASONS = new Set<string>(["literature.demo_search", "stage.demo"]);
 
 export type DegradedReason = (typeof KNOWN_DEGRADED_REASONS)[number];
 

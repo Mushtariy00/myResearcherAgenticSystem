@@ -145,7 +145,8 @@
     },
     "run": {
       "not_found": "Run not found.",
-      "already_finished": "This run has already finished."
+      "already_finished": "This run has already finished.",
+      "not_retryable": "This run is still in progress, so it can't be retried yet."
     },
     "user": {
       "not_found": "No user has this email. Ask a lab admin to invite them first."
@@ -168,7 +169,9 @@
     "stage": {
       "error": "A stage failed. The event log may say more.",
       "too_many_attempts": "The stage was retried too many times (at most 3 attempts).",
-      "invalid_output": "A stage returned output that does not match its expected format."
+      "invalid_output": "A stage returned output that does not match its expected format.",
+      "not_reached": "This run never reached that stage, so it can't be retried from there.",
+      "not_found": "Unknown stage."
     },
     "lab_balance": {
       "exhausted": "The lab's LLM balance is used up."
@@ -188,14 +191,31 @@
     "server": {
       "error": "The server had a problem. Try again shortly."
     },
-    "unknown": "Something went wrong. Try again."
+    "unknown": "Something went wrong. Try again.",
+    "decision": {
+      "invalid": "That decision isn't possible for this output.",
+      "edit_requires_approve": "Edits can only be saved together with an approval.",
+      "invalid_edit": "The edited output doesn't match this stage's format. Check the fields and try again."
+    },
+    "member": {
+      "last_owner": "A project needs at least one owner.",
+      "not_found": "That person is not a member of this project."
+    },
+    "paper": {
+      "not_found": "Paper not found."
+    },
+    "artifact": {
+      "not_found": "File not found."
+    }
   },
   "degradedReasons": {
     "stage": {
-      "placeholder": "this stage is not implemented yet, so it returned a stand-in result."
+      "placeholder": "this stage is not implemented yet, so it returned a stand-in result.",
+      "demo": "this stage isn't built yet, so it shows realistic demo output."
     },
     "literature": {
-      "search_pending": "the literature search is not connected yet."
+      "search_pending": "the literature search is not connected yet.",
+      "demo_search": "the search plan is real, but the papers, analyses and synthesis are demo data until the literature search is connected."
     }
   },
   "notFound": {
