@@ -20,6 +20,7 @@ from agentic_api import __version__
 from agentic_api.auth import SessionVerifier
 from agentic_api.errors import ErrorWithFields, error_with_fields_handler
 from agentic_api.headers import SecurityHeaders
+from agentic_api.mailer import SmtpSender, email_forever
 from agentic_api.orchestrator import (
     Orchestrator,
     OrchestratorUnavailableError,
@@ -38,6 +39,7 @@ from agentic_api.routers import (
     projects,
     runs,
     usage,
+    user_settings,
 )
 from agentic_api.settings import Settings, get_settings
 from agentic_core import NEVER_AUTO_APPROVE, STAGE_ORDER
@@ -148,6 +150,9 @@ def create_app(settings: Settings | None = None, *, state: AppState | None = Non
             attach_state(app, state)
             yield
             return
+        # Without SMTP_URL nothing is emailed; a malformed one stops the start before anything
+        # is opened.
+        sender = SmtpSender.from_url(settings.smtp_url) if settings.smtp_url else None
         engine = create_engine(settings.database_url) if settings.database_url else None
         http = httpx.AsyncClient(timeout=10)
         valkey = redis.from_url(settings.valkey_url)
@@ -165,16 +170,18 @@ def create_app(settings: Settings | None = None, *, state: AppState | None = Non
                 http=http,
             ),
         )
-        reconciler = (
-            asyncio.create_task(reconcile_forever(sessions, orchestrator)) if sessions else None
-        )
+        background: list[asyncio.Task[None]] = []
+        if sessions is not None:
+            background.append(asyncio.create_task(reconcile_forever(sessions, orchestrator)))
+            if sender is not None:
+                background.append(asyncio.create_task(email_forever(sessions, sender, settings)))
         try:
             yield
         finally:
-            if reconciler is not None:
-                reconciler.cancel()
+            for task in background:
+                task.cancel()
                 with suppress(asyncio.CancelledError):
-                    await reconciler
+                    await task
             await http.aclose()
             await valkey.aclose()
             if engine is not None:
@@ -236,6 +243,7 @@ def create_app(settings: Settings | None = None, *, state: AppState | None = Non
     app.include_router(events.router)
     app.include_router(admin.router)
     app.include_router(notifications.router)
+    app.include_router(user_settings.router)
     app.include_router(papers.router)
     app.include_router(artifacts.router)
     app.include_router(compute.router)

@@ -283,6 +283,41 @@ class NotificationRead(Base):
     read_at: Mapped[datetime] = _created_at()
 
 
+class NotificationEmail(Base):
+    """A notification emailed, or being emailed, to a user (agentic_api.mailer). The row is the
+    claim on the send: an API instance writes it before sending, so each email goes out once."""
+
+    __tablename__ = "notification_emails"
+
+    user_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    notification_key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(32))
+    attempts: Mapped[int] = mapped_column(Integer, default=1, server_default="1")  # sends begun
+    claimed_at: Mapped[datetime] = _created_at()  # when the latest attempt began
+    # No other attempt may begin before this: the end of the latest attempt's lease, or after a
+    # failed attempt, the end of the wait before the next one.
+    retry_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class UserSettings(Base):
+    """A user's own settings. Users without a row have the column defaults; the mailer writes
+    the row the first time it looks at a user."""
+
+    __tablename__ = "user_settings"
+
+    user_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    email_notifications: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
+    # The language of the user's emails (en or ko); the web keeps it in step with the UI's.
+    locale: Mapped[str] = mapped_column(String(8), default="en", server_default="en")
+    # Older notifications are never emailed, so nobody gets a flood of old ones: when the row was
+    # written, or when the user last switched email notifications back on.
+    emails_since: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 class Paper(Base):
     """A paper in the lab's library, kept across runs (docs/design/literature.md).
 

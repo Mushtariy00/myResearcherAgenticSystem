@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMemberData, AddMemberErrors, AddMemberResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CreateProjectData, CreateProjectErrors, CreateProjectResponses, CreateRunData, CreateRunErrors, CreateRunResponses, DecideStageData, DecideStageErrors, DecideStageResponses, EstimateRunCostData, EstimateRunCostErrors, EstimateRunCostResponses, GetArtifactData, GetArtifactErrors, GetArtifactResponses, GetGpuQueueData, GetGpuQueueResponses, GetHealthData, GetHealthResponses, GetLabBalanceData, GetLabBalanceResponses, GetMeData, GetMeResponses, GetModelRoutingData, GetModelRoutingResponses, GetPaidModelsData, GetPaidModelsResponses, GetPaperData, GetPaperErrors, GetPaperFileData, GetPaperFileErrors, GetPaperFileResponses, GetPaperResponses, GetProjectData, GetProjectErrors, GetProjectResponses, GetProjectSettingsData, GetProjectSettingsErrors, GetProjectSettingsResponses, GetRunData, GetRunErrors, GetRunResponses, GetStageData, GetStageErrors, GetStageResponses, GetSystemHealthData, GetSystemHealthResponses, GetUsageData, GetUsageErrors, GetUsageResponses, ListAuditLogData, ListAuditLogErrors, ListAuditLogResponses, ListBudgetsData, ListBudgetsResponses, ListDatasetsData, ListDatasetsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListNotificationsData, ListNotificationsResponses, ListPapersData, ListPapersErrors, ListPapersResponses, ListProjectsData, ListProjectsResponses, ListRecentRunsData, ListRecentRunsErrors, ListRecentRunsResponses, ListRunArtifactsData, ListRunArtifactsErrors, ListRunArtifactsResponses, ListRunsData, ListRunsErrors, ListRunsResponses, ListStagesData, ListStagesResponses, MarkNotificationsReadData, MarkNotificationsReadErrors, MarkNotificationsReadResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RetryRunData, RetryRunErrors, RetryRunResponses, SetBudgetData, SetBudgetErrors, SetBudgetResponses, SetPaidModelsData, SetPaidModelsErrors, SetPaidModelsResponses, StreamRunEventsData, StreamRunEventsErrors, StreamRunEventsResponses, UpdateMemberData, UpdateMemberErrors, UpdateMemberResponses, UpdateProjectSettingsData, UpdateProjectSettingsErrors, UpdateProjectSettingsResponses } from './types.gen';
+import type { AddMemberData, AddMemberErrors, AddMemberResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CreateProjectData, CreateProjectErrors, CreateProjectResponses, CreateRunData, CreateRunErrors, CreateRunResponses, DecideStageData, DecideStageErrors, DecideStageResponses, EstimateRunCostData, EstimateRunCostErrors, EstimateRunCostResponses, GetArtifactData, GetArtifactErrors, GetArtifactResponses, GetGpuQueueData, GetGpuQueueResponses, GetHealthData, GetHealthResponses, GetLabBalanceData, GetLabBalanceResponses, GetMeData, GetMeResponses, GetModelRoutingData, GetModelRoutingResponses, GetMySettingsData, GetMySettingsResponses, GetPaidModelsData, GetPaidModelsResponses, GetPaperData, GetPaperErrors, GetPaperFileData, GetPaperFileErrors, GetPaperFileResponses, GetPaperResponses, GetProjectData, GetProjectErrors, GetProjectResponses, GetProjectSettingsData, GetProjectSettingsErrors, GetProjectSettingsResponses, GetRunData, GetRunErrors, GetRunResponses, GetStageData, GetStageErrors, GetStageResponses, GetSystemHealthData, GetSystemHealthResponses, GetUsageData, GetUsageErrors, GetUsageResponses, ListAuditLogData, ListAuditLogErrors, ListAuditLogResponses, ListBudgetsData, ListBudgetsResponses, ListDatasetsData, ListDatasetsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListNotificationsData, ListNotificationsResponses, ListPapersData, ListPapersErrors, ListPapersResponses, ListProjectsData, ListProjectsResponses, ListRecentRunsData, ListRecentRunsErrors, ListRecentRunsResponses, ListRunArtifactsData, ListRunArtifactsErrors, ListRunArtifactsResponses, ListRunsData, ListRunsErrors, ListRunsResponses, ListStagesData, ListStagesResponses, MarkNotificationsReadData, MarkNotificationsReadErrors, MarkNotificationsReadResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RetryRunData, RetryRunErrors, RetryRunResponses, SetBudgetData, SetBudgetErrors, SetBudgetResponses, SetPaidModelsData, SetPaidModelsErrors, SetPaidModelsResponses, StreamRunEventsData, StreamRunEventsErrors, StreamRunEventsResponses, UpdateMemberData, UpdateMemberErrors, UpdateMemberResponses, UpdateMySettingsData, UpdateMySettingsErrors, UpdateMySettingsResponses, UpdateProjectSettingsData, UpdateProjectSettingsErrors, UpdateProjectSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -269,22 +269,45 @@ export const markNotificationsRead = <ThrowOnError extends boolean = false>(opti
 });
 
 /**
+ * Get My Settings
+ */
+export const getMySettings = <ThrowOnError extends boolean = false>(options?: Options<GetMySettingsData, ThrowOnError>): RequestResult<GetMySettingsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetMySettingsResponses, unknown, ThrowOnError>({ url: '/api/v1/me/settings', ...options });
+
+/**
+ * Update My Settings
+ *
+ * Change the fields sent; the others keep their values.
+ */
+export const updateMySettings = <ThrowOnError extends boolean = false>(options: Options<UpdateMySettingsData, ThrowOnError>): RequestResult<UpdateMySettingsResponses, UpdateMySettingsErrors, ThrowOnError> => (options.client ?? client).put<UpdateMySettingsResponses, UpdateMySettingsErrors, ThrowOnError>({
+    url: '/api/v1/me/settings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List Papers
  *
- * Papers of the caller's projects (every project for lab admins), best relevance first.
+ * Papers that the caller's runs screened (every project's for lab admins), best relevance
+ * first.
  *
- * ``q`` matches title, abstract, an author or the venue, ignoring case. A paper matches when
- * one run's record of it matches every filter; counts cover all of its runs in scope.
+ * ``q`` searches the title, abstract and parsed full text (web search syntax: quotes, ``or``,
+ * ``-word``), best matches first; a case-insensitive substring of the title, abstract, an
+ * author or the venue also matches. Decision and source match when one run's screening has
+ * both; counts cover all of its runs in scope.
  */
 export const listPapers = <ThrowOnError extends boolean = false>(options?: Options<ListPapersData, ThrowOnError>): RequestResult<ListPapersResponses, ListPapersErrors, ThrowOnError> => (options?.client ?? client).get<ListPapersResponses, ListPapersErrors, ThrowOnError>({ url: '/api/v1/papers', ...options });
 
 /**
  * Get Paper File
  *
- * A generated PDF preview of the paper (always demo content: no PDFs are stored yet).
+ * The paper's PDF as the library stores it. A seeded demo paper without a stored file
+ * gets a generated preview instead; any other paper without one is not found.
  *
- * It has the paper's metadata and abstract, and prints every evidence quote of its analyses
- * on the page the quote cites, so the viewer can find and highlight it there.
+ * The preview has the paper's metadata and abstract, and prints every evidence quote of its
+ * analyses on the page the quote cites, so the viewer can find and highlight it there.
  */
 export const getPaperFile = <ThrowOnError extends boolean = false>(options: Options<GetPaperFileData, ThrowOnError>): RequestResult<GetPaperFileResponses, GetPaperFileErrors, ThrowOnError> => (options.client ?? client).get<GetPaperFileResponses, GetPaperFileErrors, ThrowOnError>({ url: '/api/v1/papers/{paper_id}/file', ...options });
 

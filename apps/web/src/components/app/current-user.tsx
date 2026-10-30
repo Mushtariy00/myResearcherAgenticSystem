@@ -23,3 +23,8 @@ export function useCurrentUser(): SessionUser {
   }
   return user;
 }
+
+/** The signed-in user, or null outside the (app) layouts (the sign-in pages, the landing page). */
+export function useSignedInUser(): SessionUser | null {
+  return use(CurrentUserContext);
+}

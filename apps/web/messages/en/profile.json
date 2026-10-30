@@ -38,9 +38,16 @@
     },
     "preferences": {
       "title": "Language and theme",
-      "description": "The language is kept for this browser, and so is the theme.",
+      "description": "The language and theme are kept for this browser. Notification emails come in the language you choose here.",
       "language": "Language",
       "theme": "Theme"
+    },
+    "emails": {
+      "title": "Email notifications",
+      "description": "An email when a stage waits for your review or its approval is about to expire, when your runs finish, fail or pause, and when you reach 80% and 100% of your LLM budget.",
+      "label": "Email me",
+      "hint": "Emails go to {email}, in the language you choose for the interface.",
+      "failed": "Could not save your email setting"
     },
     "usage": {
       "title": "My LLM budget and spend",

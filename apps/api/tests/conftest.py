@@ -21,13 +21,22 @@ async def auth_users(db: async_sessionmaker[AsyncSession]) -> None:
                 "(id text PRIMARY KEY, email text, name text)"
             )
         )
+        # The admin plugin's columns, also when the worker's tests made the table first.
+        await session.execute(
+            text(
+                'ALTER TABLE auth."user" ADD COLUMN IF NOT EXISTS role text, '
+                "ADD COLUMN IF NOT EXISTS banned boolean"
+            )
+        )
         await session.execute(text('TRUNCATE auth."user"'))
         await session.execute(
             text(
-                'INSERT INTO auth."user" (id, email, name) VALUES '
-                "('alice', 'alice@lab.test', 'Alice'), ('bob', 'bob@lab.test', 'Bob'), "
-                "('vera', 'vera@lab.test', 'Vera'), ('carol', 'carol@lab.test', 'Carol'), "
-                "('root', 'root@lab.test', 'Root')"
+                'INSERT INTO auth."user" (id, email, name, role) VALUES '
+                "('alice', 'alice@lab.test', 'Alice', 'user'), "
+                "('bob', 'bob@lab.test', 'Bob', 'user'), "
+                "('vera', 'vera@lab.test', 'Vera', 'user'), "
+                "('carol', 'carol@lab.test', 'Carol', 'user'), "
+                "('root', 'root@lab.test', 'Root', 'admin')"
             )
         )
         await session.commit()

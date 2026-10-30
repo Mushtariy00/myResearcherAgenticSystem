@@ -1291,13 +1291,74 @@
         }
       }
     },
+    "/api/v1/me/settings": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get My Settings",
+        "operationId": "getMySettings",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MySettingsOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Update My Settings",
+        "description": "Change the fields sent; the others keep their values.",
+        "operationId": "updateMySettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MySettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MySettingsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/papers": {
       "get": {
         "tags": [
           "papers"
         ],
         "summary": "List Papers",
-        "description": "Papers of the caller's projects (every project for lab admins), best relevance first.\n\n``q`` matches title, abstract, an author or the venue, ignoring case. A paper matches when\none run's record of it matches every filter; counts cover all of its runs in scope.",
+        "description": "Papers that the caller's runs screened (every project's for lab admins), best relevance\nfirst.\n\n``q`` searches the title, abstract and parsed full text (web search syntax: quotes, ``or``,\n``-word``), best matches first; a case-insensitive substring of the title, abstract, an\nauthor or the venue also matches. Decision and source match when one run's screening has\nboth; counts cover all of its runs in scope.",
         "operationId": "listPapers",
         "parameters": [
           {
@@ -1470,7 +1531,7 @@
           "papers"
         ],
         "summary": "Get Paper File",
-        "description": "A generated PDF preview of the paper (always demo content: no PDFs are stored yet).\n\nIt has the paper's metadata and abstract, and prints every evidence quote of its analyses\non the page the quote cites, so the viewer can find and highlight it there.",
+        "description": "The paper's PDF as the library stores it. A seeded demo paper without a stored file\ngets a generated preview instead; any other paper without one is not found.\n\nThe preview has the paper's metadata and abstract, and prints every evidence quote of its\nanalyses on the page the quote cites, so the viewer can find and highlight it there.",
         "operationId": "getPaperFile",
         "parameters": [
           {
@@ -3255,6 +3316,62 @@
         ],
         "title": "ModelRoutingOut"
       },
+      "MySettingsIn": {
+        "properties": {
+          "email_notifications": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Notifications"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "en",
+                  "ko"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MySettingsIn",
+        "description": "Only the fields sent change: the language switches send the locale alone, so they never\nundo an email choice made in another tab."
+      },
+      "MySettingsOut": {
+        "properties": {
+          "email_notifications": {
+            "type": "boolean",
+            "title": "Email Notifications"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ko"
+            ],
+            "title": "Locale"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email_notifications",
+          "locale"
+        ],
+        "title": "MySettingsOut"
+      },
       "NotificationList": {
         "properties": {
           "items": {
@@ -3740,7 +3857,7 @@
           "pdf_available"
         ],
         "title": "PaperOut",
-        "description": "A paper's bibliographic record, as its newest appearance in a literature output has it."
+        "description": "A paper's bibliographic record, as the lab's paper library stores it."
       },
       "PaperPage": {
         "properties": {

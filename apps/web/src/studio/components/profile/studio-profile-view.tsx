@@ -12,6 +12,7 @@ import { LoadingStatus, ShimmerSkeleton } from "@/studio/components/effects/shim
 import { StudioAvatar } from "@/studio/components/shell/user-card";
 import { StudioStatePanel } from "@/studio/components/studio-state-panel";
 import { studioProjectPath } from "@/studio/lib/nav";
+import { StudioEmailNotifications } from "./studio-email-notifications";
 import { StudioPasswordForm } from "./studio-password-form";
 import { StudioPreferences } from "./studio-preferences";
 import { StudioSection, TonePill } from "./studio-section";
@@ -94,9 +95,9 @@ function StudioProjects() {
 }
 
 /**
- * The Studio profile page: who I am, language and theme, my password and other devices, my
- * budget and LLM use, and my projects with my role in each; the same data and actions as the
- * Classic page.
+ * The Studio profile page: who I am, language and theme, notification emails, my password and
+ * other devices, my budget and LLM use, and my projects with my role in each; the same data
+ * and actions as the Classic page.
  */
 export function StudioProfileView() {
   const t = useTranslations();
@@ -146,6 +147,13 @@ export function StudioProfileView() {
             description={t("profile.preferences.description")}
           >
             <StudioPreferences />
+          </StudioSection>
+          <StudioSection
+            id="studio-profile-emails"
+            title={t("profile.emails.title")}
+            description={t("profile.emails.description")}
+          >
+            <StudioEmailNotifications />
           </StudioSection>
           <StudioSection
             id="studio-profile-password"

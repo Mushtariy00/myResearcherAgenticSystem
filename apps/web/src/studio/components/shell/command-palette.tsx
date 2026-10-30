@@ -18,12 +18,12 @@ import {
   SunIcon,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
-import { type ReactNode, type Ref, useEffect, useRef, useTransition } from "react";
+import { type ReactNode, type Ref, useEffect, useRef } from "react";
 import { listProjectsOptions } from "@/client/@tanstack/react-query.gen";
 import { useCurrentUser } from "@/components/app/current-user";
-import { setLocale } from "@/i18n/actions";
+import { useChooseLocale } from "@/components/app/use-choose-locale";
 import { locales } from "@/i18n/config";
 import { toClassicPath } from "@/lib/ui-version";
 import { cn } from "@/lib/utils";
@@ -86,27 +86,15 @@ export function CommandPaletteContent({
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
-  const locale = useLocale();
+  const { locale, chooseLocale } = useChooseLocale();
   const { theme, setTheme } = useTheme();
   const user = useCurrentUser();
   const navLabels = useNavLabels();
   const projects = useQuery(listProjectsOptions());
-  const [, startTransition] = useTransition();
 
   function go(href: string) {
     onDone();
     router.push(href);
-  }
-
-  function chooseLocale(value: string) {
-    onDone();
-    if (value === locale) {
-      return;
-    }
-    startTransition(async () => {
-      await setLocale(value);
-      router.refresh();
-    });
   }
 
   const current = (
@@ -188,7 +176,10 @@ export function CommandPaletteContent({
               value={`language ${value} ${t(`nav.languages.${value}`)}`}
               keywords={["language", t("nav.language")]}
               icon={LanguagesIcon}
-              onSelect={() => chooseLocale(value)}
+              onSelect={() => {
+                onDone();
+                chooseLocale(value);
+              }}
               hint={value === locale ? current : undefined}
             >
               <span lang={value}>{t(`nav.languages.${value}`)}</span>

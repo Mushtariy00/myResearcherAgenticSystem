@@ -5,6 +5,7 @@ import { useCurrentUser } from "@/components/app/current-user";
 import { PageHeader } from "@/components/app/query-state";
 import { RoleBadge } from "@/components/app/status-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmailNotificationsCard } from "./email-notifications-card";
 import { PasswordCard } from "./password-card";
 import { PreferencesCard } from "./preferences-card";
 import { ProjectsCard } from "./projects-card";
@@ -38,8 +39,8 @@ function AccountCard() {
 }
 
 /**
- * The Classic profile page: my account, password and other devices, language and theme, my
- * budget and LLM use, and my projects with my role in each.
+ * The Classic profile page: my account, password and other devices, language and theme,
+ * notification emails, my budget and LLM use, and my projects with my role in each.
  */
 export function ProfileView() {
   const t = useTranslations("profile");
@@ -50,6 +51,7 @@ export function ProfileView() {
         <div className="grid content-start gap-6">
           <AccountCard />
           <PreferencesCard />
+          <EmailNotificationsCard />
           <PasswordCard />
           <SessionsCard />
         </div>

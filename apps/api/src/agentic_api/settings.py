@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     # Where the worker stores files: the papers' PDFs under papers/ (agentic_scholarly.storage).
     # Empty means the default, outside the repo, because the Next dev server watches the repo.
     data_dir: Path = Field(default=Path(DEFAULT_DATA_DIR), validate_default=True)
+    # Notification emails (agentic_api.mailer) go out like the web's invite emails, from the
+    # same variables: smtp://host:port (STARTTLS when the server offers it) or smtps://host:port,
+    # with user:password@ to log in. Without SMTP_URL nothing is emailed.
+    smtp_url: str = Field(default="", validation_alias="SMTP_URL")
+    mail_from: str = Field(default="no-reply@localhost", validation_alias="MAIL_FROM")
 
     @field_validator("data_dir", mode="before")
     @classmethod

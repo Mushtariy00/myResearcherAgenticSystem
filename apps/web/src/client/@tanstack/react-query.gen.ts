@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addMember, cancelRun, createProject, createRun, decideStage, estimateRunCost, getArtifact, getGpuQueue, getHealth, getLabBalance, getMe, getModelRouting, getPaidModels, getPaper, getPaperFile, getProject, getProjectSettings, getRun, getStage, getSystemHealth, getUsage, listAuditLog, listBudgets, listDatasets, listMembers, listNotifications, listPapers, listProjects, listRecentRuns, listRunArtifacts, listRuns, listStages, markNotificationsRead, type Options, removeMember, retryRun, setBudget, setPaidModels, streamRunEvents, updateMember, updateProjectSettings } from '../sdk.gen';
-import type { AddMemberData, AddMemberError, AddMemberResponse, CancelRunData, CancelRunError, CancelRunResponse, CreateProjectData, CreateProjectError, CreateProjectResponse, CreateRunData, CreateRunError, CreateRunResponse, DecideStageData, DecideStageError, DecideStageResponse, EstimateRunCostData, EstimateRunCostError, EstimateRunCostResponse, GetArtifactData, GetArtifactError, GetArtifactResponse, GetGpuQueueData, GetGpuQueueResponse, GetHealthData, GetHealthResponse, GetLabBalanceData, GetLabBalanceResponse, GetMeData, GetMeResponse, GetModelRoutingData, GetModelRoutingResponse, GetPaidModelsData, GetPaidModelsResponse, GetPaperData, GetPaperError, GetPaperFileData, GetPaperFileError, GetPaperFileResponse, GetPaperResponse, GetProjectData, GetProjectError, GetProjectResponse, GetProjectSettingsData, GetProjectSettingsError, GetProjectSettingsResponse, GetRunData, GetRunError, GetRunResponse, GetStageData, GetStageError, GetStageResponse, GetSystemHealthData, GetSystemHealthResponse, GetUsageData, GetUsageError, GetUsageResponse, ListAuditLogData, ListAuditLogError, ListAuditLogResponse, ListBudgetsData, ListBudgetsResponse, ListDatasetsData, ListDatasetsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListNotificationsData, ListNotificationsResponse, ListPapersData, ListPapersError, ListPapersResponse, ListProjectsData, ListProjectsResponse, ListRecentRunsData, ListRecentRunsError, ListRecentRunsResponse, ListRunArtifactsData, ListRunArtifactsError, ListRunArtifactsResponse, ListRunsData, ListRunsError, ListRunsResponse, ListStagesData, ListStagesResponse, MarkNotificationsReadData, MarkNotificationsReadError, MarkNotificationsReadResponse, RemoveMemberData, RemoveMemberError, RemoveMemberResponse, RetryRunData, RetryRunError, RetryRunResponse, SetBudgetData, SetBudgetError, SetBudgetResponse, SetPaidModelsData, SetPaidModelsError, SetPaidModelsResponse, StreamRunEventsData, StreamRunEventsError, UpdateMemberData, UpdateMemberError, UpdateMemberResponse, UpdateProjectSettingsData, UpdateProjectSettingsError, UpdateProjectSettingsResponse } from '../types.gen';
+import { addMember, cancelRun, createProject, createRun, decideStage, estimateRunCost, getArtifact, getGpuQueue, getHealth, getLabBalance, getMe, getModelRouting, getMySettings, getPaidModels, getPaper, getPaperFile, getProject, getProjectSettings, getRun, getStage, getSystemHealth, getUsage, listAuditLog, listBudgets, listDatasets, listMembers, listNotifications, listPapers, listProjects, listRecentRuns, listRunArtifacts, listRuns, listStages, markNotificationsRead, type Options, removeMember, retryRun, setBudget, setPaidModels, streamRunEvents, updateMember, updateMySettings, updateProjectSettings } from '../sdk.gen';
+import type { AddMemberData, AddMemberError, AddMemberResponse, CancelRunData, CancelRunError, CancelRunResponse, CreateProjectData, CreateProjectError, CreateProjectResponse, CreateRunData, CreateRunError, CreateRunResponse, DecideStageData, DecideStageError, DecideStageResponse, EstimateRunCostData, EstimateRunCostError, EstimateRunCostResponse, GetArtifactData, GetArtifactError, GetArtifactResponse, GetGpuQueueData, GetGpuQueueResponse, GetHealthData, GetHealthResponse, GetLabBalanceData, GetLabBalanceResponse, GetMeData, GetMeResponse, GetModelRoutingData, GetModelRoutingResponse, GetMySettingsData, GetMySettingsResponse, GetPaidModelsData, GetPaidModelsResponse, GetPaperData, GetPaperError, GetPaperFileData, GetPaperFileError, GetPaperFileResponse, GetPaperResponse, GetProjectData, GetProjectError, GetProjectResponse, GetProjectSettingsData, GetProjectSettingsError, GetProjectSettingsResponse, GetRunData, GetRunError, GetRunResponse, GetStageData, GetStageError, GetStageResponse, GetSystemHealthData, GetSystemHealthResponse, GetUsageData, GetUsageError, GetUsageResponse, ListAuditLogData, ListAuditLogError, ListAuditLogResponse, ListBudgetsData, ListBudgetsResponse, ListDatasetsData, ListDatasetsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListNotificationsData, ListNotificationsResponse, ListPapersData, ListPapersError, ListPapersResponse, ListProjectsData, ListProjectsResponse, ListRecentRunsData, ListRecentRunsError, ListRecentRunsResponse, ListRunArtifactsData, ListRunArtifactsError, ListRunArtifactsResponse, ListRunsData, ListRunsError, ListRunsResponse, ListStagesData, ListStagesResponse, MarkNotificationsReadData, MarkNotificationsReadError, MarkNotificationsReadResponse, RemoveMemberData, RemoveMemberError, RemoveMemberResponse, RetryRunData, RetryRunError, RetryRunResponse, SetBudgetData, SetBudgetError, SetBudgetResponse, SetPaidModelsData, SetPaidModelsError, SetPaidModelsResponse, StreamRunEventsData, StreamRunEventsError, UpdateMemberData, UpdateMemberError, UpdateMemberResponse, UpdateMySettingsData, UpdateMySettingsError, UpdateMySettingsResponse, UpdateProjectSettingsData, UpdateProjectSettingsError, UpdateProjectSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -717,15 +717,55 @@ export const markNotificationsReadMutation = (options?: Partial<Options<MarkNoti
     return mutationOptions;
 };
 
+export const getMySettingsQueryKey = (options?: Options<GetMySettingsData>) => createQueryKey('getMySettings', options);
+
+/**
+ * Get My Settings
+ */
+export const getMySettingsOptions = (options?: Options<GetMySettingsData>) => queryOptions<GetMySettingsResponse, DefaultError, GetMySettingsResponse, ReturnType<typeof getMySettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getMySettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getMySettingsQueryKey(options)
+});
+
+/**
+ * Update My Settings
+ *
+ * Change the fields sent; the others keep their values.
+ */
+export const updateMySettingsMutation = (options?: Partial<Options<UpdateMySettingsData>>): UseMutationOptions<UpdateMySettingsResponse, UpdateMySettingsError, Options<UpdateMySettingsData>> => {
+    const mutationOptions: UseMutationOptions<UpdateMySettingsResponse, UpdateMySettingsError, Options<UpdateMySettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateMySettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const listPapersQueryKey = (options?: Options<ListPapersData>) => createQueryKey('listPapers', options);
 
 /**
  * List Papers
  *
- * Papers of the caller's projects (every project for lab admins), best relevance first.
+ * Papers that the caller's runs screened (every project's for lab admins), best relevance
+ * first.
  *
- * ``q`` matches title, abstract, an author or the venue, ignoring case. A paper matches when
- * one run's record of it matches every filter; counts cover all of its runs in scope.
+ * ``q`` searches the title, abstract and parsed full text (web search syntax: quotes, ``or``,
+ * ``-word``), best matches first; a case-insensitive substring of the title, abstract, an
+ * author or the venue also matches. Decision and source match when one run's screening has
+ * both; counts cover all of its runs in scope.
  */
 export const listPapersOptions = (options?: Options<ListPapersData>) => queryOptions<ListPapersResponse, ListPapersError, ListPapersResponse, ReturnType<typeof listPapersQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -745,10 +785,13 @@ export const listPapersInfiniteQueryKey = (options?: Options<ListPapersData>): Q
 /**
  * List Papers
  *
- * Papers of the caller's projects (every project for lab admins), best relevance first.
+ * Papers that the caller's runs screened (every project's for lab admins), best relevance
+ * first.
  *
- * ``q`` matches title, abstract, an author or the venue, ignoring case. A paper matches when
- * one run's record of it matches every filter; counts cover all of its runs in scope.
+ * ``q`` searches the title, abstract and parsed full text (web search syntax: quotes, ``or``,
+ * ``-word``), best matches first; a case-insensitive substring of the title, abstract, an
+ * author or the venue also matches. Decision and source match when one run's screening has
+ * both; counts cover all of its runs in scope.
  */
 export const listPapersInfiniteOptions = (options?: Options<ListPapersData>) => {
     const opts = infiniteQueryOptions<ListPapersResponse, ListPapersError, InfiniteData<ListPapersResponse>, QueryKey<Options<ListPapersData>>, number | Pick<QueryKey<Options<ListPapersData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
@@ -780,10 +823,11 @@ export const getPaperFileQueryKey = (options: Options<GetPaperFileData>) => crea
 /**
  * Get Paper File
  *
- * A generated PDF preview of the paper (always demo content: no PDFs are stored yet).
+ * The paper's PDF as the library stores it. A seeded demo paper without a stored file
+ * gets a generated preview instead; any other paper without one is not found.
  *
- * It has the paper's metadata and abstract, and prints every evidence quote of its analyses
- * on the page the quote cites, so the viewer can find and highlight it there.
+ * The preview has the paper's metadata and abstract, and prints every evidence quote of its
+ * analyses on the page the quote cites, so the viewer can find and highlight it there.
  */
 export const getPaperFileOptions = (options: Options<GetPaperFileData>) => queryOptions<GetPaperFileResponse, GetPaperFileError, GetPaperFileResponse, ReturnType<typeof getPaperFileQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

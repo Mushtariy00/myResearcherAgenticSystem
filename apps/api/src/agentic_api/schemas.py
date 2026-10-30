@@ -314,6 +314,29 @@ class NotificationsReadIn(_In):
         return self
 
 
+Locale = Literal["en", "ko"]  # the UI languages (apps/web/src/i18n/config.ts)
+
+
+class MySettingsOut(BaseModel):
+    # Approvals, finished, failed and paused runs, and budget alerts by email too.
+    email_notifications: bool
+    locale: Locale  # the language of those emails; the web saves the UI language here
+
+
+class MySettingsIn(_In):
+    """Only the fields sent change: the language switches send the locale alone, so they never
+    undo an email choice made in another tab."""
+
+    email_notifications: bool | None = None
+    locale: Locale | None = None
+
+    @model_validator(mode="after")
+    def _something_to_change(self) -> "MySettingsIn":
+        if self.email_notifications is None and self.locale is None:
+            raise ValueError("send email_notifications, locale or both")
+        return self
+
+
 class AuditEntryOut(BaseModel):
     id: int
     actor_id: str

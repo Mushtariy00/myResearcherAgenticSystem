@@ -1,4 +1,5 @@
-"""Better Auth's user table (ADR 0003). Read-only: look-ups by email and display names."""
+"""Better Auth's user table (ADR 0003). Read-only: look-ups by email, display names, and the
+accounts notification emails go to."""
 
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -6,8 +7,14 @@ from dataclasses import dataclass
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from agentic_api.auth import CurrentUser
+
 _USER_BY_EMAIL = text('SELECT id, email, name FROM auth."user" WHERE lower(email) = lower(:email)')
 _USERS_BY_ID = text('SELECT id, email, name FROM auth."user" WHERE id = ANY(:ids)')
+# Suspending an account bans it (apps/web/src/lib/admin-offboarding.ts).
+_ACTIVE_USERS = text(
+    'SELECT id, email, name, role FROM auth."user" WHERE banned IS NOT TRUE ORDER BY id'
+)
 
 
 @dataclass(frozen=True)
@@ -29,3 +36,12 @@ async def users_by_id(db: AsyncSession, ids: Iterable[str]) -> dict[str, AuthUse
         return {}
     rows = (await db.execute(_USERS_BY_ID, {"ids": wanted})).all()
     return {row.id: AuthUser(id=row.id, email=row.email, name=row.name) for row in rows}
+
+
+async def active_users(db: AsyncSession) -> list[CurrentUser]:
+    """Every account that may sign in, as its sessions see it (the role as in agentic_api.auth)."""
+    rows = (await db.execute(_ACTIVE_USERS)).all()
+    return [
+        CurrentUser(id=row.id, email=row.email, name=row.name, role=row.role or "user")
+        for row in rows
+    ]

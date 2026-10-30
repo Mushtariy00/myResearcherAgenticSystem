@@ -870,6 +870,37 @@ export type ModelRoutingOut = {
 };
 
 /**
+ * MySettingsIn
+ *
+ * Only the fields sent change: the language switches send the locale alone, so they never
+ * undo an email choice made in another tab.
+ */
+export type MySettingsIn = {
+    /**
+     * Email Notifications
+     */
+    email_notifications?: boolean | null;
+    /**
+     * Locale
+     */
+    locale?: 'en' | 'ko' | null;
+};
+
+/**
+ * MySettingsOut
+ */
+export type MySettingsOut = {
+    /**
+     * Email Notifications
+     */
+    email_notifications: boolean;
+    /**
+     * Locale
+     */
+    locale: 'en' | 'ko';
+};
+
+/**
  * NotificationList
  */
 export type NotificationList = {
@@ -1078,7 +1109,7 @@ export type PaperDetail = {
 /**
  * PaperOut
  *
- * A paper's bibliographic record, as its newest appearance in a literature output has it.
+ * A paper's bibliographic record, as the lab's paper library stores it.
  */
 export type PaperOut = {
     /**
@@ -3319,6 +3350,47 @@ export type MarkNotificationsReadResponses = {
 };
 
 export type MarkNotificationsReadResponse = MarkNotificationsReadResponses[keyof MarkNotificationsReadResponses];
+
+export type GetMySettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/settings';
+};
+
+export type GetMySettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: MySettingsOut;
+};
+
+export type GetMySettingsResponse = GetMySettingsResponses[keyof GetMySettingsResponses];
+
+export type UpdateMySettingsData = {
+    body: MySettingsIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/settings';
+};
+
+export type UpdateMySettingsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateMySettingsError = UpdateMySettingsErrors[keyof UpdateMySettingsErrors];
+
+export type UpdateMySettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: MySettingsOut;
+};
+
+export type UpdateMySettingsResponse = UpdateMySettingsResponses[keyof UpdateMySettingsResponses];
 
 export type ListPapersData = {
     body?: never;

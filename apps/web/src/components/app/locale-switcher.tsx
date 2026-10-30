@@ -1,9 +1,7 @@
 "use client";
 
 import { LanguagesIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
-import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,30 +12,18 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { setLocale } from "@/i18n/actions";
 import { locales } from "@/i18n/config";
+import { useChooseLocale } from "./use-choose-locale";
 
 export function LocaleSwitcher() {
   const t = useTranslations("nav");
-  const locale = useLocale();
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-
-  function choose(value: unknown) {
-    if (typeof value !== "string" || value === locale) {
-      return;
-    }
-    startTransition(async () => {
-      await setLocale(value);
-      router.refresh();
-    });
-  }
+  const { locale, chooseLocale, switchingLocale } = useChooseLocale();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="sm" aria-label={t("language")} disabled={pending}>
+          <Button variant="ghost" size="sm" aria-label={t("language")} disabled={switchingLocale}>
             <LanguagesIcon aria-hidden />
             <span className="hidden sm:inline">{t(`languages.${locale}`)}</span>
           </Button>
@@ -46,7 +32,7 @@ export function LocaleSwitcher() {
       <DropdownMenuContent align="end" className="w-40">
         <DropdownMenuGroup>
           <DropdownMenuLabel>{t("language")}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={locale} onValueChange={choose}>
+          <DropdownMenuRadioGroup value={locale} onValueChange={chooseLocale}>
             {locales.map((value) => (
               <DropdownMenuRadioItem key={value} value={value} lang={value} closeOnClick>
                 {t(`languages.${value}`)}

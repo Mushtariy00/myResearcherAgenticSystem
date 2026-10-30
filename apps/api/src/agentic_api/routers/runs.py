@@ -47,6 +47,7 @@ from agentic_db import append_event
 from agentic_db.models import (
     Approval,
     AuditLog,
+    NotificationEmail,
     NotificationRead,
     Project,
     ProjectMember,
@@ -566,12 +567,10 @@ async def retry_run(
             details={"stage": stage, "previous_status": previous.value},
         )
     )
-    # The run's next finish is news again, even to an owner who read the previous one.
-    await db.execute(
-        delete(NotificationRead).where(
-            NotificationRead.notification_key == run_finished_key(run_id)
-        )
-    )
+    # The run's next finish is news again, even to an owner who read the previous one or got
+    # its email.
+    for table in (NotificationRead, NotificationEmail):
+        await db.execute(delete(table).where(table.notification_key == run_finished_key(run_id)))
     await db.commit()
     return Accepted()
 

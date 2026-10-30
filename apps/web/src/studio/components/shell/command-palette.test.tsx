@@ -4,6 +4,8 @@ import { useState } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ProjectOut } from "@/client";
 import { listProjectsQueryKey } from "@/client/@tanstack/react-query.gen";
+import { json, mockApi, requestsOf } from "@/hooks/run-hooks.fixtures";
+import { setLocale } from "@/i18n/actions";
 import { installDomFakes } from "@/studio/test/dom";
 import { makeQueryClient, renderStudio, TEST_USER } from "@/studio/test/render";
 import { CommandPalette, CommandPaletteContent, isPaletteShortcut } from "./command-palette";
@@ -103,6 +105,17 @@ describe("CommandPaletteContent", () => {
     cleanup();
     renderPalette("admin");
     expect(screen.getByRole("option", { name: "Admin" })).toBeTruthy();
+  });
+
+  it("switches the language, which the user's emails then use too", async () => {
+    const fetchMock = mockApi(() => json(200, { email_notifications: true, locale: "ko" }));
+    const { input, onDone } = renderPalette();
+    fireEvent.change(input, { target: { value: "한국어" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onDone).toHaveBeenCalled();
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
+    expect(setLocale).toHaveBeenCalledWith("ko");
+    await waitFor(() => expect(requestsOf(fetchMock)).toEqual(["PUT /api/v1/me/settings"]));
   });
 
   it("says when nothing matches", () => {

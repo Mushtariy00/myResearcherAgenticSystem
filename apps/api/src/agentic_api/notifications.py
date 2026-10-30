@@ -1,7 +1,8 @@
 """In-app notifications, derived from run, approval and spend state on every request.
 
-Only read state is stored (``notification_reads``). Keys are stable, so a notification keeps
-its read flag for as long as it is derived:
+Only read state is stored (``notification_reads``); agentic_api.mailer also emails most kinds
+and records what went out under the same keys (``notification_emails``). Keys are stable, so a
+notification keeps its read flag for as long as it is derived:
 
 - ``approval:<stage_output_id>``: an output the user may decide on is waiting (approval_needed).
 - ``approval.expiring:<stage_output_id>``: it has waited longer than the project's approval
