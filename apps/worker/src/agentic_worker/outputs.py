@@ -27,6 +27,10 @@ LITERATURE_PROMPT_VERSION = "literature@1"
 # when any of its prompts changes.
 METHOD_PROMPT_VERSION = "method@1"
 WRITING_PROMPT_VERSION = "writing@1"
+# The real coding stage's prompts (agentic_worker.coding), and the real experiment stage's
+# training recipe (agentic_worker.experiment): bump each when it changes.
+CODING_PROMPT_VERSION = "coding@1"
+EXPERIMENT_PROMPT_VERSION = "experiment@1"
 DEMO_PROMPT_VERSION = demo.PROMPT_VERSION
 # Degraded reasons the front end shows for demo outputs (the search when the worker runs with
 # ARP_LITERATURE_SEARCH=demo; coding and experiment, which are not built yet; method and

@@ -1,10 +1,10 @@
 """What each stage produces.
 
-Literature, method and writing are real stages (agentic_worker.literature, .method, .writing)
-when the worker is given them. Without the real literature stage (ARP_LITERATURE_SEARCH=demo)
+Every stage is real (agentic_worker.literature, .method, .coding, .experiment, .writing) when
+the worker is given it. Without the real literature stage (ARP_LITERATURE_SEARCH=demo)
 literature runs its real CrewAI research-plan step and fills in search, screening and analysis
-with demo data. Coding and experiment, method and writing without their real stages
-(ARP_LLM_STAGES=demo), and every stage of a simulated run return demo outputs
+with demo data. The other stages without their real ones (ARP_LLM_STAGES=demo,
+ARP_GPU_STAGES=demo), and every stage of a simulated run, return demo outputs
 (``agentic_core.demo``) built on the approved outputs of the stages before them. Every demo
 output is flagged degraded, and each simulated stage takes a while and reports its progress as
 log events, so the front end sees what a real run looks like.
@@ -249,6 +249,8 @@ class PipelineStageRunner:
         # The real stages; without one, its stage returns demo outputs.
         literature: StageRunner | None = None,
         method: StageRunner | None = None,
+        coding: StageRunner | None = None,
+        experiment: StageRunner | None = None,
         writing: StageRunner | None = None,
         # Where a demo search records its papers in the library, so they resolve like real ones
         # (the demo seed records its own, inside its transaction).
@@ -257,7 +259,13 @@ class PipelineStageRunner:
         clock: Callable[[], datetime] = _utc_now,  # the demo seed backdates finished runs
     ) -> None:
         self._planner = planner
-        real = {Stage.LITERATURE: literature, Stage.METHOD: method, Stage.WRITING: writing}
+        real = {
+            Stage.LITERATURE: literature,
+            Stage.METHOD: method,
+            Stage.CODING: coding,
+            Stage.EXPERIMENT: experiment,
+            Stage.WRITING: writing,
+        }
         self._real = {stage: runner for stage, runner in real.items() if runner is not None}
         self._demo_library = demo_library
         self._demo_stage_seconds = demo_stage_seconds

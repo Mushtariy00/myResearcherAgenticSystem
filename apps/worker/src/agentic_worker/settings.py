@@ -22,8 +22,18 @@ class WorkerSettings(BaseSettings):
     # How long each simulated (demo) stage takes; a run's config may override it per run.
     demo_stage_seconds: float = Field(default=6.0, ge=0)
     # The method and writing stages. "demo" keeps their generated demo outputs, for working
-    # offline; coding and experiment stay demo until Phase 3 either way.
+    # offline (coding and experiment are then demo too).
     llm_stages: Literal["real", "demo"] = "real"
+    # The coding and experiment stages (docs/design/experiments.md). "real" writes the model with
+    # the LLM and runs it on the GPU through the executor (make executor); "demo" keeps their
+    # generated outputs, for machines without a GPU.
+    gpu_stages: Literal["real", "demo"] = "real"
+    # The experiment's training run: its epochs, and the training steps of each, a share of the
+    # dataset's training split per epoch, so that one run fits in an hour or so on one GPU.
+    experiment_epochs: int = Field(default=3, ge=1, le=50)
+    experiment_steps_per_epoch: int = Field(default=1000, ge=10, le=100_000)
+    # Its wall clock, which the executor caps at its own ARP_MAX_TRAIN_HOURS.
+    max_train_hours: float = Field(default=6.0, gt=0, le=72)
 
     # Literature stage (docs/design/literature.md). "demo" keeps the real plan with a generated
     # search, for working offline.

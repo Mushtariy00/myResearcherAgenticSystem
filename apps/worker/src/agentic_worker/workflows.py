@@ -52,6 +52,12 @@ LITERATURE_STEP = timedelta(hours=2)
 # The writing stage makes up to 9 LLM calls in one activity (an outline and at most 8 sections,
 # each allowed the gateway's 150 s), plus their repairs.
 WRITING_STEP = timedelta(hours=1)
+# The coding stage: up to 3 tries, each an LLM call and a smoke job on the GPU (10 minutes at
+# most), plus the wait in the GPU queue. The experiment stage: a training job (6 hours at most)
+# and its wait. An activity that times out leaves its job running: the next try of the activity
+# finds the job again and waits on.
+CODING_STEP = timedelta(hours=2)
+EXPERIMENT_STEP = timedelta(hours=8)
 STAGE_HEARTBEAT = timedelta(minutes=2)
 # Database errors that no retry fixes, e.g. a NUL character in a comment. Temporal names an
 # activity's exception by its class, here SQLAlchemy's.
@@ -129,13 +135,25 @@ _ERROR_CODES = {
 }
 _INVALID_OUTPUT = re.compile(r"[a-z_]+\.invalid_output")
 # What else a stage may fail with (StageFailed "<code>: <details>"); the web translates these.
-_STAGE_FAILURES = frozenset({"literature.no_papers"})
+_STAGE_FAILURES = frozenset(
+    {
+        "literature.no_papers",
+        "coding.no_dataset",  # the run's dataset is not registered, or the harness can't use it
+        "coding.smoke_failed",  # 3 tries, and none passed its smoke test
+        "coding.job_cancelled",  # a smoke job was cancelled outside the run
+        "experiment.no_dataset",
+        "experiment.demo_code",  # the approved code is a demo output, never run
+    }
+)
 
 
 def _stage_timeout(stage: str) -> timedelta:
-    return {Stage.LITERATURE.value: LITERATURE_STEP, Stage.WRITING.value: WRITING_STEP}.get(
-        stage, STAGE_STEP
-    )
+    return {
+        Stage.LITERATURE.value: LITERATURE_STEP,
+        Stage.CODING.value: CODING_STEP,
+        Stage.EXPERIMENT.value: EXPERIMENT_STEP,
+        Stage.WRITING.value: WRITING_STEP,
+    }.get(stage, STAGE_STEP)
 
 
 def _error_code(error: ActivityError) -> str:
