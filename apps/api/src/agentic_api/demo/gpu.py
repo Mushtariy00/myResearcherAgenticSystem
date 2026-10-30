@@ -274,6 +274,7 @@ def queue_snapshot(now: datetime, real_jobs: Sequence[RealJob], caller_id: str) 
     mine = [index for index, job in enumerate([*running, *queued]) if job.is_mine]
     return GpuQueueOut(
         gpu=telemetry(now, busy=bool(running), job_memory_mb=memory or TYPICAL_JOB_MEMORY_MB),
+        executor_alive=False,
         concurrency=CONCURRENCY,
         running=running,
         queued=queued,

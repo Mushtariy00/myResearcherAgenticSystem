@@ -70,7 +70,7 @@ export type ArtifactOut = {
     /**
      * Kind
      */
-    kind: 'code_file' | 'code_archive' | 'experiment_log' | 'metrics' | 'draft' | 'references';
+    kind: 'code_file' | 'code_archive' | 'experiment_log' | 'metrics' | 'checkpoint' | 'draft' | 'references';
     /**
      * Filename
      */
@@ -314,7 +314,7 @@ export type DatasetOut = {
     /**
      * Size Bytes
      */
-    size_bytes: number;
+    size_bytes: number | null;
     /**
      * License
      */
@@ -330,7 +330,7 @@ export type DatasetOut = {
     /**
      * Checksum Sha256
      */
-    checksum_sha256: string;
+    checksum_sha256: string | null;
     /**
      * Registered At
      */
@@ -471,6 +471,10 @@ export type GpuJobOut = {
      */
     id: string;
     /**
+     * Kind
+     */
+    kind?: 'smoke' | 'train' | null;
+    /**
      * Status
      */
     status: 'running' | 'queued';
@@ -546,6 +550,9 @@ export type GpuJobOut = {
 
 /**
  * GpuOut
+ *
+ * The GPU's latest nvidia-smi readings, as the executor reports them every few seconds. A
+ * reading this GPU or driver does not give (under WSL, say) is None.
  */
 export type GpuOut = {
     /**
@@ -563,23 +570,23 @@ export type GpuOut = {
     /**
      * Utilization Percent
      */
-    utilization_percent: number;
+    utilization_percent: number | null;
     /**
      * Temperature C
      */
-    temperature_c: number;
+    temperature_c: number | null;
     /**
      * Power Draw W
      */
-    power_draw_w: number;
+    power_draw_w: number | null;
     /**
      * Power Limit W
      */
-    power_limit_w: number;
+    power_limit_w: number | null;
     /**
      * Fan Percent
      */
-    fan_percent: number;
+    fan_percent: number | null;
     /**
      * Sampled At
      */
@@ -594,7 +601,11 @@ export type GpuOut = {
  * GpuQueueOut
  */
 export type GpuQueueOut = {
-    gpu: GpuOut;
+    gpu: GpuOut | null;
+    /**
+     * Executor Alive
+     */
+    executor_alive: boolean;
     /**
      * Concurrency
      */

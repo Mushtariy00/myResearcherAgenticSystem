@@ -451,7 +451,13 @@ class PaperDetail(BaseModel):
 # --- Artifacts ------------------------------------------------------------------------------
 
 ArtifactKind = Literal[
-    "code_file", "code_archive", "experiment_log", "metrics", "draft", "references"
+    "code_file",
+    "code_archive",
+    "experiment_log",
+    "metrics",
+    "checkpoint",  # best.pt of a training job, from the GPU host's job folder
+    "draft",
+    "references",
 ]
 
 
@@ -507,11 +513,12 @@ class DatasetOut(BaseModel):
     height: int
     samples: int  # in the lab's copy
     splits: list[DatasetSplitOut]
-    size_bytes: int
+    size_bytes: int | None  # None until measured
     license: str
     homepage: str | None
     mount_path: str  # mounted read-only into experiment containers
-    checksum_sha256: str
+    # sha256 of the dataset's file list (the executor computes it); None until it has.
+    checksum_sha256: str | None
     registered_at: datetime
     contract: DataContractOut
     demo: bool
@@ -523,20 +530,24 @@ class DatasetList(BaseModel):
 
 
 class GpuOut(BaseModel):
+    """The GPU's latest nvidia-smi readings, as the executor reports them every few seconds. A
+    reading this GPU or driver does not give (under WSL, say) is None."""
+
     name: str
     memory_total_mb: int
     memory_used_mb: int
-    utilization_percent: int
-    temperature_c: int
-    power_draw_w: float
-    power_limit_w: float
-    fan_percent: int
+    utilization_percent: int | None
+    temperature_c: int | None
+    power_draw_w: float | None
+    power_limit_w: float | None
+    fan_percent: int | None
     sampled_at: datetime
-    demo: bool  # readings are generated until the executor reports nvidia-smi samples
+    demo: bool
 
 
 class GpuJobOut(BaseModel):
-    id: str  # a real job's id is its stage attempt id
+    id: str  # the GPU job's id
+    kind: Literal["smoke", "train"] | None = None  # a coding stage's smoke test, or training
     status: Literal["running", "queued"]
     run_id: uuid.UUID | None  # None for demo jobs and for runs the caller can't open
     topic: str | None
@@ -558,7 +569,9 @@ class GpuJobOut(BaseModel):
 
 
 class GpuQueueOut(BaseModel):
-    gpu: GpuOut
+    gpu: GpuOut | None  # None while the executor reports no readings
+    # Whether the executor's heartbeat is recent; queued jobs wait while it isn't.
+    executor_alive: bool
     concurrency: int  # jobs the GPU runs at once
     running: list[GpuJobOut]
     queued: list[GpuJobOut]  # in the order they will run

@@ -2019,6 +2019,7 @@
               "code_archive",
               "experiment_log",
               "metrics",
+              "checkpoint",
               "draft",
               "references"
             ],
@@ -2398,7 +2399,14 @@
             "title": "Splits"
           },
           "size_bytes": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Size Bytes"
           },
           "license": {
@@ -2421,7 +2429,14 @@
             "title": "Mount Path"
           },
           "checksum_sha256": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Checksum Sha256"
           },
           "registered_at": {
@@ -2652,6 +2667,21 @@
             "type": "string",
             "title": "Id"
           },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "smoke",
+                  "train"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -2836,23 +2866,58 @@
             "title": "Memory Used Mb"
           },
           "utilization_percent": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Utilization Percent"
           },
           "temperature_c": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Temperature C"
           },
           "power_draw_w": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Power Draw W"
           },
           "power_limit_w": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Power Limit W"
           },
           "fan_percent": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Fan Percent"
           },
           "sampled_at": {
@@ -2878,12 +2943,24 @@
           "sampled_at",
           "demo"
         ],
-        "title": "GpuOut"
+        "title": "GpuOut",
+        "description": "The GPU's latest nvidia-smi readings, as the executor reports them every few seconds. A\nreading this GPU or driver does not give (under WSL, say) is None."
       },
       "GpuQueueOut": {
         "properties": {
           "gpu": {
-            "$ref": "#/components/schemas/GpuOut"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GpuOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "executor_alive": {
+            "type": "boolean",
+            "title": "Executor Alive"
           },
           "concurrency": {
             "type": "integer",
@@ -2930,6 +3007,7 @@
         "type": "object",
         "required": [
           "gpu",
+          "executor_alive",
           "concurrency",
           "running",
           "queued",
