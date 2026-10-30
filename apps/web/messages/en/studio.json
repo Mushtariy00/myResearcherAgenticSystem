@@ -1,1 +1,199 @@
-{}
+{
+  "studio": {
+    "meta": {
+      "landingTitle": "From a research question to a reviewed paper",
+      "landingDescription": "A research pipeline of AI agents where a person approves every stage: literature, method, coding, experiment and writing."
+    },
+    "landing": {
+      "nav": {
+        "label": "Sections",
+        "capabilities": "Capabilities",
+        "how": "How it works",
+        "sources": "Sources"
+      },
+      "hero": {
+        "eyebrow": "A person approves every stage",
+        "titleLead": "From a research question",
+        "titleAccent": "to a reviewed paper",
+        "subtitle": "Agents search the literature, propose a method, write the code, run the experiment and draft the paper. You approve each stage before the next one starts.",
+        "signIn": "Sign in",
+        "openDashboard": "Open dashboard",
+        "secondary": "See how it works",
+        "inviteOnly": "Accounts are created by invitation from a lab admin."
+      },
+      "demo": {
+        "label": "Example run",
+        "topic": "Monocular depth estimation on NYU Depth V2",
+        "caption": "An illustration of how a run moves through the pipeline, not live data.",
+        "pause": "Pause",
+        "play": "Play",
+        "steps": {
+          "running": "{stage} is running",
+          "review": "{stage} is waiting for your review",
+          "changes": "You asked for changes to {stage}",
+          "approved": "You approved {stage}",
+          "done": "Every stage approved: the paper draft is ready"
+        }
+      },
+      "capabilities": {
+        "eyebrow": "Capabilities",
+        "title": "Built for careful research",
+        "subtitle": "Agents do the groundwork; people make the decisions.",
+        "stages": {
+          "title": "Five stages, one pipeline",
+          "body": "Literature, method, coding, experiment and writing run in order, and each stage builds on the approved output of the one before."
+        },
+        "approval": {
+          "title": "A person approves every step",
+          "body": "Approve, request changes with a comment, or reject. A decision applies to the exact version you reviewed; if the output changes, you see the new version first."
+        },
+        "budget": {
+          "title": "Paid models within budget, free models otherwise",
+          "body": "Runs use paid models while your monthly budget allows, then continue on free models. Set a cost cap per run, or use free models only.",
+          "paid": "Paid models",
+          "free": "Free models"
+        },
+        "sandbox": {
+          "title": "GPU sandbox with provenance",
+          "body": "Experiments run in a locked-down GPU container with no network access. Results keep their provenance: image, code, configuration, dataset version and seed.",
+          "provenance": {
+            "image": "image digest",
+            "code": "code sha256",
+            "config": "config sha256",
+            "dataset": "dataset version",
+            "seed": "seed"
+          }
+        },
+        "languages": {
+          "title": "English and Korean",
+          "body": "Every screen, message and error is available in both languages. Switch at any time."
+        }
+      },
+      "how": {
+        "eyebrow": "How it works",
+        "title": "Four steps, with you in the loop",
+        "steps": {
+          "ask": {
+            "title": "Start a run",
+            "body": "Create a project, add your lab and describe the research question. Choose paid or free models and an optional cost cap."
+          },
+          "agents": {
+            "title": "Agents do the groundwork",
+            "body": "From the literature to the draft, each stage works from the approved result of the stage before it."
+          },
+          "review": {
+            "title": "Review every stage",
+            "body": "Read the output, then approve it, ask for changes with a comment, or reject it. Nothing moves on without your decision."
+          },
+          "paper": {
+            "title": "Finish with a reviewed draft",
+            "body": "The writing stage drafts the paper from approved work, with citations linked to the papers that were found."
+          }
+        }
+      },
+      "sources": {
+        "eyebrow": "Sources",
+        "title": "Grounded in open scholarship",
+        "subtitle": "The literature stage is built around open metadata and open-access full text from these sources.",
+        "label": "Data sources"
+      },
+      "closing": {
+        "title": "Ready when your lab is",
+        "body": "Use the account from your lab invitation. Every run waits for your approval at each stage."
+      },
+      "footer": {
+        "note": "Studio and Classic show the same projects, runs and data.",
+        "classic": "Prefer the classic interface?",
+        "openClassic": "Open Classic"
+      }
+    },
+    "auth": {
+      "panelEyebrow": "Human-in-the-loop research",
+      "panelTitle": "Research, reviewed at every step",
+      "panelBody": "Agents do the groundwork. You decide what moves forward.",
+      "points": {
+        "approve": "Approve, revise or reject each stage",
+        "budget": "Paid models within your budget, free models after",
+        "languages": "Works in English and Korean"
+      },
+      "backHome": "Studio home",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
+    },
+    "shell": {
+      "nav": {
+        "projects": "Projects",
+        "papers": "Papers"
+      },
+      "collapse": "Collapse sidebar",
+      "expand": "Expand sidebar",
+      "openMenu": "Open navigation",
+      "closeMenu": "Close navigation",
+      "navigation": "Navigation",
+      "breadcrumb": "Breadcrumb",
+      "search": "Search",
+      "searchPlaceholder": "Search or jump to…",
+      "unread": "{count} unread",
+      "notificationsWithCount": "Notifications, {count} unread",
+      "crumbs": {
+        "project": "Project",
+        "run": "Run",
+        "paper": "Paper",
+        "profile": "Profile"
+      }
+    },
+    "palette": {
+      "title": "Command palette",
+      "description": "Jump to a page or a project, or change the interface, language or theme.",
+      "placeholder": "Type a command or search…",
+      "empty": "No results",
+      "loading": "Loading projects…",
+      "groups": {
+        "navigate": "Go to",
+        "projects": "Projects",
+        "interface": "Interface",
+        "language": "Language",
+        "theme": "Theme"
+      },
+      "openClassic": "Open this page in Classic",
+      "current": "Current",
+      "hints": {
+        "navigate": "Move",
+        "select": "Open",
+        "close": "Close"
+      }
+    },
+    "pipeline": {
+      "label": "Pipeline stages",
+      "node": "{stage}: {status}",
+      "attempt": "Attempt {attempt}"
+    },
+    "dashboard": {
+      "greeting": {
+        "morning": "Good morning, {name}",
+        "afternoon": "Good afternoon, {name}",
+        "evening": "Good evening, {name}"
+      },
+      "subtitle": "Here is where your research stands.",
+      "overview": "Overview",
+      "kpi": {
+        "projects": "Projects",
+        "projectsHint": "Projects you can open",
+        "spent": "Spent this month",
+        "left": "Left this month",
+        "leftHint": "{percent}% of {budget} used",
+        "unread": "Unread notifications",
+        "unreadHint": "Approvals, finished runs and budget alerts"
+      },
+      "projects": {
+        "title": "Projects",
+        "count": "{count, plural, one {# project} other {# projects}}"
+      }
+    },
+    "notFound": {
+      "title": "Not in Studio yet",
+      "description": "This page does not exist in Studio yet, or you do not have access to it. The switch at the top opens it in Classic.",
+      "back": "Go to the dashboard"
+    }
+  }
+}

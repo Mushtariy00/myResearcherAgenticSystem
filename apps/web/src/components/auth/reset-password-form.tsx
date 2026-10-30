@@ -3,16 +3,13 @@
 import { AlertCircleIcon, CheckCircle2Icon } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { type FormEvent, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { type AuthErrorCode, authClient, authErrorKey } from "@/lib/auth-client";
 import { MAX_PASSWORD_LENGTH } from "@/lib/password-policy";
-
-type Problem = AuthErrorCode | "mismatch" | "tooShort";
+import { useResetPasswordForm } from "./use-reset-password-form";
 
 export function ResetPasswordForm({
   token,
@@ -22,9 +19,7 @@ export function ResetPasswordForm({
   minLength: number;
 }) {
   const t = useTranslations("auth");
-  const [pending, setPending] = useState(false);
-  const [problem, setProblem] = useState<Problem | null>(null);
-  const [done, setDone] = useState(false);
+  const { pending, problemText, done, onSubmit } = useResetPasswordForm(token, minLength);
 
   if (!token) {
     return (
@@ -63,47 +58,6 @@ export function ResetPasswordForm({
       </Card>
     );
   }
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!token) {
-      return;
-    }
-    const form = new FormData(event.currentTarget);
-    const password = String(form.get("password") ?? "");
-    const confirm = String(form.get("confirm") ?? "");
-    if (password.length < minLength) {
-      setProblem("tooShort");
-      return;
-    }
-    if (password !== confirm) {
-      setProblem("mismatch");
-      return;
-    }
-    setPending(true);
-    setProblem(null);
-    try {
-      const result = await authClient.resetPassword({ newPassword: password, token });
-      if (result.error) {
-        setProblem(authErrorKey(result.error));
-        return;
-      }
-      setDone(true);
-    } catch {
-      setProblem("UNKNOWN");
-    } finally {
-      setPending(false);
-    }
-  }
-
-  const problemText =
-    problem === "mismatch"
-      ? t("reset.mismatch")
-      : problem === "tooShort"
-        ? t("reset.tooShort", { min: minLength })
-        : problem
-          ? t(`errors.${problem}`)
-          : null;
 
   return (
     <Card className="w-full max-w-sm">

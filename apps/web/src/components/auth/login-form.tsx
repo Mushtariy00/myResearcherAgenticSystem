@@ -1,45 +1,17 @@
 "use client";
 
 import { AlertCircleIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type FormEvent, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { type AuthErrorCode, authClient, authErrorKey } from "@/lib/auth-client";
+import { useSignInForm } from "./use-sign-in-form";
 
 export function LoginForm({ next }: { next: string }) {
   const t = useTranslations("auth");
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<AuthErrorCode | null>(null);
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    setPending(true);
-    setError(null);
-    try {
-      const result = await authClient.signIn.email({
-        email: String(form.get("email") ?? "").trim(),
-        password: String(form.get("password") ?? ""),
-      });
-      if (result.error) {
-        setError(authErrorKey(result.error));
-        setPending(false);
-        return;
-      }
-    } catch {
-      setError("UNKNOWN");
-      setPending(false);
-      return;
-    }
-    router.replace(next);
-    router.refresh();
-  }
+  const { pending, error, onSubmit } = useSignInForm(next);
 
   return (
     <Card className="w-full max-w-sm">

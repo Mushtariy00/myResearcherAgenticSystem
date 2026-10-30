@@ -144,3 +144,766 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* ==========================================================================================
+   Studio: the animated interface under /studio (docs/design/studio.md).
+   Every rule below is scoped to [data-ui="studio"]: the Studio root element, and <html> while a
+   Studio page is open (so portaled menus, dialogs and toasts get the same tokens). The shadcn
+   variables are redefined so the shared ui components look right inside Studio; --studio-*,
+   --aurora-* and --stage-* are Studio-only. Text tokens (*-fg) keep at least 4.5:1 contrast on
+   the background, cards and glass, including glass over the aurora; never dim text with
+   opacity. src/studio/lib/studio-tokens.test.ts checks the page, cards, glass and tints.
+   ========================================================================================== */
+
+[data-ui="studio"] {
+  color-scheme: light;
+  --background: oklch(0.985 0.005 265);
+  --foreground: oklch(0.21 0.03 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.03 265);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.03 265);
+  --primary: oklch(0.53 0.23 288);
+  --primary-foreground: oklch(0.99 0.003 265);
+  --secondary: oklch(0.955 0.008 265);
+  --secondary-foreground: oklch(0.26 0.03 265);
+  --muted: oklch(0.955 0.008 265);
+  --muted-foreground: oklch(0.47 0.03 265);
+  --accent: oklch(0.948 0.02 285);
+  --accent-foreground: oklch(0.3 0.08 285);
+  --destructive: oklch(0.53 0.21 18);
+  --border: oklch(0.9 0.01 265);
+  --input: oklch(0.88 0.012 265);
+  --ring: oklch(0.6 0.2 285);
+  --chart-1: oklch(0.62 0.12 215);
+  --chart-2: oklch(0.56 0.24 293);
+  --chart-3: oklch(0.72 0.17 65);
+  --chart-4: oklch(0.64 0.15 163);
+  --chart-5: oklch(0.62 0.21 355);
+  --radius: 0.625rem;
+  --sidebar: oklch(1 0 0 / 0.6);
+  --sidebar-foreground: oklch(0.21 0.03 265);
+  --sidebar-primary: oklch(0.53 0.23 288);
+  --sidebar-primary-foreground: oklch(0.99 0.003 265);
+  --sidebar-accent: oklch(0.948 0.02 285);
+  --sidebar-accent-foreground: oklch(0.3 0.08 285);
+  --sidebar-border: oklch(0.9 0.01 265);
+  --sidebar-ring: oklch(0.6 0.2 285);
+
+  --studio-surface: oklch(1 0 0);
+  --studio-glass: oklch(1 0 0 / 0.65);
+  --studio-glass-strong: oklch(1 0 0 / 0.82);
+  --studio-glass-border: oklch(0.9 0.01 265);
+  --studio-glass-highlight: oklch(1 0 0 / 0.9);
+  --studio-glass-shadow:
+    0 1px 2px oklch(0.25 0.03 265 / 0.05), 0 12px 32px -16px oklch(0.25 0.04 265 / 0.18);
+  /* Hover and open fills for controls: an ink tint, since white glass on paper does not show. */
+  --studio-hover: oklch(0.25 0.03 265 / 0.06);
+  --studio-topbar: oklch(0.985 0.005 265 / 0.72);
+  --studio-glow: oklch(0.6 0.2 285 / 0.22);
+  --studio-grid-dot: oklch(0.25 0.03 265 / 0.09);
+  --studio-noise-opacity: 0.03;
+  --studio-accent-fg: oklch(0.5 0.22 290);
+  --studio-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --aurora-violet: #8b5cf6;
+  --aurora-indigo: #6366f1;
+  --aurora-cyan: #22d3ee;
+  --aurora-emerald: #34d399;
+  --aurora-blob-opacity: 0.16;
+  /* Text-safe aurora stops for GradientText (large text keeps >= 3:1, these keep >= 4.5:1). */
+  --aurora-text-1: #7c3aed;
+  --aurora-text-2: #4f46e5;
+  --aurora-text-3: #0e7490;
+  --aurora-text-4: #047857;
+  --studio-cta-from: #7c3aed;
+  --studio-cta-to: #4f46e5;
+  --studio-cta-foreground: #ffffff;
+
+  --stage-literature: oklch(0.62 0.12 215);
+  --stage-literature-fg: oklch(0.47 0.1 222);
+  --stage-method: oklch(0.56 0.24 293);
+  --stage-method-fg: oklch(0.5 0.22 293);
+  --stage-coding: oklch(0.72 0.17 65);
+  --stage-coding-fg: oklch(0.49 0.13 58);
+  --stage-experiment: oklch(0.64 0.15 163);
+  --stage-experiment-fg: oklch(0.47 0.11 165);
+  --stage-writing: oklch(0.62 0.21 355);
+  --stage-writing-fg: oklch(0.5 0.2 355);
+
+  --studio-success: oklch(0.64 0.15 163);
+  --studio-success-fg: oklch(0.47 0.11 165);
+  --studio-warning: oklch(0.75 0.16 70);
+  --studio-warning-fg: oklch(0.49 0.13 58);
+  --studio-danger: oklch(0.6 0.21 18);
+  --studio-danger-fg: oklch(0.5 0.2 18);
+  --studio-info: oklch(0.62 0.14 240);
+  --studio-info-fg: oklch(0.47 0.13 245);
+  --studio-neutral: oklch(0.7 0.02 265);
+  --studio-neutral-fg: oklch(0.47 0.03 265);
+
+  /* Geist for UI and display, Noto Sans KR for Hangul, Geist Mono for code, ids and numbers
+     (the next/font variables come from the Studio root; system fonts are the fallback). */
+  --font-sans:
+    var(--font-studio-sans, ui-sans-serif), var(--font-studio-kr, "Noto Sans KR"), ui-sans-serif,
+    system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-mono:
+    var(--font-studio-mono, ui-monospace), ui-monospace, SFMono-Regular, Menlo, Consolas,
+    "D2Coding", monospace;
+  font-family: var(--font-sans);
+  scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent) transparent;
+}
+
+.dark [data-ui="studio"],
+[data-ui="studio"].dark {
+  color-scheme: dark;
+  --background: oklch(0.14 0.02 265);
+  --foreground: oklch(0.97 0.006 265);
+  --card: oklch(0.18 0.02 265);
+  --card-foreground: oklch(0.97 0.006 265);
+  --popover: oklch(0.19 0.022 268);
+  --popover-foreground: oklch(0.97 0.006 265);
+  --primary: oklch(0.56 0.22 290);
+  --primary-foreground: oklch(0.99 0.003 265);
+  --secondary: oklch(0.23 0.022 265);
+  --secondary-foreground: oklch(0.97 0.006 265);
+  --muted: oklch(0.22 0.02 265);
+  --muted-foreground: oklch(0.77 0.02 265);
+  --accent: oklch(0.25 0.035 280);
+  --accent-foreground: oklch(0.97 0.006 265);
+  --destructive: oklch(0.72 0.17 18);
+  --border: oklch(1 0 0 / 0.1);
+  --input: oklch(1 0 0 / 0.14);
+  --ring: oklch(0.72 0.16 285);
+  --chart-1: oklch(0.8 0.13 210);
+  --chart-2: oklch(0.7 0.18 293);
+  --chart-3: oklch(0.82 0.16 75);
+  --chart-4: oklch(0.78 0.15 163);
+  --chart-5: oklch(0.74 0.18 350);
+  --sidebar: oklch(0.16 0.02 265 / 0.6);
+  --sidebar-foreground: oklch(0.97 0.006 265);
+  --sidebar-primary: oklch(0.56 0.22 290);
+  --sidebar-primary-foreground: oklch(0.99 0.003 265);
+  --sidebar-accent: oklch(0.25 0.035 280);
+  --sidebar-accent-foreground: oklch(0.97 0.006 265);
+  --sidebar-border: oklch(1 0 0 / 0.08);
+  --sidebar-ring: oklch(0.72 0.16 285);
+
+  --studio-surface: oklch(0.18 0.02 265);
+  --studio-glass: oklch(1 0 0 / 0.05);
+  --studio-glass-strong: oklch(1 0 0 / 0.08);
+  --studio-glass-border: oklch(1 0 0 / 0.1);
+  --studio-glass-highlight: oklch(1 0 0 / 0.1);
+  --studio-glass-shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 16px 40px -20px oklch(0 0 0 / 0.6);
+  --studio-hover: oklch(1 0 0 / 0.08);
+  --studio-topbar: oklch(0.14 0.02 265 / 0.62);
+  --studio-glow: oklch(0.65 0.2 285 / 0.28);
+  --studio-grid-dot: oklch(1 0 0 / 0.07);
+  --studio-noise-opacity: 0.045;
+  --studio-accent-fg: oklch(0.8 0.13 290);
+
+  --aurora-blob-opacity: 0.22;
+  --aurora-text-1: #a78bfa;
+  --aurora-text-2: #818cf8;
+  --aurora-text-3: #22d3ee;
+  --aurora-text-4: #34d399;
+
+  --stage-literature: oklch(0.8 0.13 210);
+  --stage-literature-fg: oklch(0.84 0.12 210);
+  --stage-method: oklch(0.7 0.18 293);
+  --stage-method-fg: oklch(0.78 0.14 293);
+  --stage-coding: oklch(0.82 0.16 75);
+  --stage-coding-fg: oklch(0.85 0.14 80);
+  --stage-experiment: oklch(0.78 0.15 163);
+  --stage-experiment-fg: oklch(0.82 0.14 163);
+  --stage-writing: oklch(0.74 0.18 350);
+  --stage-writing-fg: oklch(0.8 0.14 350);
+
+  --studio-success: oklch(0.78 0.15 163);
+  --studio-success-fg: oklch(0.82 0.14 163);
+  --studio-warning: oklch(0.82 0.16 75);
+  --studio-warning-fg: oklch(0.85 0.14 80);
+  --studio-danger: oklch(0.7 0.19 15);
+  --studio-danger-fg: oklch(0.78 0.14 15);
+  --studio-info: oklch(0.74 0.13 235);
+  --studio-info-fg: oklch(0.8 0.11 235);
+  --studio-neutral: oklch(0.6 0.02 265);
+  --studio-neutral-fg: oklch(0.77 0.02 265);
+}
+
+@layer components {
+  [data-ui="studio"] ::selection {
+    background-color: color-mix(in oklch, var(--aurora-violet) 32%, transparent);
+  }
+
+  /* Stage and tone colours as two variables (--tone fill, --tone-fg text) for any element. */
+  [data-ui="studio"] [data-stage="literature"] {
+    --tone: var(--stage-literature);
+    --tone-fg: var(--stage-literature-fg);
+  }
+  [data-ui="studio"] [data-stage="method"] {
+    --tone: var(--stage-method);
+    --tone-fg: var(--stage-method-fg);
+  }
+  [data-ui="studio"] [data-stage="coding"] {
+    --tone: var(--stage-coding);
+    --tone-fg: var(--stage-coding-fg);
+  }
+  [data-ui="studio"] [data-stage="experiment"] {
+    --tone: var(--stage-experiment);
+    --tone-fg: var(--stage-experiment-fg);
+  }
+  [data-ui="studio"] [data-stage="writing"] {
+    --tone: var(--stage-writing);
+    --tone-fg: var(--stage-writing-fg);
+  }
+  [data-ui="studio"] [data-tone="neutral"] {
+    --tone: var(--studio-neutral);
+    --tone-fg: var(--studio-neutral-fg);
+  }
+  [data-ui="studio"] [data-tone="info"] {
+    --tone: var(--studio-info);
+    --tone-fg: var(--studio-info-fg);
+  }
+  [data-ui="studio"] [data-tone="success"] {
+    --tone: var(--studio-success);
+    --tone-fg: var(--studio-success-fg);
+  }
+  [data-ui="studio"] [data-tone="warning"] {
+    --tone: var(--studio-warning);
+    --tone-fg: var(--studio-warning-fg);
+  }
+  [data-ui="studio"] [data-tone="danger"] {
+    --tone: var(--studio-danger);
+    --tone-fg: var(--studio-danger-fg);
+  }
+
+  /* Glass: the default surface. Blur is opt-in (at most two blurred layers on screen). */
+  [data-ui="studio"] .studio-glass {
+    background-color: var(--studio-glass);
+    border: 1px solid var(--studio-glass-border);
+    box-shadow:
+      inset 0 1px 0 0 var(--studio-glass-highlight),
+      var(--studio-glass-shadow);
+  }
+  [data-ui="studio"] .studio-glass-strong {
+    background-color: var(--studio-glass-strong);
+  }
+  [data-ui="studio"] .studio-blur {
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    backdrop-filter: blur(24px) saturate(1.5);
+  }
+
+  /* Hover: lift 2px and fade in a soft glow (transform and opacity only). */
+  [data-ui="studio"] .studio-lift {
+    transition: transform 200ms var(--studio-ease-out);
+  }
+  [data-ui="studio"] .studio-lift::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--ring) 35%, transparent),
+      0 14px 40px -14px var(--studio-glow);
+    opacity: 0;
+    transition: opacity 200ms var(--studio-ease-out);
+  }
+  [data-ui="studio"] .studio-lift:focus-within::after {
+    opacity: 1;
+  }
+  @media (hover: hover) {
+    [data-ui="studio"] .studio-lift:hover {
+      transform: translateY(-2px);
+    }
+    [data-ui="studio"] .studio-lift:hover::after {
+      opacity: 1;
+    }
+  }
+
+  /* The sidebar collapses and expands at once: animating its width would reflow the page on
+     every frame. After a toggle (data-sidebar-motion, set by the shell), the labels fade back
+     in on expand instead (opacity only). */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-ui="studio"] [data-sidebar-motion][data-sidebar="expanded"] .studio-sidebar-label {
+      animation: studio-fade 180ms var(--studio-ease-out);
+    }
+  }
+
+  /* Display headings: tight tracking in Latin scripts, gentler for Hangul. */
+  [data-ui="studio"] .studio-display {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    text-wrap: balance;
+  }
+  [data-ui="studio"] .studio-display:lang(ko) {
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  [data-ui="studio"] .studio-gradient-text {
+    background-image: linear-gradient(
+      100deg,
+      var(--aurora-text-1) 0%,
+      var(--aurora-text-2) 35%,
+      var(--aurora-text-3) 70%,
+      var(--aurora-text-4) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  /* Entrance: rise 10px and fade in (CSS, so server-rendered content animates without JS).
+     Backwards fill only: once done, hover transforms apply normally. */
+  [data-ui="studio"] .studio-rise {
+    animation: studio-rise 640ms var(--studio-ease-out) backwards;
+    animation-delay: var(--rise-delay, 0ms);
+  }
+
+  /* AuroraBackground: slow mesh-gradient blobs, a masked dot grid and a noise overlay. */
+  [data-ui="studio"] .studio-aurora {
+    --aurora-alpha: var(--aurora-blob-opacity);
+    contain: strict;
+  }
+  [data-ui="studio"] .studio-aurora[data-variant="vivid"] {
+    --aurora-alpha: calc(var(--aurora-blob-opacity) * 1.2);
+  }
+  [data-ui="studio"] .studio-aurora-blob {
+    position: absolute;
+    width: 64vmax;
+    height: 64vmax;
+    border-radius: 9999px;
+    background: radial-gradient(closest-side, var(--blob), transparent);
+    opacity: var(--aurora-alpha);
+    will-change: transform;
+    animation-duration: var(--blob-duration, 30s);
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+  }
+  [data-ui="studio"] .studio-aurora-blob[data-blob="1"] {
+    --blob: var(--aurora-violet);
+    --blob-duration: 26s;
+    top: -34vmax;
+    left: -20vmax;
+    animation-name: studio-aurora-a;
+  }
+  [data-ui="studio"] .studio-aurora-blob[data-blob="2"] {
+    --blob: var(--aurora-cyan);
+    --blob-duration: 32s;
+    top: -30vmax;
+    right: -24vmax;
+    animation-name: studio-aurora-b;
+  }
+  [data-ui="studio"] .studio-aurora-blob[data-blob="3"] {
+    --blob: var(--aurora-indigo);
+    --blob-duration: 38s;
+    top: 28%;
+    left: 30%;
+    width: 46vmax;
+    height: 46vmax;
+    animation-name: studio-aurora-c;
+  }
+  [data-ui="studio"] .studio-aurora-blob[data-blob="4"] {
+    --blob: var(--aurora-emerald);
+    --blob-duration: 44s;
+    right: 0;
+    bottom: -40vmax;
+    animation-name: studio-aurora-d;
+  }
+  [data-ui="studio"] .studio-aurora-grid {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, var(--studio-grid-dot) 1px, transparent 1.5px);
+    background-size: 24px 24px;
+    -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 0%, #000 25%, transparent 100%);
+    mask-image: radial-gradient(ellipse 75% 60% at 50% 0%, #000 25%, transparent 100%);
+  }
+  [data-ui="studio"] .studio-aurora-noise {
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: var(--studio-noise-opacity);
+  }
+
+  /* BorderBeam: a conic highlight that travels around the border (rotation only). */
+  [data-ui="studio"] .studio-beam {
+    position: absolute;
+    inset: 0;
+    padding: var(--beam-width, 1.5px);
+    border-radius: inherit;
+    pointer-events: none;
+    container-type: size;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+  }
+  [data-ui="studio"] .studio-beam::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 150cqmax;
+    height: 150cqmax;
+    background: conic-gradient(
+      from 0turn,
+      transparent 0turn 0.62turn,
+      var(--beam-from) 0.82turn,
+      var(--beam-to) 0.95turn,
+      transparent 1turn
+    );
+    transform: translate(-50%, -50%) rotate(0turn);
+    animation: studio-beam-spin var(--beam-duration, 4s) linear infinite;
+  }
+
+  /* ShimmerButton: a light sweep across the call to action every few seconds. */
+  [data-ui="studio"] .studio-shimmer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 30%, oklch(1 0 0 / 0.32) 50%, transparent 70%);
+    transform: translateX(-120%);
+    animation: studio-shimmer 3.6s var(--studio-ease-out) infinite;
+  }
+
+  /* ShimmerSkeleton */
+  [data-ui="studio"] .studio-skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: color-mix(in oklch, var(--foreground) 7%, transparent);
+  }
+  [data-ui="studio"] .studio-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklch, var(--foreground) 8%, transparent),
+      transparent
+    );
+    transform: translateX(-100%);
+    animation: studio-skeleton 1.6s ease-in-out infinite;
+  }
+
+  /* PulseDot: the ring that pulses while something is live. */
+  [data-ui="studio"] .studio-pulse {
+    animation: studio-pulse 1.8s var(--studio-ease-out) infinite;
+  }
+
+  /* Marquee: two copies of the content slide by one copy's width; pauses on hover and focus. */
+  [data-ui="studio"] .studio-marquee {
+    --marquee-gap: 0.75rem;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  }
+  [data-ui="studio"] .studio-marquee-track {
+    display: flex;
+    width: max-content;
+    gap: var(--marquee-gap);
+    animation: studio-marquee var(--marquee-duration, 40s) linear infinite;
+  }
+  [data-ui="studio"] .studio-marquee[data-reverse] .studio-marquee-track {
+    animation-direction: reverse;
+  }
+  [data-ui="studio"] .studio-marquee:hover .studio-marquee-track,
+  [data-ui="studio"] .studio-marquee:focus-within .studio-marquee-track {
+    animation-play-state: paused;
+  }
+  [data-ui="studio"] .studio-marquee-group {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--marquee-gap);
+  }
+  [data-ui="studio"] .studio-marquee[data-reduced] {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  [data-ui="studio"] .studio-marquee[data-reduced] .studio-marquee-track,
+  [data-ui="studio"] .studio-marquee[data-reduced] .studio-marquee-group {
+    width: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: none;
+  }
+
+  /* PipelineGraph beams: a 2px line between two stages, in their colours once data has moved
+     on, with particles flowing along it while the next stage runs. The connector box clips the
+     particles; the track is as long as the connector, so translating it by its own length
+     carries a particle from one end to the other. */
+  [data-ui="studio"] .studio-pipeline-beam {
+    --beam-line: color-mix(in oklch, var(--foreground) 14%, transparent);
+    --beam-a: var(--beam-line);
+    --beam-b: var(--beam-line);
+    position: absolute;
+    pointer-events: none;
+    background: linear-gradient(to right, var(--beam-a), var(--beam-b)) center / 100% 2px no-repeat;
+  }
+  [data-ui="studio"] .studio-pipeline-beam[data-state="complete"],
+  [data-ui="studio"] .studio-pipeline-beam[data-state="flowing"] {
+    --beam-a: color-mix(in oklch, var(--beam-from-color) 75%, transparent);
+    --beam-b: color-mix(in oklch, var(--beam-to-color) 75%, transparent);
+  }
+  [data-ui="studio"] [data-pipeline-axis="y"] .studio-pipeline-beam {
+    background:
+      linear-gradient(to bottom, var(--beam-a), var(--beam-b)) center / 2px 100% no-repeat;
+  }
+  @container pipeline (width < 48rem) {
+    [data-ui="studio"] [data-pipeline-axis="auto"] .studio-pipeline-beam {
+      background:
+        linear-gradient(to bottom, var(--beam-a), var(--beam-b)) center / 2px 100% no-repeat;
+    }
+  }
+  [data-ui="studio"] .studio-flow {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  [data-ui="studio"] .studio-flow-track {
+    position: absolute;
+    inset: 0;
+    animation: studio-flow-x 2.4s linear infinite;
+    animation-delay: var(--flow-delay, 0s);
+  }
+  [data-ui="studio"] .studio-flow-dot {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 0.5rem;
+    height: 0.25rem;
+    border-radius: 9999px;
+    background: var(--flow-color, var(--aurora-cyan));
+    box-shadow: 0 0 10px 2px
+      color-mix(in oklch, var(--flow-color, var(--aurora-cyan)) 60%, transparent);
+    transform: translateY(-50%);
+  }
+  [data-ui="studio"] [data-pipeline-axis="y"] .studio-flow-track {
+    animation-name: studio-flow-y;
+  }
+  [data-ui="studio"] [data-pipeline-axis="y"] .studio-flow-dot {
+    top: auto;
+    right: auto;
+    bottom: 0;
+    left: 50%;
+    width: 0.25rem;
+    height: 0.5rem;
+    transform: translateX(-50%);
+  }
+  @container pipeline (width >= 48rem) {
+    [data-ui="studio"] [data-pipeline-axis="auto"] .studio-flow-track {
+      animation-name: studio-flow-x;
+    }
+  }
+  @container pipeline (width < 48rem) {
+    [data-ui="studio"] [data-pipeline-axis="auto"] .studio-flow-track {
+      animation-name: studio-flow-y;
+    }
+    [data-ui="studio"] [data-pipeline-axis="auto"] .studio-flow-dot {
+      top: auto;
+      right: auto;
+      bottom: 0;
+      left: 50%;
+      width: 0.25rem;
+      height: 0.5rem;
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Loops pause while their element is off screen (useInView sets data-paused). This comes after
+     every animation shorthand above, with the same specificity, so it wins. */
+  [data-ui="studio"] [data-paused="true"] *,
+  [data-ui="studio"] [data-paused="true"] *::before,
+  [data-ui="studio"] [data-paused="true"] *::after {
+    animation-play-state: paused;
+  }
+
+  /* Reduced motion: no infinite or decorative animation; state changes become plain fades.
+     Selectors match the specificity of the rules they switch off. */
+  @media (prefers-reduced-motion: reduce) {
+    [data-ui="studio"] .studio-aurora-blob[data-blob],
+    [data-ui="studio"] .studio-pulse,
+    [data-ui="studio"] .studio-shimmer::before,
+    [data-ui="studio"] .studio-skeleton::after,
+    [data-ui="studio"] .studio-marquee .studio-marquee-track,
+    [data-ui="studio"] [data-pipeline-axis] .studio-flow-track {
+      animation: none;
+    }
+    [data-ui="studio"] .studio-pulse,
+    [data-ui="studio"] .studio-shimmer::before,
+    [data-ui="studio"] .studio-flow {
+      opacity: 0;
+    }
+    [data-ui="studio"] .studio-beam::before {
+      animation: none;
+      background: conic-gradient(var(--beam-from), var(--beam-to), var(--beam-from));
+      opacity: 0.7;
+    }
+    [data-ui="studio"] .studio-rise {
+      animation-name: studio-fade;
+      animation-duration: 200ms;
+    }
+    [data-ui="studio"] .studio-lift {
+      transition: none;
+    }
+    [data-ui="studio"] .studio-lift:hover {
+      transform: none;
+    }
+    [data-ui="studio"] .studio-marquee-group[aria-hidden="true"] {
+      display: none;
+    }
+    [data-ui="studio"] .studio-marquee {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+    [data-ui="studio"] .studio-marquee .studio-marquee-track,
+    [data-ui="studio"] .studio-marquee .studio-marquee-group {
+      width: auto;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  }
+
+  @media (forced-colors: active) {
+    [data-ui="studio"] .studio-gradient-text {
+      background: none;
+      color: CanvasText;
+      -webkit-text-fill-color: CanvasText;
+    }
+    [data-ui="studio"] .studio-aurora,
+    [data-ui="studio"] .studio-beam {
+      display: none;
+    }
+  }
+}
+
+@keyframes studio-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes studio-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes studio-aurora-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(10vmax, 6vmax, 0) scale(1.12);
+  }
+}
+
+@keyframes studio-aurora-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  to {
+    transform: translate3d(-12vmax, 8vmax, 0) scale(0.95);
+  }
+}
+
+@keyframes studio-aurora-c {
+  from {
+    transform: translate3d(-6vmax, -4vmax, 0) scale(0.9);
+  }
+  to {
+    transform: translate3d(8vmax, 6vmax, 0) scale(1.1);
+  }
+}
+
+@keyframes studio-aurora-d {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-10vmax, -8vmax, 0) scale(1.15);
+  }
+}
+
+@keyframes studio-beam-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(1turn);
+  }
+}
+
+@keyframes studio-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  55%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes studio-skeleton {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes studio-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  80%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes studio-marquee {
+  to {
+    transform: translateX(calc(-50% - var(--marquee-gap, 0.75rem) / 2));
+  }
+}
+
+@keyframes studio-flow-x {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 0;
+  }
+}
+
+@keyframes studio-flow-y {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 0;
+  }
+}
+/* ========================================= End of Studio ================================== */
