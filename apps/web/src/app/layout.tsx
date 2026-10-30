@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { Providers } from "@/components/providers";
 import "./globals.css";
+import "./shared.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("common");

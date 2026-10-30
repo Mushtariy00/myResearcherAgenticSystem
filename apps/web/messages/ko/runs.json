@@ -85,5 +85,209 @@
       "keepRunning": "계속 실행",
       "requested": "취소를 요청했습니다."
     }
+  },
+  "shared": {
+    "demo": {
+      "badge": "데모",
+      "title": "데모 데이터",
+      "description": "이 화면이 어떻게 동작하는지 보여 주려고 만든 데이터로, 실제 연구 결과가 아닙니다.",
+      "reason": "이유:"
+    },
+    "metric": {
+      "higherIsBetter": "높을수록 좋음",
+      "lowerIsBetter": "낮을수록 좋음",
+      "notMeasured": "측정되지 않음"
+    },
+    "copy": {
+      "copy": "복사",
+      "copyValue": "{name} 복사",
+      "copied": "복사했습니다",
+      "failed": "복사하지 못했습니다. 텍스트를 선택해 직접 복사하세요."
+    },
+    "download": {
+      "download": "다운로드",
+      "downloadFile": "{filename} 다운로드"
+    },
+    "provenance": {
+      "image": "컨테이너 이미지",
+      "code": "코드 (SHA-256)",
+      "config": "설정 (SHA-256)",
+      "dataset": "데이터셋",
+      "datasetVersion": "{dataset}, 버전 {version}",
+      "seed": "난수 시드",
+      "gpu": "GPU",
+      "gpuUnknown": "기록되지 않음",
+      "gpuTime": "GPU 사용 시간",
+      "started": "시작",
+      "finished": "종료",
+      "notFinished": "아직 끝나지 않음",
+      "copyHash": "{name} 전체 해시 복사"
+    },
+    "proposal": {
+      "recommended": "추천",
+      "rationale": "근거",
+      "benefit": "기대 효과",
+      "risk": "위험",
+      "evidence": "근거 논문",
+      "unknownPaper": "논문 {id}"
+    },
+    "analysis": {
+      "contribution": "기여",
+      "method": "방법",
+      "results": "결과",
+      "limitations": "한계",
+      "evidence": "근거 인용",
+      "noEvidence": "이 논문에서 기록된 인용문이 없습니다.",
+      "page": "{page}쪽",
+      "openInPdf": "PDF에서 열기",
+      "openQuoteInPdf": "인용문 {index}을(를) PDF {page}쪽에서 열기",
+      "noPdf": "이 논문은 PDF가 없습니다."
+    },
+    "papers": {
+      "caption": "논문",
+      "columns": {
+        "title": "논문",
+        "relevance": "관련도",
+        "decision": "판정",
+        "year": "연도",
+        "citations": "인용 수",
+        "source": "출처",
+        "pdf": "PDF"
+      },
+      "decisions": {
+        "include": "포함",
+        "maybe": "보류",
+        "exclude": "제외"
+      },
+      "sources": {
+        "arxiv": "arXiv",
+        "semantic_scholar": "Semantic Scholar",
+        "openalex": "OpenAlex",
+        "crossref": "Crossref",
+        "core": "CORE",
+        "demo": "데모"
+      },
+      "etAl": "{names} 외",
+      "unknownAuthors": "저자 미상",
+      "pdfAvailable": "PDF 있음",
+      "pdfMissing": "PDF 없음",
+      "unknown": "알 수 없음",
+      "empty": "아직 논문이 없습니다.",
+      "loading": "논문을 불러오는 중…"
+    },
+    "pdf": {
+      "document": "PDF: {title}",
+      "documentUntitled": "PDF 문서",
+      "toolbar": "PDF 도구",
+      "previousPage": "이전 쪽",
+      "nextPage": "다음 쪽",
+      "pageInput": "쪽 번호",
+      "pageOf": "/ {total}",
+      "pageStatus": "{total}쪽 중 {page}쪽",
+      "zoom": "배율",
+      "zoomOut": "축소",
+      "zoomIn": "확대",
+      "fitWidth": "너비에 맞추기",
+      "previousQuote": "이전 인용문",
+      "nextQuote": "다음 인용문",
+      "quotePosition": "인용문 {total}개 중 {index}번째",
+      "quoteOnPage": "인용문 {total}개 중 {index}번째, {page}쪽",
+      "quoteNotFound": "인용문 {index}을(를) {page}쪽에서 찾지 못했습니다.",
+      "loading": "PDF를 불러오는 중…",
+      "loadingPage": "{page}쪽을 불러오는 중…",
+      "error": "PDF를 불러오지 못했습니다.",
+      "pageError": "{page}쪽을 표시하지 못했습니다.",
+      "retry": "다시 시도",
+      "shortcuts": "Page Up과 Page Down으로 쪽을 넘기고, 더하기와 빼기로 확대·축소합니다."
+    },
+    "code": {
+      "files": "파일",
+      "empty": "파일이 없습니다.",
+      "roles": {
+        "model": "모델",
+        "loss": "손실",
+        "config": "설정",
+        "test": "테스트",
+        "docs": "문서"
+      },
+      "lines": "{count, plural, other {#줄}}",
+      "copy": "{path} 복사",
+      "downloadAll": "모든 파일 다운로드",
+      "contents": "{path} 내용",
+      "noFileSelected": "파일을 선택하면 내용이 보입니다."
+    },
+    "diff": {
+      "files": "파일",
+      "status": {
+        "added": "추가",
+        "removed": "삭제",
+        "modified": "변경",
+        "renamed": "이름 변경",
+        "unchanged": "변경 없음"
+      },
+      "renamedFrom": "{path}에서 이름 변경",
+      "summary": "{count, plural, =0 {변경된 파일 없음} other {파일 #개 변경}}",
+      "lineCounts": "{additions, plural, other {#줄 추가}}, {deletions, plural, other {#줄 삭제}}",
+      "noChanges": "이 파일에는 변경 사항이 없습니다.",
+      "identical": "두 버전이 같습니다.",
+      "showUnchanged": "변경 없는 파일 보기",
+      "view": "비교 보기",
+      "split": "나란히",
+      "unified": "통합",
+      "loadingEditor": "비교 편집기를 불러오는 중…",
+      "skipped": "{count, plural, other {변경 없는 #줄}}",
+      "changesIn": "{path} 변경 사항",
+      "before": "이전",
+      "after": "이후",
+      "empty": "비교할 파일이 없습니다."
+    },
+    "json": {
+      "changes": "변경 사항",
+      "noChanges": "변경 사항이 없습니다.",
+      "editor": "JSON 편집기",
+      "valid": "올바른 JSON",
+      "invalid": "{line}행 {column}열: {message}",
+      "format": "정리",
+      "loadingEditor": "편집기를 불러오는 중…",
+      "errors": {
+        "empty": "JSON 값을 입력하세요.",
+        "unexpected_end": "JSON이 중간에 끝났습니다.",
+        "unexpected_character": "예상하지 못한 문자 “{character}”가 있습니다.",
+        "unterminated_string": "큰따옴표로 닫히지 않은 텍스트 값이 있습니다.",
+        "invalid_escape": "텍스트 값에 잘못된 이스케이프 시퀀스가 있습니다.",
+        "control_character": "텍스트 값에는 줄바꿈이나 탭을 그대로 넣을 수 없습니다.",
+        "invalid_number": "숫자 형식이 올바르지 않습니다.",
+        "expected_property": "큰따옴표로 감싼 속성 이름이 와야 합니다.",
+        "expected_colon": "속성 이름 뒤에 콜론이 와야 합니다.",
+        "expected_comma_or_brace": "쉼표나 닫는 중괄호가 와야 합니다.",
+        "expected_comma_or_bracket": "쉼표나 닫는 대괄호가 와야 합니다.",
+        "expected_value": "값이 와야 합니다.",
+        "trailing_characters": "JSON 값 뒤에 불필요한 내용이 있습니다."
+      }
+    },
+    "chart": {
+      "epoch": "에포크",
+      "splits": {
+        "train": "학습",
+        "val": "검증",
+        "test": "테스트"
+      },
+      "series": "{metric} ({split})",
+      "showTable": "데이터 표 보기",
+      "hideTable": "데이터 표 숨기기",
+      "tableCaption": "{title}: 에포크별 값",
+      "empty": "기록된 지표가 없습니다.",
+      "noValue": "값 없음"
+    },
+    "draft": {
+      "toc": "목차",
+      "headingLink": "이 섹션으로 연결: {title}",
+      "citation": "인용 {key}: {title}",
+      "citationUnknown": "인용 {key}은(는) 참고문헌 목록에 없습니다",
+      "notInReferences": "참고문헌 목록에 없음",
+      "imageBlocked": "표시하지 않은 이미지: {alt}",
+      "imageBlockedUntitled": "표시하지 않은 이미지",
+      "authorsYear": "{authors}, {year}"
+    }
   }
 }

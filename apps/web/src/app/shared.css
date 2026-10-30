@@ -1,0 +1,172 @@
+/* ==========================================================================================
+   Shared feature components (src/components/shared, src/lib/stage-meta.ts): the colour tokens
+   both interfaces use for stages, chart series, statuses and evidence highlights, in light and
+   dark. Classic uses these values as they are. The defaults sit in cascade layers, so the
+   Studio scope ([data-ui="studio"] in globals.css, unlayered) redefines any of them without
+   fighting specificity or stylesheet order.
+
+   Optional overrides read by MetricsChart, with fallbacks to the theme tokens in scope:
+   --chart-text, --chart-axis, --chart-grid, --chart-tooltip-bg, --chart-tooltip-fg,
+   --chart-tooltip-border.
+   ========================================================================================== */
+
+/* Same order as Tailwind's, so whichever stylesheet loads first sets it. */
+@layer theme, base, components, utilities;
+
+@layer base {
+  :root {
+    /* Pipeline stages: a fill (dots, bars, series) and a text-safe foreground (>= 4.5:1). */
+    --stage-literature: oklch(0.62 0.12 215);
+    --stage-literature-fg: oklch(0.47 0.1 222);
+    --stage-method: oklch(0.56 0.24 293);
+    --stage-method-fg: oklch(0.5 0.22 293);
+    --stage-coding: oklch(0.72 0.17 65);
+    --stage-coding-fg: oklch(0.49 0.13 58);
+    --stage-experiment: oklch(0.64 0.15 163);
+    --stage-experiment-fg: oklch(0.47 0.11 165);
+    --stage-writing: oklch(0.62 0.21 355);
+    --stage-writing-fg: oklch(0.5 0.2 355);
+
+    /* Categorical chart series in a fixed order (checked for colour-vision deficiencies on
+       white and on the dark card). Colour follows the metric, never its rank. */
+    --chart-series-1: #2a78d6;
+    --chart-series-2: #eb6834;
+    --chart-series-3: #1baf7a;
+    --chart-series-4: #eda100;
+    --chart-series-5: #e87ba4;
+    --chart-series-6: #008300;
+    --chart-series-7: #6250d6;
+    --chart-series-8: #e34948;
+
+    /* Status tones (badges, diff markers): a fill and a text-safe foreground. */
+    --status-neutral: oklch(0.7 0 0);
+    --status-neutral-fg: oklch(0.45 0 0);
+    --status-info: oklch(0.62 0.14 240);
+    --status-info-fg: oklch(0.47 0.13 245);
+    --status-success: oklch(0.64 0.15 163);
+    --status-success-fg: oklch(0.45 0.11 165);
+    --status-warning: oklch(0.77 0.16 70);
+    --status-warning-fg: oklch(0.49 0.13 58);
+    --status-danger: oklch(0.6 0.21 25);
+    --status-danger-fg: oklch(0.5 0.2 25);
+
+    /* Evidence quotes highlighted on a PDF page (pages stay white in both themes). */
+    --quote-highlight: oklch(0.9 0.16 95 / 0.55);
+    --quote-highlight-active: oklch(0.82 0.17 75 / 0.7);
+    --quote-highlight-ring: oklch(0.6 0.16 65);
+  }
+
+  .dark {
+    --stage-literature: oklch(0.8 0.13 210);
+    --stage-literature-fg: oklch(0.84 0.12 210);
+    --stage-method: oklch(0.7 0.18 293);
+    --stage-method-fg: oklch(0.78 0.14 293);
+    --stage-coding: oklch(0.82 0.16 75);
+    --stage-coding-fg: oklch(0.85 0.14 80);
+    --stage-experiment: oklch(0.78 0.15 163);
+    --stage-experiment-fg: oklch(0.82 0.14 163);
+    --stage-writing: oklch(0.74 0.18 350);
+    --stage-writing-fg: oklch(0.8 0.14 350);
+
+    --chart-series-1: #3987e5;
+    --chart-series-2: #d95926;
+    --chart-series-3: #199e70;
+    --chart-series-4: #c98500;
+    --chart-series-5: #d55181;
+    --chart-series-6: #008300;
+    --chart-series-7: #9085e9;
+    --chart-series-8: #e66767;
+
+    --status-neutral: oklch(0.6 0 0);
+    --status-neutral-fg: oklch(0.75 0 0);
+    --status-info: oklch(0.72 0.13 235);
+    --status-info-fg: oklch(0.8 0.11 235);
+    --status-success: oklch(0.75 0.15 163);
+    --status-success-fg: oklch(0.82 0.14 163);
+    --status-warning: oklch(0.8 0.16 75);
+    --status-warning-fg: oklch(0.85 0.14 80);
+    --status-danger: oklch(0.68 0.19 22);
+    --status-danger-fg: oklch(0.78 0.14 20);
+  }
+}
+
+@layer components {
+  /* `data-stage` and `data-tone` give any element --tone (fill) and --tone-fg (text). Studio
+     maps the same attributes to its own colours with a more specific selector. */
+  [data-stage="literature"] {
+    --tone: var(--stage-literature);
+    --tone-fg: var(--stage-literature-fg);
+  }
+  [data-stage="method"] {
+    --tone: var(--stage-method);
+    --tone-fg: var(--stage-method-fg);
+  }
+  [data-stage="coding"] {
+    --tone: var(--stage-coding);
+    --tone-fg: var(--stage-coding-fg);
+  }
+  [data-stage="experiment"] {
+    --tone: var(--stage-experiment);
+    --tone-fg: var(--stage-experiment-fg);
+  }
+  [data-stage="writing"] {
+    --tone: var(--stage-writing);
+    --tone-fg: var(--stage-writing-fg);
+  }
+  [data-tone="neutral"] {
+    --tone: var(--status-neutral);
+    --tone-fg: var(--status-neutral-fg);
+  }
+  [data-tone="info"] {
+    --tone: var(--status-info);
+    --tone-fg: var(--status-info-fg);
+  }
+  [data-tone="success"] {
+    --tone: var(--status-success);
+    --tone-fg: var(--status-success-fg);
+  }
+  [data-tone="warning"] {
+    --tone: var(--status-warning);
+    --tone-fg: var(--status-warning-fg);
+  }
+  [data-tone="danger"] {
+    --tone: var(--status-danger);
+    --tone-fg: var(--status-danger-fg);
+  }
+}
+
+/* Syntax colours from the one Shiki highlighter (both themes are in every token as CSS
+   variables, so switching themes needs no re-highlighting). */
+[data-code] > span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+}
+.dark [data-code] > span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+}
+
+/* Evidence quotes in the PDF text layer: the text stays transparent over the rendered page. */
+.textLayer mark.pdf-quote {
+  color: transparent;
+  background-color: var(--quote-highlight);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--quote-highlight);
+}
+.textLayer mark.pdf-quote[data-active] {
+  background-color: var(--quote-highlight-active);
+  box-shadow: 0 0 0 2px var(--quote-highlight-ring);
+}
+
+@media (forced-colors: active) {
+  .textLayer mark.pdf-quote {
+    forced-color-adjust: none;
+    background-color: Highlight;
+    box-shadow: none;
+  }
+  .textLayer mark.pdf-quote[data-active] {
+    outline: 2px solid CanvasText;
+  }
+}

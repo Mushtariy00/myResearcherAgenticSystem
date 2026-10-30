@@ -85,5 +85,209 @@
       "keepRunning": "Keep running",
       "requested": "Cancellation requested."
     }
+  },
+  "shared": {
+    "demo": {
+      "badge": "Demo",
+      "title": "Demo data",
+      "description": "Generated to show how this screen works. It is not a real research result.",
+      "reason": "Reason:"
+    },
+    "metric": {
+      "higherIsBetter": "higher is better",
+      "lowerIsBetter": "lower is better",
+      "notMeasured": "not measured"
+    },
+    "copy": {
+      "copy": "Copy",
+      "copyValue": "Copy {name}",
+      "copied": "Copied",
+      "failed": "Could not copy. Select the text and copy it yourself."
+    },
+    "download": {
+      "download": "Download",
+      "downloadFile": "Download {filename}"
+    },
+    "provenance": {
+      "image": "Container image",
+      "code": "Code (SHA-256)",
+      "config": "Config (SHA-256)",
+      "dataset": "Dataset",
+      "datasetVersion": "{dataset}, version {version}",
+      "seed": "Random seed",
+      "gpu": "GPU",
+      "gpuUnknown": "Not recorded",
+      "gpuTime": "GPU time",
+      "started": "Started",
+      "finished": "Finished",
+      "notFinished": "Not finished",
+      "copyHash": "Copy the full {name} hash"
+    },
+    "proposal": {
+      "recommended": "Recommended",
+      "rationale": "Why",
+      "benefit": "Expected benefit",
+      "risk": "Risk",
+      "evidence": "Supporting papers",
+      "unknownPaper": "Paper {id}"
+    },
+    "analysis": {
+      "contribution": "Contribution",
+      "method": "Method",
+      "results": "Results",
+      "limitations": "Limitations",
+      "evidence": "Evidence",
+      "noEvidence": "No quotes were recorded for this paper.",
+      "page": "Page {page}",
+      "openInPdf": "Open in PDF",
+      "openQuoteInPdf": "Open quote {index} in the PDF, page {page}",
+      "noPdf": "No PDF is available for this paper."
+    },
+    "papers": {
+      "caption": "Papers",
+      "columns": {
+        "title": "Paper",
+        "relevance": "Relevance",
+        "decision": "Decision",
+        "year": "Year",
+        "citations": "Citations",
+        "source": "Source",
+        "pdf": "PDF"
+      },
+      "decisions": {
+        "include": "Included",
+        "maybe": "Maybe",
+        "exclude": "Excluded"
+      },
+      "sources": {
+        "arxiv": "arXiv",
+        "semantic_scholar": "Semantic Scholar",
+        "openalex": "OpenAlex",
+        "crossref": "Crossref",
+        "core": "CORE",
+        "demo": "Demo"
+      },
+      "etAl": "{names} et al.",
+      "unknownAuthors": "Unknown authors",
+      "pdfAvailable": "PDF available",
+      "pdfMissing": "No PDF",
+      "unknown": "Unknown",
+      "empty": "No papers yet.",
+      "loading": "Loading papers…"
+    },
+    "pdf": {
+      "document": "PDF: {title}",
+      "documentUntitled": "PDF document",
+      "toolbar": "PDF controls",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "pageInput": "Page number",
+      "pageOf": "of {total}",
+      "pageStatus": "Page {page} of {total}",
+      "zoom": "Zoom",
+      "zoomOut": "Zoom out",
+      "zoomIn": "Zoom in",
+      "fitWidth": "Fit to width",
+      "previousQuote": "Previous quote",
+      "nextQuote": "Next quote",
+      "quotePosition": "Quote {index} of {total}",
+      "quoteOnPage": "Quote {index} of {total}, page {page}",
+      "quoteNotFound": "Quote {index} could not be found on page {page}.",
+      "loading": "Loading the PDF…",
+      "loadingPage": "Loading page {page}…",
+      "error": "Could not load the PDF.",
+      "pageError": "Could not show page {page}.",
+      "retry": "Try again",
+      "shortcuts": "Page Up and Page Down turn pages; plus and minus zoom."
+    },
+    "code": {
+      "files": "Files",
+      "empty": "No files.",
+      "roles": {
+        "model": "Model",
+        "loss": "Loss",
+        "config": "Config",
+        "test": "Test",
+        "docs": "Docs"
+      },
+      "lines": "{count, plural, one {# line} other {# lines}}",
+      "copy": "Copy {path}",
+      "downloadAll": "Download all files",
+      "contents": "Contents of {path}",
+      "noFileSelected": "Select a file to see it."
+    },
+    "diff": {
+      "files": "Files",
+      "status": {
+        "added": "Added",
+        "removed": "Deleted",
+        "modified": "Changed",
+        "renamed": "Renamed",
+        "unchanged": "Unchanged"
+      },
+      "renamedFrom": "Renamed from {path}",
+      "summary": "{count, plural, one {# file changed} other {# files changed}}",
+      "lineCounts": "{additions, plural, one {# line added} other {# lines added}}, {deletions, plural, one {# line removed} other {# lines removed}}",
+      "noChanges": "No changes in this file.",
+      "identical": "The two versions are identical.",
+      "showUnchanged": "Show unchanged files",
+      "view": "Diff view",
+      "split": "Side by side",
+      "unified": "Unified",
+      "loadingEditor": "Loading the diff editor…",
+      "skipped": "{count, plural, one {# unchanged line} other {# unchanged lines}}",
+      "changesIn": "Changes in {path}",
+      "before": "Before",
+      "after": "After",
+      "empty": "No files to compare."
+    },
+    "json": {
+      "changes": "Changes",
+      "noChanges": "No changes.",
+      "editor": "JSON editor",
+      "valid": "Valid JSON",
+      "invalid": "Line {line}, column {column}: {message}",
+      "format": "Format",
+      "loadingEditor": "Loading the editor…",
+      "errors": {
+        "empty": "Enter a JSON value.",
+        "unexpected_end": "The JSON ends too early.",
+        "unexpected_character": "Unexpected character “{character}”.",
+        "unterminated_string": "A text value is not closed with a double quote.",
+        "invalid_escape": "Invalid escape sequence in a text value.",
+        "control_character": "Text values cannot contain a raw line break or tab.",
+        "invalid_number": "Invalid number.",
+        "expected_property": "Expected a property name in double quotes.",
+        "expected_colon": "Expected a colon after the property name.",
+        "expected_comma_or_brace": "Expected a comma or a closing brace.",
+        "expected_comma_or_bracket": "Expected a comma or a closing bracket.",
+        "expected_value": "Expected a value.",
+        "trailing_characters": "Unexpected text after the JSON value."
+      }
+    },
+    "chart": {
+      "epoch": "Epoch",
+      "splits": {
+        "train": "Train",
+        "val": "Validation",
+        "test": "Test"
+      },
+      "series": "{metric} ({split})",
+      "showTable": "Show data table",
+      "hideTable": "Hide data table",
+      "tableCaption": "{title}: values per epoch",
+      "empty": "No metrics were recorded.",
+      "noValue": "No value"
+    },
+    "draft": {
+      "toc": "Contents",
+      "headingLink": "Link to this section: {title}",
+      "citation": "Citation {key}: {title}",
+      "citationUnknown": "Citation {key} is not in the reference list",
+      "notInReferences": "Not in the reference list",
+      "imageBlocked": "Image not shown: {alt}",
+      "imageBlockedUntitled": "Image not shown",
+      "authorsYear": "{authors}, {year}"
+    }
   }
 }
