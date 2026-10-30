@@ -1,1 +1,322 @@
-{}
+{
+  "studioRun": {
+    "loading": "Loading the run…",
+    "notFound": {
+      "title": "Run not found",
+      "description": "This run does not exist, or you do not have access to it.",
+      "back": "Go to the dashboard"
+    },
+    "loadError": {
+      "title": "Could not load this run",
+      "retry": "Try again"
+    },
+    "refreshError": "Could not refresh the run, so what you see may be out of date.",
+    "notices": {
+      "completedTitle": "Every stage is approved",
+      "completedDescription": "The run is complete: the draft and every file are ready to download.",
+      "openDraft": "Open the draft"
+    },
+    "hero": {
+      "backTo": "Back to {project}",
+      "status": "Run status",
+      "started": "Started",
+      "models": "Models",
+      "cap": "Cost cap",
+      "runId": "Run ID",
+      "copyRunId": "Copy the run ID",
+      "policies": {
+        "auto": "Auto",
+        "free": "Free only"
+      }
+    },
+    "spend": {
+      "title": "LLM spend",
+      "hint": "Live, from this run's model calls.",
+      "calls": "{count, plural, one {# call} other {# calls}}",
+      "split": "{paid} paid · {free} free",
+      "byStage": "Spend by stage",
+      "capUsed": "Share of the cost cap used",
+      "ofCap": "{percent}% of the {cap} cap",
+      "switchedToFree": "Switched to free models"
+    },
+    "downloads": {
+      "button": "Downloads",
+      "demo": "Generated demo files",
+      "kinds": {
+        "code_file": "Code file",
+        "code_archive": "All code (zip)",
+        "experiment_log": "Experiment log",
+        "metrics": "Metrics",
+        "draft": "Draft",
+        "references": "References"
+      }
+    },
+    "retry": {
+      "button": "Retry",
+      "title": "Run again from a stage",
+      "description": "The run starts again at the stage you choose and waits for your approval at every stage, as before.",
+      "close": "Close",
+      "stages": "Start again at",
+      "attempts": "{count, plural, one {# attempt} other {# attempts}}",
+      "consequences": "What happens",
+      "keeps": "Approved outputs before {stage} are kept.",
+      "keepsNothing": "Nothing is kept: the whole run starts over.",
+      "outdatedOne": "{stages} runs again: its current output becomes outdated, but stays readable as an earlier version.",
+      "outdatedMany": "{stages} run again: their current outputs become outdated, but stay readable as earlier versions.",
+      "cost": "New attempts follow the run's model policy and count toward your budget.",
+      "confirm": "Retry from {stage}",
+      "starting": "Starting…",
+      "cancel": "Keep as is",
+      "failed": "The retry did not start",
+      "started": "The run starts again from {stage}.",
+      "fromHere": "Retry from this stage"
+    },
+    "pipeline": {
+      "label": "Pipeline stages: select one to see its output",
+      "viewLog": "View the log"
+    },
+    "tabs": {
+      "title": "Stage outputs",
+      "label": "Stages"
+    },
+    "stage": {
+      "loading": "Loading the stage…",
+      "loadingVersion": "Loading the version under review…",
+      "loadFailed": "Could not load this stage",
+      "versions": "Versions",
+      "versionShort": "Attempt {attempt} · v{version}",
+      "versionLabel": "Attempt {attempt}, version {version}",
+      "underReview": "under review",
+      "approved": "approved",
+      "changesRequested": "changes requested",
+      "rejected": "rejected",
+      "editedMark": "edited by a reviewer",
+      "attemptVersion": "Attempt {attempt} · Version {version}",
+      "model": "Model: {model}",
+      "produced": "Produced {date}",
+      "editedBy": "Edited by {name}",
+      "editedByUnknown": "Edited by a reviewer",
+      "feedback": "Reviewer feedback for this attempt",
+      "decidedBy": "{decision} by {name}",
+      "decidedByUnknown": "{decision} by a reviewer",
+      "viewingOlder": "You are looking at version {version}. Version {reviewVersion} is the one waiting for review.",
+      "showReviewed": "Show the version under review",
+      "attemptRunning": "Attempt {attempt} is running. You are looking at an earlier output.",
+      "attemptFailed": "Attempt {attempt} failed. You are looking at an earlier output.",
+      "invalidatedTitle": "This output is outdated",
+      "invalidatedDescription": "A retry from an earlier stage replaced it. It stays here as an earlier version.",
+      "running": "{stage} is running",
+      "runningDescription": "The output appears here as soon as it is ready.",
+      "latestStep": "Latest step",
+      "notStarted": "{stage} has not started",
+      "notStartedAfter": "It starts once the {previous} output is approved.",
+      "notStartedFirst": "It starts as soon as the run begins.",
+      "skipped": "{stage} did not run",
+      "skippedDescription": "The run ended before it reached this stage.",
+      "failed": "{stage} failed",
+      "failedDescription": "The stage stopped without an output.",
+      "cancelled": "{stage} was cancelled",
+      "cancelledDescription": "The run was cancelled while this stage was working.",
+      "noOutput": "No output yet",
+      "noOutputDescription": "This attempt has not produced an output.",
+      "rawTitle": "Shown as JSON",
+      "rawReasons": {
+        "schema_failed": "This output does not match the stage's format, so it is shown as plain JSON.",
+        "unexpected_shape": "This output has an older or unexpected shape, so it is shown as plain JSON.",
+        "unknown_stage": "This interface does not know this stage yet, so its output is shown as plain JSON."
+      },
+      "rawLabel": "Stage output (JSON)"
+    },
+    "literature": {
+      "stats": {
+        "screened": "Papers screened",
+        "included": "Included",
+        "maybe": "Maybe",
+        "excluded": "Excluded",
+        "analysed": "Read in full"
+      },
+      "plan": "Search plan",
+      "scope": "Scope",
+      "criteria": "Inclusion criteria",
+      "queries": "Queries",
+      "subtopics": "Subtopics",
+      "papers": "Papers",
+      "filter": {
+        "decision": "Screening decision",
+        "all": "All",
+        "pdfOnly": "With PDF",
+        "search": "Search the papers",
+        "searchPlaceholder": "Title, author, venue or year",
+        "count": "{shown} of {total} papers",
+        "empty": "No papers match these filters.",
+        "clear": "Clear filters"
+      },
+      "findings": "Key findings",
+      "noFindings": "No key findings were recorded.",
+      "source": "Source: {source}",
+      "openPaper": "Open the paper",
+      "openSource": "Source page",
+      "newTab": "opens in a new tab",
+      "synthesis": "Synthesis"
+    },
+    "paper": {
+      "eyebrow": "Paper",
+      "citation": "Citation [{key}]",
+      "close": "Close",
+      "loading": "Loading the paper…",
+      "notFound": "Paper not found",
+      "notFoundDescription": "This paper is neither in the run's results nor in the library.",
+      "unknownCitation": "Citation [{key}]",
+      "unknownCitationDescription": "This citation is not in the draft's reference list.",
+      "citations": "{count, plural, one {# citation} other {# citations}}",
+      "screening": "Screening",
+      "relevance": "Relevance",
+      "why": "Why:",
+      "doi": "DOI {doi}",
+      "arxiv": "arXiv {id}",
+      "sourcePage": "Source page",
+      "newTab": "opens in a new tab",
+      "abstract": "Abstract",
+      "analysis": "Reading notes",
+      "noAnalysis": "This paper was not read in full, so it has no reading notes.",
+      "pdf": "PDF",
+      "showPdf": "Show the PDF",
+      "hidePdf": "Hide the PDF",
+      "noPdf": "No PDF is available for this paper."
+    },
+    "method": {
+      "gaps": "Research gaps",
+      "focus": "Implementation focus",
+      "datasets": "Datasets",
+      "metrics": "Evaluation metrics",
+      "recommended": "Recommended option",
+      "proposals": "Proposals"
+    },
+    "coding": {
+      "summary": "What was built",
+      "entrypoint": "Entry point",
+      "code": "Generated code",
+      "filesLines": "{files, plural, one {# file} other {# files}} · {lines} lines",
+      "smokeTest": "Smoke test",
+      "passed": "Passed",
+      "failed": "Failed",
+      "duration": "Took {seconds} s",
+      "log": "Smoke test log",
+      "changesSinceAttempt": "Changes since attempt {attempt}",
+      "changesSinceVersion": "Changes since version {version}",
+      "showChanges": "Show the changes",
+      "hideChanges": "Hide the changes"
+    },
+    "experiment": {
+      "summary": "Outcome",
+      "status": {
+        "succeeded": "Succeeded",
+        "failed": "Failed",
+        "timeout": "Timed out",
+        "cancelled": "Cancelled"
+      },
+      "finalMetrics": "Final metrics",
+      "noMetrics": "No final metrics were reported.",
+      "headline": "Headline",
+      "curves": "Training curves",
+      "chartTitle": "{metric} per epoch",
+      "config": "Configuration",
+      "provenance": "Provenance",
+      "logs": "Training log",
+      "logText": "Last lines of the training log",
+      "downloadLog": "Download the full log"
+    },
+    "writing": {
+      "stats": {
+        "words": "Words",
+        "sections": "Sections",
+        "citations": "Citations"
+      },
+      "abstract": "Abstract",
+      "reviewFocus": "What to check",
+      "draft": "Draft",
+      "outline": "Outline",
+      "references": "References",
+      "noReferences": "The draft cites no papers.",
+      "reference": "{title} ({year})",
+      "downloads": "Files",
+      "noDownloads": "No files for this version yet."
+    },
+    "review": {
+      "version": "Version {version}",
+      "edited": "Edited",
+      "expand": "Show the review controls",
+      "collapse": "Hide the review controls",
+      "changes": "Changes",
+      "edit": "Edit",
+      "show": "Show {stage}",
+      "approveWithEdits": "Approve with edits",
+      "invalidJson": "Fix the JSON, or discard your edits, before approving.",
+      "loadingChanges": "Loading the changes…",
+      "noPrevious": "This is the first version of this stage, so there is nothing to compare.",
+      "changesSinceAttempt": "Changes since attempt {attempt}",
+      "changesSinceVersion": "Changes since version {version}",
+      "editTitle": "Edit before approving",
+      "editHint": "Correct the output, then approve it with your edits. The API checks it against the stage's format.",
+      "editorLabel": "{stage} output (JSON)",
+      "discard": "Discard edits",
+      "yourChanges": "Your changes",
+      "invalidEdit": {
+        "where": "Where:",
+        "whole": "the output as a whole",
+        "kinds": {
+          "missing": "A required field is missing.",
+          "extra": "This field is not part of the stage's format.",
+          "tooShort": "This value is too short.",
+          "tooLong": "This value is too long.",
+          "type": "This value has the wrong type.",
+          "choice": "This value is not one of the allowed choices.",
+          "range": "This number is out of range."
+        },
+        "other": "Check this field ({type})."
+      }
+    },
+    "log": {
+      "title": "Live log",
+      "filter": "Show",
+      "filters": {
+        "all": "All",
+        "stages": "Stages",
+        "llm": "Model calls"
+      },
+      "terminal": "run/{run} · events",
+      "lines": "{count, plural, one {# line} other {# lines}}",
+      "scroll": "Log lines",
+      "earlier": "Show {count, plural, one {# earlier line} other {# earlier lines}}",
+      "empty": "Nothing has happened yet.",
+      "emptyFiltered": "No lines of this kind yet.",
+      "jumpToLatest": "Jump to the latest line",
+      "invalidated": "{stage}: attempt {attempt} is outdated after the retry from {retryStage}",
+      "invalidatedPlain": "{stage}: the output is outdated after a retry",
+      "retried": "Run restarted from {stage}",
+      "retriedEarlier": "Run restarted from {stage}: {requested} was asked for, but an earlier stage had no approved output",
+      "decidedAutomatically": "automatically",
+      "decidedWithEdits": "with edits",
+      "progress": {
+        "search": "Searching {sources} with {queries, plural, one {# query} other {# queries}}",
+        "screen": "Screening {candidates, plural, one {# candidate} other {# candidates}}; keeping the {papers, plural, one {# most relevant paper} other {# most relevant papers}}",
+        "analyse": "Reading {papers, plural, one {# included paper} other {# included papers}} in full",
+        "synthesise": "Writing the synthesis from {findings, plural, one {# key finding} other {# key findings}}",
+        "gaps": "Mapping {gaps, plural, one {# research gap} other {# research gaps}}",
+        "propose": "Drafting {proposals, plural, one {# proposal} other {# proposals}}",
+        "recommend": "Recommending: {option}",
+        "code": "Writing {files, plural, one {# file} other {# files}} (entry point {entrypoint})",
+        "test": "Running {tests, plural, one {# unit test} other {# unit tests}} and a 2-batch dry run",
+        "smokePassed": "Smoke test passed in {seconds} s",
+        "smokeFailed": "Smoke test failed after {seconds} s",
+        "train": "Training for {epochs, plural, one {# epoch} other {# epochs}} on {dataset}",
+        "trainOnGpu": "Training for {epochs, plural, one {# epoch} other {# epochs}} on {dataset} ({gpu})",
+        "epoch": "Epoch {epoch}/{epochs}: validation {metric} {value}",
+        "epochNotMeasured": "Epoch {epoch}/{epochs}: validation {metric} not measured",
+        "outline": "Outlining {sections, plural, one {# section} other {# sections}}",
+        "draft": "Drafting {section} ({index}/{sections})",
+        "cite": "Linking {citations, plural, one {# citation} other {# citations}} to the included papers"
+      }
+    }
+  }
+}

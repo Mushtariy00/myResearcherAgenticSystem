@@ -2,13 +2,17 @@
 
 import { Tabs } from "@base-ui/react/tabs";
 import { LayoutGroup, motion } from "motion/react";
-import { createContext, type ReactNode, use, useId, useState } from "react";
+import { createContext, type ReactNode, use, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useReducedMotionPreference } from "@/studio/hooks/use-media-query";
 import { SPRING } from "@/studio/lib/motion";
 
 type TabsContextValue = { value: string | null; indicatorId: string };
 
 const AnimatedTabsContext = createContext<TabsContextValue | null>(null);
+
+/** Room left beside a tab scrolled into view, so its neighbour shows the list goes on. */
+const SCROLL_MARGIN = 12;
 
 export type AnimatedTabsProps = {
   /** Controlled value; leave out (with `defaultValue`) for an uncontrolled set of tabs. */
@@ -23,6 +27,11 @@ export type AnimatedTabsProps = {
  * Tabs whose active indicator slides between tabs (a shared `layoutId`). Semantics and keyboard
  * support come from Base UI Tabs: a tablist, arrow keys with roving focus, and panels linked to
  * their tabs. With reduced motion the indicator jumps instead of sliding (MotionConfig).
+ *
+ * The list scrolls sideways when its tabs do not fit (phones, long labels). Its scroll offset is
+ * measured for the layout animation (`layoutScroll`), so the indicator starts from and lands on
+ * the right tab after the list has scrolled, and a tab that becomes active out of view (from a
+ * link or another control) is scrolled into view within the list, never the page.
  *
  * ```tsx
  * <AnimatedTabs defaultValue="runs">
@@ -81,6 +90,8 @@ export function AnimatedTabsList({
   return (
     <Tabs.List
       aria-label={ariaLabel}
+      // The scroll container of the tabs: motion measures its scroll offset for the indicator.
+      render={<motion.div layoutScroll />}
       className={cn(
         "studio-glass relative isolate inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-xl p-1",
         className,
@@ -89,6 +100,30 @@ export function AnimatedTabsList({
       {children}
     </Tabs.List>
   );
+}
+
+/** Scrolls `list` sideways (never the page) so that `tab` is in view, with room beside it. */
+function scrollTabIntoView(tab: HTMLElement, list: HTMLElement, smooth: boolean): void {
+  if (list.scrollWidth <= list.clientWidth) {
+    return;
+  }
+  const start = tab.offsetLeft - SCROLL_MARGIN;
+  const end = tab.offsetLeft + tab.offsetWidth + SCROLL_MARGIN;
+  let left: number | null = null;
+  if (start < list.scrollLeft) {
+    left = start;
+  } else if (end > list.scrollLeft + list.clientWidth) {
+    left = end - list.clientWidth;
+  }
+  if (left === null) {
+    return;
+  }
+  const target = Math.max(0, Math.min(left, list.scrollWidth - list.clientWidth));
+  if (typeof list.scrollTo === "function") {
+    list.scrollTo({ left: target, behavior: smooth ? "smooth" : "auto" });
+  } else {
+    list.scrollLeft = target;
+  }
 }
 
 export function AnimatedTabsTab({
@@ -105,9 +140,20 @@ export function AnimatedTabsTab({
 }) {
   const context = use(AnimatedTabsContext);
   const active = context?.value === value;
+  const tab = useRef<HTMLElement>(null);
+  const reduced = useReducedMotionPreference();
+
+  useEffect(() => {
+    const element = tab.current;
+    const list = element?.parentElement;
+    if (active && element && list) {
+      scrollTabIntoView(element, list, !reduced);
+    }
+  }, [active, reduced]);
 
   return (
     <Tabs.Tab
+      ref={tab}
       value={value}
       data-stage={stage}
       className={cn(
