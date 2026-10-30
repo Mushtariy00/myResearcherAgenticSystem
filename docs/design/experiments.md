@@ -89,7 +89,16 @@ The only component that talks to Docker:
   - the dataset read-only;
   - the job's code (`ARP_DATA_DIR/jobs/<id>/code`) read-only;
   - a size-limited tmpfs for `/workspace/out`. It is a hard quota that WSL's ext4 can't give
-    a bind mount, and it is charged to the container's memory.
+    a bind mount. Use
+    `--tmpfs /workspace/out:rw,nosuid,nodev,size=512m,uid=10001,gid=10001,mode=0700`. Docker's
+    `--mount type=tmpfs` ignores the owner of the image's directory, which leaves the sandbox
+    user unable to write its results (found by `make sandbox-limits`).
+  - tmpfs contents count against the container's memory: a job that fills `/tmp` (1 GiB) and
+    its output (512 MiB) has that much less of its `--memory`. Size the memory for the model
+    plus both.
+- **Container lifecycle:** stop, kill and remove containers through the Docker API, never by
+  killing a client process. A `timeout` around `docker run` stops the client, and the
+  container keeps running.
 - **Queue:** claims the next job with `FOR UPDATE SKIP LOCKED`, at concurrency 1, after a
   VRAM preflight (`nvidia-smi`; it waits while another process holds the GPU).
 - **Live metrics:** the harness writes its metric records as JSON lines to stdout, and the
@@ -155,9 +164,15 @@ timeout is the job's limit plus the queue wait.
   - the harness loading generated modules;
   - the executor against a fake Docker API: claim, adopt or reap, cancel compare-and-set,
     timeout, the archive copy.
-- **Sandbox tests on this machine (`make sandbox-security`)**: a fork bomb stops at the PID
-  limit; a disk fill stops at the tmpfs limit and the read-only root; no network; no secrets;
-  writes outside the output folder fail.
+- **Limit checks on this machine (`make sandbox-limits`, 7 checks in about 6 s):**
+  - process count stops at the PID limit;
+  - writes stop at the output and /tmp quotas;
+  - the root is read-only;
+  - memory over the limit is killed while the host and the dev stack keep running;
+  - no DNS, HTTPS or raw TCP;
+  - no secret-like variables;
+  - uid 10001 with no capabilities, no_new_privs and seccomp.
+  Each check was also run with its limit weakened, to show it can fail.
 - **Live:**
   - a cancel during training ends within 5 s;
   - killing the worker or the executor mid-job resumes without a second container;

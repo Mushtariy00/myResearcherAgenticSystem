@@ -9,7 +9,7 @@ export ARP_UID := $(shell id -u)
 export ARP_GID := $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
+.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch sandbox-limits
 
 help: ## List targets
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -118,3 +118,6 @@ sandbox-smoke: ## Phase 0 spike: hardened GPU container trains 200 NYU2 steps
 
 sandbox-epoch: ## Phase 0 exit check: one full NYU2 epoch in the sandbox (slow)
 	bash scripts/sandbox-smoke.sh nyu2-epoch.yaml
+
+sandbox-limits: ## Phase 3: the training container's limits hold
+	bash scripts/sandbox-limits.sh
