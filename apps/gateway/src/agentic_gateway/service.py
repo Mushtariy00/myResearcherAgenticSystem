@@ -44,8 +44,13 @@ DEFAULT_MAX_OUTPUT_TOKENS = 2048
 CHARS_PER_TOKEN = 3.5  # conservative: overestimating tokens only makes the reservation larger
 DEFAULT_PAID_MODELS = ("google/gemini-2.5-flash", "openai/gpt-4.1-mini")
 # Free models change often; unlisted ones are skipped and the catalog fills in text models.
-DEFAULT_FREE_MODELS = ("google/gemma-4-31b-it:free", "nvidia/nemotron-3-ultra-550b-a55b:free")
+# Nemotron first: on 2026-10-30 Gemma answered empty or rate-limited on every live call.
+DEFAULT_FREE_MODELS = ("nvidia/nemotron-3-ultra-550b-a55b:free", "google/gemma-4-31b-it:free")
 PAID_MODELS_SETTING = "paid_models_enabled"
+# Passive model health (docs/PLAN.md: from real call outcomes, no probes). A model that answered
+# empty, or that its provider rate-limited, moves to the back of its chain for a while: each
+# free try spends a unit of the daily quota whether or not an answer comes back.
+EMPTY_ANSWER_COOLDOWN_SECONDS = 600.0
 # With less time than this left before the call's deadline no attempt starts: it would likely be
 # cut off, and a paid one billed all the same.
 MIN_ATTEMPT_SECONDS = 5.0
@@ -147,6 +152,8 @@ class Router:
         self._timeout = timeout  # one upstream attempt
         self._deadline = deadline  # the whole call, every attempt included
         self._lease = timedelta(seconds=lease_seconds)
+        # Model id -> monotonic time until which it goes last in its chain (this process only).
+        self._cooling: dict[str, float] = {}
 
     async def complete(self, req: CompletionRequest) -> CompletionResult:
         deadline = time.monotonic() + self._deadline
@@ -193,10 +200,13 @@ class Router:
                     break
                 except NoAnswerError as exc:
                     await self._settle_unanswered(call_id, exc)
+                    self._cool(info.id, EMPTY_ANSWER_COOLDOWN_SECONDS)
                     last_error = exc
                     continue
                 except (UpstreamError, UpstreamRateLimitError, FreeDailyLimitError) as exc:
                     await self._finish(call_id, LlmCallState.RELEASED, type(exc).__name__)
+                    if isinstance(exc, UpstreamRateLimitError):
+                        self._cool(info.id, exc.retry_after)
                     last_error = exc
                     continue
                 except AuthError as exc:
@@ -232,10 +242,13 @@ class Router:
                 continue
             except NoAnswerError as exc:
                 await self._finish(call_id, LlmCallState.RELEASED, exc.reason)
+                self._cool(info.id, EMPTY_ANSWER_COOLDOWN_SECONDS)
                 last_error = exc
                 continue
             except (UpstreamError, UpstreamRateLimitError) as exc:
                 await self._finish(call_id, LlmCallState.RELEASED, type(exc).__name__)
+                if isinstance(exc, UpstreamRateLimitError):
+                    self._cool(info.id, exc.retry_after)
                 last_error = exc
                 continue
             except (AccountBalanceError, KeyLimitError, AuthError, FreeDailyLimitError) as exc:
@@ -447,7 +460,18 @@ class Router:
         ):  # nothing preferred is listed: fall back to the catalog's free models
             extra = sorted((i for i in models.values() if fits(i)), key=lambda i: -i.context_length)
             chain = extra[:3]
-        return chain
+        return self._by_health(chain)
+
+    def _cool(self, model: str, seconds: float) -> None:
+        until = time.monotonic() + seconds
+        self._cooling[model] = max(self._cooling.get(model, 0.0), until)
+
+    def _by_health(self, chain: list[ModelInfo]) -> list[ModelInfo]:
+        """The chain with the models that failed lately at its back, each part in its order.
+        None is dropped: when every model is cooling, they are all still tried."""
+        now = time.monotonic()
+        cooling = {info.id for info in chain if self._cooling.get(info.id, 0.0) > now}
+        return [i for i in chain if i.id not in cooling] + [i for i in chain if i.id in cooling]
 
     # --- sweeper -------------------------------------------------------------------------
 

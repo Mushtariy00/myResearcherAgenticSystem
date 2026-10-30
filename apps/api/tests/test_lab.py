@@ -90,8 +90,8 @@ async def test_model_routing_shows_every_role_and_the_kill_switch(db: Factory) -
             },
         ]
         assert [(m["id"], m["free"], m["prompt_usd_per_mtok"]) for m in researcher["free"]] == [
-            ("google/gemma-4-31b-it:free", True, "0"),
             ("nvidia/nemotron-3-ultra-550b-a55b:free", True, "0"),
+            ("google/gemma-4-31b-it:free", True, "0"),
         ]
         assert all(role["paid"] == researcher["paid"] for role in routing["roles"])
 

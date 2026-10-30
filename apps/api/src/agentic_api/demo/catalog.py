@@ -12,7 +12,7 @@ from decimal import Decimal
 from agentic_api.schemas import AgentRole, RoleRoutingOut, RoutedModelOut
 
 DEFAULT_PAID_MODELS = ("google/gemini-2.5-flash", "openai/gpt-4.1-mini")
-DEFAULT_FREE_MODELS = ("google/gemma-4-31b-it:free", "nvidia/nemotron-3-ultra-550b-a55b:free")
+DEFAULT_FREE_MODELS = ("nvidia/nemotron-3-ultra-550b-a55b:free", "google/gemma-4-31b-it:free")
 AGENT_ROLES: tuple[AgentRole, ...] = (
     "researcher",
     "screener",

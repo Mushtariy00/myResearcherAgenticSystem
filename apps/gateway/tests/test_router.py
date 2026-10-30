@@ -24,6 +24,7 @@ from agentic_gateway.openrouter import (
 )
 from agentic_gateway.quota import FreeQuota, QuotaExhaustedError, QuotaUnavailableError
 from agentic_gateway.service import (
+    EMPTY_ANSWER_COOLDOWN_SECONDS,
     MIN_ATTEMPT_SECONDS,
     CallInProgressError,
     CompletionRequest,
@@ -396,6 +397,74 @@ async def test_free_chain_falls_over(router: Router, upstream: FakeOpenRouter) -
     result = await router.complete(request())
     assert result.model == FREE_B
     assert upstream.calls == [FREE_A, FREE_B]
+
+
+class FakeClock:
+    """The router's monotonic clock (only that module's: asyncio keeps the real one)."""
+
+    def __init__(self) -> None:
+        self.now = 1_000.0
+
+    def monotonic(self) -> float:
+        return self.now
+
+
+@pytest.fixture
+def clock(monkeypatch: pytest.MonkeyPatch) -> FakeClock:
+    fake = FakeClock()
+    monkeypatch.setattr("agentic_gateway.service.time", fake)
+    return fake
+
+
+async def test_a_model_that_answered_empty_goes_last_for_a_while(
+    router: Router, upstream: FakeOpenRouter, clock: FakeClock
+) -> None:
+    """Seen live: a free model answering empty every time cost a quota unit on every call."""
+    empty = {
+        "id": "gen-empty",
+        "model": FREE_A,
+        "choices": [{"message": {"content": ""}, "finish_reason": "stop"}],
+        "usage": {"prompt_tokens": 120, "completion_tokens": 0},
+    }
+    upstream.plan[FREE_A].append((200, empty))
+    assert (await router.complete(request("stage-1:call-1"))).model == FREE_B
+    assert (await router.complete(request("stage-1:call-2"))).model == FREE_B
+    assert upstream.calls == [FREE_A, FREE_B, FREE_B]  # the second call skipped it
+
+    clock.now += EMPTY_ANSWER_COOLDOWN_SECONDS + 1
+    assert (await router.complete(request("stage-1:call-3"))).model == FREE_A
+
+
+async def test_a_model_rate_limited_by_its_provider_waits_at_the_back(
+    router: Router, upstream: FakeOpenRouter, clock: FakeClock
+) -> None:
+    upstream.plan[FREE_A].append(
+        httpx.Response(
+            429, json={"error": {"code": 429, "message": "busy"}}, headers={"Retry-After": "30"}
+        )
+    )
+    assert (await router.complete(request("stage-1:call-1"))).model == FREE_B
+    assert (await router.complete(request("stage-1:call-2"))).model == FREE_B
+    clock.now += 31
+    assert (await router.complete(request("stage-1:call-3"))).model == FREE_A
+    assert upstream.calls == [FREE_A, FREE_B, FREE_B, FREE_A]
+
+
+async def test_cooling_models_are_still_tried_when_nothing_else_is_left(
+    router: Router, upstream: FakeOpenRouter, clock: FakeClock
+) -> None:
+    upstream.plan[FREE_A].append(OVERLOADED)  # not a cooling reason: plain upstream trouble
+    upstream.plan[FREE_B].append(
+        httpx.Response(
+            429, json={"error": {"code": 429, "message": "busy"}}, headers={"Retry-After": "30"}
+        )
+    )
+    with pytest.raises(UpstreamRateLimitError):
+        await router.complete(request("stage-1:call-1"))
+    # FREE_B cools, FREE_A doesn't: FREE_A first, FREE_B still behind it.
+    upstream.plan[FREE_A].append(OVERLOADED)
+    assert (await router.complete(request("stage-1:call-2"))).model == FREE_B
+    assert upstream.calls == [FREE_A, FREE_B, FREE_A, FREE_B]
 
 
 async def test_empty_lab_balance_stops_even_free_calls(
