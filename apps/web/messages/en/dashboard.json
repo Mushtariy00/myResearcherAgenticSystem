@@ -8,6 +8,7 @@
     "confidential": "Confidential",
     "noDescription": "No description",
     "createdAt": "Created {date}",
+    "resources": "GPU and spend",
     "create": {
       "open": "New project",
       "title": "New project",
@@ -17,6 +18,83 @@
       "descriptionPlaceholder": "What is this project about?",
       "submit": "Create project",
       "created": "Project “{name}” created."
+    },
+    "review": {
+      "title": "Needs your review",
+      "description": "Stage outputs waiting for a decision you can make.",
+      "empty": "Nothing is waiting for your review.",
+      "count": "{count, plural, one {# run waiting} other {# runs waiting}}",
+      "stageReady": "{stage} output to review",
+      "stageLoading": "Loading the stage…",
+      "outputReady": "Output to review",
+      "ready": "Ready {time}",
+      "review": "Review",
+      "reviewLabel": "Review “{topic}”"
+    },
+    "recentRuns": {
+      "title": "Recent runs",
+      "empty": "No runs yet",
+      "emptyDescription": "Runs started in your projects show up here.",
+      "caption": "The newest runs across your projects",
+      "columns": {
+        "topic": "Topic",
+        "project": "Project",
+        "status": "Status",
+        "stage": "Current stage",
+        "updated": "Updated"
+      },
+      "stageLoading": "Loading the stage…",
+      "finished": "Finished",
+      "noStage": "Not started yet"
+    },
+    "gpu": {
+      "title": "GPU",
+      "description": "The lab GPU and its job queue.",
+      "loading": "Loading the GPU queue…",
+      "utilization": "Load",
+      "memory": "Memory",
+      "memoryValue": "{used} of {total}",
+      "temperature": "Temperature",
+      "power": "Power",
+      "powerValue": "{draw} of {limit} W",
+      "running": "On the GPU",
+      "idle": "Nothing is running.",
+      "waiting": "Waiting ({count})",
+      "queueEmpty": "Nobody is waiting.",
+      "more": "and {count} more",
+      "position": "#{position}",
+      "otherProject": "A run in another project",
+      "someone": "Someone",
+      "yours": "Yours",
+      "epoch": "Epoch {epoch} of {total}",
+      "progress": "Progress",
+      "finishesIn": "About {duration} left",
+      "startsIn": "Starts in about {duration}",
+      "mine": {
+        "none": "You have no jobs on the GPU.",
+        "running": "Your job is on the GPU now.",
+        "queued": "Your job is number {position} in the queue.",
+        "limit": "Up to {limit} jobs per person can wait at a time; you have {count}."
+      }
+    },
+    "spend": {
+      "title": "My LLM spend",
+      "description": "Paid and free calls over the last {days} days.",
+      "loading": "Loading your spend…",
+      "paidSpend": "Spent on paid models in the last {days} days",
+      "noCalls": "No LLM calls in the last {days} days.",
+      "callsByTier": "Calls by tier",
+      "paidCalls": "Paid · {count, plural, one {# call} other {# calls}}",
+      "freeCalls": "Free · {count, plural, one {# call} other {# calls}}",
+      "noPaidSpend": "No paid spend in this period: every call used a free model.",
+      "chartTitle": "Paid spend per day",
+      "chartSummary": "Over {days} days you spent {total} on paid models, at most {max} on {date}.",
+      "dayValue": "{date}: {amount}",
+      "showTable": "Show the daily figures",
+      "day": "Day",
+      "paid": "Paid",
+      "budgetMonth": "Budget this month",
+      "budgetValue": "{spent} of {budget}"
     }
   }
 }

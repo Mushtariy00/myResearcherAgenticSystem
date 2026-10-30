@@ -1,1 +1,189 @@
-{}
+{
+  "wizard": {
+    "title": "New run",
+    "description": "Start the pipeline in {project}. You approve each stage before the next one starts.",
+    "backToProject": "Back to the project",
+    "notAllowed": "You are a viewer in this project: only owners and researchers can start runs.",
+    "started": "Run started.",
+    "back": "Back",
+    "next": "Next",
+    "toReview": "Review",
+    "start": "Start run",
+    "starting": "Starting…",
+    "cancel": "Cancel",
+    "stepper": {
+      "label": "Steps of the new run",
+      "step": "Step {current} of {total}",
+      "stepName": "Step {current} of {total}: {name}",
+      "hasError": "needs attention",
+      "done": "done"
+    },
+    "steps": {
+      "topic": {
+        "title": "Topic",
+        "description": "What should the run research? One clear sentence works best."
+      },
+      "literature": {
+        "title": "Literature",
+        "description": "Which papers the literature stage searches for and keeps."
+      },
+      "stages": {
+        "title": "Stages",
+        "description": "How far the pipeline goes, and the dataset for the experiment."
+      },
+      "budget": {
+        "title": "Models and budget",
+        "description": "Which LLMs the run may use, and the most it may spend."
+      },
+      "review": {
+        "title": "Review",
+        "description": "Check the options and the cost estimate, then start the run."
+      }
+    },
+    "topic": {
+      "label": "Research topic",
+      "placeholder": "e.g. Monocular depth estimation on NYU Depth V2",
+      "hint": "Press Enter to continue, Shift+Enter for a new line.",
+      "count": "{count} / {max}"
+    },
+    "literature": {
+      "years": "Publication years",
+      "yearFrom": "From",
+      "yearTo": "To",
+      "sources": "Sources",
+      "sourcesHint": "The search queries every source you tick.",
+      "maxPapers": "Papers to keep",
+      "maxPapersHint": "The most relevant papers are screened and analysed: between {min} and {max}."
+    },
+    "stages": {
+      "label": "Stop after",
+      "hint": "Stages always start with the literature and follow the pipeline in order.",
+      "stopAfter": "{stage}",
+      "descriptions": {
+        "literature": "Only the literature: screened papers, their analyses and a synthesis.",
+        "method": "Adds research proposals built on the literature, to choose from.",
+        "coding": "Adds the model and loss code for the chosen method, for review.",
+        "experiment": "Adds a GPU training run on the dataset, with metrics.",
+        "writing": "The whole pipeline: ends with a paper draft with linked citations."
+      },
+      "preview": "Stages of this run",
+      "included": "included",
+      "skipped": "not run"
+    },
+    "dataset": {
+      "label": "Dataset",
+      "none": "No dataset",
+      "loading": "Loading datasets…",
+      "hint": "The experiment trains and evaluates on this dataset (mounted read-only).",
+      "notUsed": "This run stops before the experiment, so it does not use a dataset.",
+      "option": "{name} ({version})",
+      "facts": "{samples} samples · {size} · {modality} · {license}",
+      "splits": "Splits: {splits}"
+    },
+    "budget": {
+      "policy": "LLM models",
+      "freeNotAllowed": "This project does not allow free models.",
+      "cap": "Cost cap for this run (USD, optional)",
+      "capPlaceholder": "No cap",
+      "capHint": "Paid calls stop at this amount; the run continues on free models.",
+      "capHintFree": "Free models cost nothing, so a cap only matters if you switch to Auto."
+    },
+    "review": {
+      "topic": "Topic",
+      "years": "Years",
+      "yearRange": "{from} to {to}",
+      "sources": "Sources",
+      "maxPapers": "Papers to keep",
+      "stages": "Stages",
+      "dataset": "Dataset",
+      "policy": "Models",
+      "cap": "Cost cap",
+      "noCap": "No cap",
+      "edit": "Edit {step}",
+      "editShort": "Edit"
+    },
+    "estimate": {
+      "title": "Estimated cost",
+      "unavailable": "Fix the highlighted options to see an estimate.",
+      "loading": "Estimating the cost…",
+      "failed": "The cost could not be estimated: {reason}",
+      "free": "Free",
+      "range": "{low} – {high}",
+      "expected": "about {amount} expected",
+      "calls": "about {expected} LLM calls ({low}–{high})",
+      "updating": "Updating the estimate…",
+      "stale": "These figures are for earlier options: the estimate could not be updated.",
+      "paidBlocked": {
+        "policy": "Free models only: this run does not spend money.",
+        "kill_switch": "Paid models are switched off for the lab right now, so the run uses free models.",
+        "budget": "Your budget for this month is used up, so the run uses free models.",
+        "run_cap": "The cost cap is zero, so the run uses free models only."
+      },
+      "cappedBy": {
+        "run_cap": "The high end stops at this run's cost cap; past it, the run continues on free models.",
+        "budget": "The high end stops at what is left of your budget this month."
+      },
+      "budgetRemaining": "You have {amount} of paid budget left this month.",
+      "note": "An estimate from typical runs, not a quote: you are charged what the run actually uses.",
+      "assumptions": {
+        "title": "Assumed calls per step",
+        "step": "Step",
+        "calls": "Calls",
+        "tokens": "Tokens per call",
+        "cost": "Cost",
+        "callsValue": "{low}–{high} (about {expected})",
+        "tokensValue": "{prompt} in, {completion} out"
+      },
+      "paidChain": "Paid models, in the order they are tried",
+      "price": "{prompt} in, {completion} out per million tokens",
+      "priceUnknown": "price not in the catalogue",
+      "roles": {
+        "researcher": "Search planning",
+        "screener": "Screening",
+        "analyst": "Paper analysis",
+        "methodologist": "Method design",
+        "coder": "Code",
+        "writer": "Writing"
+      }
+    },
+    "errors": {
+      "topic": {
+        "tooShort": "Describe the topic in at least {min} characters.",
+        "tooLong": "Keep the topic to {max} characters or fewer."
+      },
+      "year": {
+        "invalid": "Enter a year as a whole number.",
+        "outOfRange": "Choose a year between {min} and {max}.",
+        "order": "The first year must not be after the last one."
+      },
+      "sources": {
+        "empty": "Tick at least one source.",
+        "invalid": "One of the sources is not supported.",
+        "duplicate": "Each source can be chosen only once."
+      },
+      "maxPapers": {
+        "invalid": "Enter a whole number of papers.",
+        "outOfRange": "Choose between {min} and {max} papers."
+      },
+      "stages": {
+        "empty": "Choose at least the literature stage.",
+        "invalid": "One of the stages is not known.",
+        "notPrefix": "Stages must start with the literature and follow the pipeline order."
+      },
+      "dataset": {
+        "invalid": "Choose a dataset from the list."
+      },
+      "llmPolicy": {
+        "invalid": "Choose which models the run may use."
+      },
+      "budget": {
+        "invalid": "Enter the cap as an amount in US dollars, e.g. 2.50.",
+        "negative": "The cap cannot be below {min}.",
+        "tooHigh": "The cap can be at most {max} USD."
+      },
+      "server": {
+        "rejected": "The server did not accept this value. Check it and try again."
+      }
+    }
+  }
+}

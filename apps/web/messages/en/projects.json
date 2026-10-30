@@ -4,6 +4,13 @@
     "back": "All projects",
     "confidential": "Confidential: only providers that keep no data are used, so fewer free models are available.",
     "viewerNotice": "You are a viewer in this project: you can follow its runs but not start them.",
+    "tabs": {
+      "label": "Project sections",
+      "runs": "Runs",
+      "papers": "Papers",
+      "members": "Members",
+      "settings": "Settings"
+    },
     "newRun": {
       "title": "New run",
       "description": "Start the pipeline on a research topic. You approve each stage before the next one starts.",
@@ -30,22 +37,39 @@
     "runs": {
       "title": "Runs",
       "empty": "No runs yet.",
+      "emptyDescription": "Start the pipeline on a research topic; you approve each stage before the next one.",
+      "newRun": "New run",
       "topic": "Topic",
       "status": "Status",
       "policy": "Models",
       "cap": "Cost cap",
       "created": "Started",
-      "noCap": "None"
+      "updated": "Updated",
+      "noCap": "None",
+      "caption": "Runs of this project",
+      "search": "Search topics",
+      "searchPlaceholder": "Words in the topic",
+      "statusFilter": "Status",
+      "allStatuses": "All statuses ({count})",
+      "statusOption": "{status} ({count})",
+      "clearFilters": "Clear filters",
+      "shown": "{shown} of {total, plural, one {# run} other {# runs}}",
+      "noMatches": "No runs match these filters."
     },
     "members": {
       "title": "Members",
       "description": "People who can see this project.",
       "descriptionOwner": "Add people with the email they were invited with.",
+      "descriptionManage": "Change roles, remove people, or add someone by the email they were invited with.",
       "empty": "No members yet.",
+      "readOnly": "Only project owners and lab admins can change who is in this project.",
+      "you": "you",
       "addTitle": "Add a member",
+      "addDescription": "They need an account first: a lab admin invites people to the lab.",
       "email": "Email",
       "emailPlaceholder": "name@lab.example",
       "role": "Role",
+      "roleOf": "Role of {name}",
       "roleHints": {
         "owner": "Manages members and can approve any run.",
         "researcher": "Starts runs and approves their own.",
@@ -53,7 +77,71 @@
       },
       "add": "Add member",
       "adding": "Adding…",
-      "added": "{name} can now open this project."
+      "added": "{name} can now open this project.",
+      "roleChanged": "{name} is now: {role}.",
+      "lastOwner": "A project needs at least one owner. Make someone else an owner first.",
+      "removeLabel": "Remove {name}",
+      "removeTitle": "Remove {name}?",
+      "removeDescription": "They will no longer see this project or its runs. Runs they started stay in the project.",
+      "removeConfirm": "Remove",
+      "removed": "{name} was removed from this project.",
+      "keep": "Keep",
+      "leave": "Leave this project",
+      "leaveTitle": "Leave this project?",
+      "leaveDescription": "You will no longer see this project. An owner can add you again later.",
+      "leaveConfirm": "Leave",
+      "left": "You left the project.",
+      "stepDownTitle": "Change your own role to {role}?",
+      "stepDownDescription": "You will no longer be able to manage members or settings of this project.",
+      "stepDownConfirm": "Change my role",
+      "keepOwner": "Stay owner"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "How runs in this project use models and approvals.",
+      "descriptionReadOnly": "How runs in this project use models and approvals.",
+      "readOnly": "Only project owners and lab admins can change these settings.",
+      "privacy": {
+        "label": "Privacy",
+        "standard": {
+          "label": "Standard",
+          "description": "Any approved provider can be used, including free models that may keep prompts."
+        },
+        "confidential": {
+          "label": "Confidential",
+          "description": "Only providers that keep no data are used, so fewer free models are available."
+        }
+      },
+      "allowFreeModels": {
+        "label": "Allow free models",
+        "description": "Runs may use free models when paid ones are not available or not wanted."
+      },
+      "autoApprove": {
+        "label": "Approve stages automatically",
+        "description": "Stage outputs are approved as soon as they are ready, without waiting for a person.",
+        "codingNote": "The coding stage is never approved automatically: a person always reviews generated code."
+      },
+      "expiry": {
+        "label": "Approval expiry",
+        "unit": "days",
+        "hint": "An output nobody decides on within this many days ({min} to {max}) cancels its run."
+      },
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Settings saved.",
+      "discard": "Discard changes",
+      "errors": {
+        "privacy": {
+          "invalid": "Choose a privacy level."
+        },
+        "value": {
+          "invalid": "This value is not valid."
+        },
+        "approvalExpiryDays": {
+          "invalid": "Enter a whole number of days between {min} and {max}.",
+          "outOfRange": "Choose between {min} and {max} days."
+        }
+      }
     }
   },
   "budget": {

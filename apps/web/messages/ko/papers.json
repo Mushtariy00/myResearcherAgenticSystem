@@ -1,1 +1,69 @@
-{}
+{
+  "papers": {
+    "title": "논문 라이브러리",
+    "description": "내 프로젝트의 실행이 찾은 모든 논문과 그 분석, PDF를 모아 봅니다.",
+    "filters": {
+      "label": "논문 검색",
+      "search": "논문 검색",
+      "searchPlaceholder": "제목, 초록, 저자 또는 학회·저널",
+      "yearFrom": "시작 연도",
+      "yearTo": "끝 연도",
+      "decision": "선별 결과",
+      "anyDecision": "모든 선별 결과",
+      "source": "출처",
+      "anySource": "모든 출처",
+      "clear": "필터 지우기",
+      "yearRangeInvalid": "{min}년에서 {max}년 사이로 입력하고, 시작 연도가 끝 연도보다 늦지 않게 하세요."
+    },
+    "results": {
+      "none": "논문 없음",
+      "range": "전체 {total}편 중 {from}–{to}",
+      "searching": "검색하는 중…",
+      "caption": "라이브러리의 논문",
+      "noMatches": "검색 조건에 맞는 논문이 없습니다.",
+      "emptyProject": "아직 논문이 없습니다. 실행의 문헌 단계에서 논문을 찾으면 여기에 표시됩니다.",
+      "emptyLibrary": "아직 논문이 없습니다. 내 프로젝트의 실행이 문헌을 검색하면 여기에 표시됩니다."
+    },
+    "pagination": {
+      "label": "결과 페이지",
+      "page": "{count}페이지 중 {page}페이지",
+      "previous": "이전",
+      "next": "다음"
+    },
+    "sheet": {
+      "title": "논문",
+      "loading": "논문을 불러오는 중…",
+      "openPage": "논문 페이지 열기"
+    },
+    "detail": {
+      "title": "논문",
+      "back": "논문 라이브러리",
+      "opensInNewTab": "(새 탭에서 열림)",
+      "details": "정보",
+      "authors": "저자",
+      "year": "연도",
+      "venue": "학회·저널",
+      "doi": "DOI",
+      "arxiv": "arXiv",
+      "link": "링크",
+      "citations": "인용 수",
+      "source": "찾은 곳",
+      "pdf": "PDF",
+      "bestRelevance": "최고 관련성",
+      "id": "논문 ID",
+      "copyId": "논문 ID 복사",
+      "abstract": "초록",
+      "noAbstract": "이 논문에는 기록된 초록이 없습니다.",
+      "analyses": "분석 ({count})",
+      "noAnalyses": "아직 이 논문을 분석한 실행이 없습니다.",
+      "analysisFrom": "‘{topic}’의 분석",
+      "analysisFromOtherRun": "열 수 없는 실행의 분석",
+      "attempt": "{attempt}번째 시도",
+      "runs": "이 논문을 찾은 실행 ({count})",
+      "noRuns": "내가 열 수 있는 실행 중에는 이 논문을 찾은 실행이 없습니다.",
+      "relevance": "관련성 {value}",
+      "pdfTitle": "PDF",
+      "noPdf": "이 논문의 PDF가 없습니다."
+    }
+  }
+}

@@ -1,1 +1,69 @@
-{}
+{
+  "papers": {
+    "title": "Paper library",
+    "description": "Every paper the runs of your projects have found, with their analyses and PDFs.",
+    "filters": {
+      "label": "Search the papers",
+      "search": "Search papers",
+      "searchPlaceholder": "Title, abstract, author or venue",
+      "yearFrom": "From year",
+      "yearTo": "To year",
+      "decision": "Screening",
+      "anyDecision": "Any decision",
+      "source": "Source",
+      "anySource": "Any source",
+      "clear": "Clear filters",
+      "yearRangeInvalid": "Enter years from {min} to {max}, with the first not after the second."
+    },
+    "results": {
+      "none": "No papers",
+      "range": "{from}–{to} of {total, plural, one {# paper} other {# papers}}",
+      "searching": "Searching…",
+      "caption": "Papers in the library",
+      "noMatches": "No papers match this search.",
+      "emptyProject": "No papers yet: they appear once a run's literature stage has found some.",
+      "emptyLibrary": "No papers yet: they appear once a run in one of your projects has searched the literature."
+    },
+    "pagination": {
+      "label": "Pages of results",
+      "page": "Page {page} of {count}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "sheet": {
+      "title": "Paper",
+      "loading": "Loading the paper…",
+      "openPage": "Open the paper's page"
+    },
+    "detail": {
+      "title": "Paper",
+      "back": "Paper library",
+      "opensInNewTab": "(opens in a new tab)",
+      "details": "Details",
+      "authors": "Authors",
+      "year": "Year",
+      "venue": "Venue",
+      "doi": "DOI",
+      "arxiv": "arXiv",
+      "link": "Link",
+      "citations": "Citations",
+      "source": "Found through",
+      "pdf": "PDF",
+      "bestRelevance": "Best relevance",
+      "id": "Paper id",
+      "copyId": "Copy the paper id",
+      "abstract": "Abstract",
+      "noAbstract": "No abstract was recorded for this paper.",
+      "analyses": "Analyses ({count})",
+      "noAnalyses": "No run has analysed this paper yet.",
+      "analysisFrom": "From “{topic}”",
+      "analysisFromOtherRun": "From a run you cannot open",
+      "attempt": "attempt {attempt}",
+      "runs": "Runs that found it ({count})",
+      "noRuns": "No run you can open found this paper.",
+      "relevance": "relevance {value}",
+      "pdfTitle": "PDF",
+      "noPdf": "No PDF is available for this paper."
+    }
+  }
+}

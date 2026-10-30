@@ -8,6 +8,7 @@
     "confidential": "기밀",
     "noDescription": "설명 없음",
     "createdAt": "{date} 생성",
+    "resources": "GPU와 사용액",
     "create": {
       "open": "새 프로젝트",
       "title": "새 프로젝트",
@@ -17,6 +18,83 @@
       "descriptionPlaceholder": "어떤 연구를 하는 프로젝트인가요?",
       "submit": "프로젝트 만들기",
       "created": "‘{name}’ 프로젝트를 만들었습니다."
+    },
+    "review": {
+      "title": "검토가 필요한 실행",
+      "description": "내가 결정할 수 있는, 승인을 기다리는 단계 결과입니다.",
+      "empty": "검토를 기다리는 실행이 없습니다.",
+      "count": "{count, plural, other {#건 대기 중}}",
+      "stageReady": "{stage} 결과 검토 대기",
+      "stageLoading": "단계를 불러오는 중…",
+      "outputReady": "결과 검토 대기",
+      "ready": "{time} 준비됨",
+      "review": "검토하기",
+      "reviewLabel": "‘{topic}’ 검토하기"
+    },
+    "recentRuns": {
+      "title": "최근 실행",
+      "empty": "아직 실행이 없습니다",
+      "emptyDescription": "내 프로젝트에서 시작한 실행이 여기에 표시됩니다.",
+      "caption": "내 프로젝트 전체의 최근 실행",
+      "columns": {
+        "topic": "주제",
+        "project": "프로젝트",
+        "status": "상태",
+        "stage": "현재 단계",
+        "updated": "업데이트"
+      },
+      "stageLoading": "단계를 불러오는 중…",
+      "finished": "종료됨",
+      "noStage": "아직 시작 전"
+    },
+    "gpu": {
+      "title": "GPU",
+      "description": "연구실 GPU와 작업 대기열입니다.",
+      "loading": "GPU 대기열을 불러오는 중…",
+      "utilization": "사용률",
+      "memory": "메모리",
+      "memoryValue": "{used} / {total}",
+      "temperature": "온도",
+      "power": "전력",
+      "powerValue": "{draw} / {limit} W",
+      "running": "GPU에서 실행 중",
+      "idle": "실행 중인 작업이 없습니다.",
+      "waiting": "대기 중 ({count})",
+      "queueEmpty": "기다리는 작업이 없습니다.",
+      "more": "외 {count}건",
+      "position": "{position}번",
+      "otherProject": "다른 프로젝트의 실행",
+      "someone": "다른 사용자",
+      "yours": "내 작업",
+      "epoch": "에폭 {epoch}/{total}",
+      "progress": "진행률",
+      "finishesIn": "약 {duration} 남음",
+      "startsIn": "약 {duration} 후 시작",
+      "mine": {
+        "none": "GPU에 올린 내 작업이 없습니다.",
+        "running": "내 작업이 지금 GPU에서 실행 중입니다.",
+        "queued": "내 작업은 대기열에서 {position}번째입니다.",
+        "limit": "한 사람당 최대 {limit}개의 작업을 대기열에 올릴 수 있으며, 지금 {count}개를 올렸습니다."
+      }
+    },
+    "spend": {
+      "title": "내 LLM 사용액",
+      "description": "최근 {days}일 동안의 유료·무료 호출입니다.",
+      "loading": "사용액을 불러오는 중…",
+      "paidSpend": "최근 {days}일 동안 유료 모델에 쓴 금액",
+      "noCalls": "최근 {days}일 동안 LLM 호출이 없습니다.",
+      "callsByTier": "요금제별 호출",
+      "paidCalls": "유료 · {count, plural, other {#회}}",
+      "freeCalls": "무료 · {count, plural, other {#회}}",
+      "noPaidSpend": "이 기간에는 유료 사용액이 없습니다. 모든 호출에 무료 모델을 썼습니다.",
+      "chartTitle": "일별 유료 사용액",
+      "chartSummary": "{days}일 동안 유료 모델 사용액은 모두 {total}이며, 가장 많이 쓴 날은 {date}({max})입니다.",
+      "dayValue": "{date}: {amount}",
+      "showTable": "일별 금액 보기",
+      "day": "날짜",
+      "paid": "유료",
+      "budgetMonth": "이번 달 예산",
+      "budgetValue": "{spent} / {budget}"
     }
   }
 }

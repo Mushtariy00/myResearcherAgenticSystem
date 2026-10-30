@@ -9,5 +9,6 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <ProjectView projectId={id} />;
+  // Keyed so another project opens on its own tab and filters.
+  return <ProjectView key={id} projectId={id} />;
 }
