@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir --break-system-packages -r /opt/harness/requireme
 
 COPY harness /opt/harness/harness
 COPY configs /opt/harness/configs
+COPY examples /opt/harness/examples
 
 # Unprivileged runtime user. /workspace/out is pre-created so a fresh named volume inherits its owner.
 RUN groupadd --system --gid 10001 sandbox \

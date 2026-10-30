@@ -1,0 +1,23 @@
+# Dry-run-sized generated job: Model (and Loss) come from /job/code, which the executor mounts
+# read-only. scripts/sandbox-smoke.sh runs this with --dry-run against the examples/ directories.
+task: nyu2_depth
+seed: 42
+require_gpu: true
+model:
+  architecture: generated
+  code_dir: /job/code
+  kwargs:
+    base_channels: 16
+data:
+  dataset: nyu2
+  root: /data/nyu2
+  split_file_template: "{root}/splits/nyu/{split}.txt"
+  batch_size: 2
+  num_workers: 2
+training:
+  loss: generated
+  epochs: 1
+  learning_rate: 0.001
+  optimizer: adam
+  max_train_steps: 2
+  max_val_steps: 2

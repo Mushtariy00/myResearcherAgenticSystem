@@ -15,6 +15,8 @@ class _Strict(BaseModel):
 class ModelSection(_Strict):
     architecture: str = Field(min_length=1)
     kwargs: dict[str, int | float | str | bool] = Field(default_factory=dict)
+    # For architecture "generated": the read-only mount with model.py (and optionally loss.py).
+    code_dir: Path = Path("/job/code")
 
 
 class DataSection(_Strict):
@@ -28,7 +30,7 @@ class DataSection(_Strict):
 
 
 class TrainingSection(_Strict):
-    loss: Literal["l1", "mse", "smooth_l1"] = "l1"
+    loss: Literal["l1", "mse", "smooth_l1", "generated"] = "l1"
     epochs: int = Field(ge=1, le=50)
     learning_rate: float = Field(gt=0, le=1.0)
     optimizer: Literal["adam", "adamw", "sgd"] = "adam"
