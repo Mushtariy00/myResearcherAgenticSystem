@@ -1,15 +1,18 @@
 """The run workflow with demo stages: stage selection, retries, approve with edits, project
-settings and runs started on Phase 1 code (time-skipping Temporal server, real database)."""
+settings and runs started on older code (time-skipping Temporal server, real database)."""
 
+import asyncio
 import copy
 import dataclasses
 import uuid
 from collections.abc import AsyncIterator
+from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any
 
 import pytest
 from phase1_workflow import Phase1RunWorkflow
+from settings_workflow import SettingsRunWorkflow
 from sqlalchemy import select
 from temporalio.client import Client, WorkflowUpdateFailedError
 from temporalio.exceptions import ApplicationError
@@ -28,18 +31,36 @@ from agentic_core.schemas import (
     WritingOutput,
     validate_stage_output,
 )
-from agentic_db.models import Approval, RunEvent, StageOutput, StageRun
+from agentic_db.models import Approval, Run, RunEvent, StageOutput, StageRun
 from agentic_worker.activities import StageActivities
+from agentic_worker.gateway_llm import GatewayRateLimitedError, GatewayUnavailableError
 from agentic_worker.outputs import content_sha256
-from agentic_worker.stages import PipelineStageRunner
-from agentic_worker.types import DecisionRecordIn, RunPrepareIn, StageExecIn
+from agentic_worker.stages import (
+    PipelineStageRunner,
+    PlannedSearch,
+    StageContext,
+    StageOutcome,
+)
+from agentic_worker.types import (
+    DecisionRecordIn,
+    FinishIn,
+    RunPrepareIn,
+    RunResumeIn,
+    StageExecIn,
+    StageStartIn,
+    StageWaitIn,
+)
 from agentic_worker.workflows import AUTO_APPROVE_ACTOR, RunWorkflow
 from worker_testkit import (
+    HEARTBEAT_THROTTLE,
     Factory,
     FakePlanner,
     FakeValkey,
+    HangingValkey,
     awaiting,
     create_run,
+    retry_run,
+    run_events,
     run_status,
     start_run,
 )
@@ -66,7 +87,11 @@ def activities(db: Factory, planner: FakePlanner) -> StageActivities:
 @pytest.fixture
 async def client(env: WorkflowEnvironment, activities: StageActivities) -> AsyncIterator[Client]:
     async with Worker(
-        env.client, task_queue=TASK_QUEUE, workflows=[RunWorkflow], activities=activities.all()
+        env.client,
+        task_queue=TASK_QUEUE,
+        workflows=[RunWorkflow],
+        activities=activities.all(),
+        max_heartbeat_throttle_interval=HEARTBEAT_THROTTLE,
     ):
         yield env.client
 
@@ -79,16 +104,6 @@ async def stage_runs(db: Factory, run_id: str) -> list[tuple[str, int, StageStat
             .order_by(StageRun.started_at, StageRun.attempt)
         )
         return [(row.stage, row.attempt, StageStatus(row.status)) for row in rows]
-
-
-async def run_events(db: Factory, run_id: str, event_type: str) -> list[dict[str, Any]]:
-    async with db() as session:
-        rows = await session.scalars(
-            select(RunEvent)
-            .where(RunEvent.run_id == uuid.UUID(run_id), RunEvent.type == event_type)
-            .order_by(RunEvent.seq)
-        )
-        return [row.payload for row in rows]
 
 
 async def output_data(db: Factory, stage_output_id: str) -> dict[str, Any]:
@@ -218,7 +233,7 @@ async def test_an_invalid_stored_config_fails_the_run_with_a_code(
     run_id = await create_run(db, config={"stages": ["method"]})
     handle = await start_run(client, run_id)
     assert await handle.result() == "failed"
-    assert await run_status(db, run_id) == (RunStatus.FAILED, "run.invalid_config")
+    assert await run_status(db, run_id) == (RunStatus.FAILED, "stage.error")
 
 
 async def test_retry_keeps_earlier_approvals_and_invalidates_later_stages(
@@ -233,7 +248,7 @@ async def test_retry_keeps_earlier_approvals_and_invalidates_later_stages(
     assert await first.result() == "completed"
     method_output = (await approved_output_ids(db, run_id))["method"]
 
-    retry = await start_run(client, run_id, start_stage="coding")
+    retry = await retry_run(client, db, run_id, "coding")
     coding = await awaiting(retry, db, "coding")
     assert await run_status(db, run_id) == (RunStatus.AWAITING_APPROVAL, None)
     assert await stage_runs(db, run_id) == [
@@ -275,7 +290,7 @@ async def test_retry_restarts_at_the_first_stage_without_an_approval(
     failures = await run_events(db, run_id, "stage.failed")
     assert failures == [{"stage": "literature", "attempt": 1, "error": "literature.invalid_output"}]
 
-    retry = await start_run(client, run_id, start_stage="method")
+    retry = await retry_run(client, db, run_id, "method")
     await awaiting(retry, db, "literature")
     retried = await run_events(db, run_id, "run.retried")
     assert [(e["stage"], e["requested_stage"]) for e in retried] == [("literature", "method")]
@@ -292,9 +307,9 @@ async def test_retry_from_a_stage_outside_the_config_fails(client: Client, db: F
     first = await start_run(client, run_id)
     await approve_all(first, db, ("literature",))
     assert await first.result() == "completed"
-    retry = await start_run(client, run_id, start_stage="writing")
+    retry = await retry_run(client, db, run_id, "writing")
     assert await retry.result() == "failed"
-    assert await run_status(db, run_id) == (RunStatus.FAILED, "retry.invalid_stage")
+    assert await run_status(db, run_id) == (RunStatus.FAILED, "stage.error")
 
 
 async def test_approve_with_edits_approves_a_new_version_that_later_stages_use(
@@ -420,11 +435,44 @@ async def test_runs_started_on_phase1_code_continue_on_the_new_code(
     assert [e["automatic"] for e in decided] == [False] * 5
 
 
+async def test_runs_started_before_stage_waits_continue_on_the_new_code(
+    env: WorkflowEnvironment, db: Factory, activities: StageActivities
+) -> None:
+    run_id = await create_run(db)
+    async with Worker(
+        env.client,
+        task_queue=TASK_QUEUE,
+        workflows=[SettingsRunWorkflow],
+        activities=activities.all(),
+        max_cached_workflows=0,
+    ):
+        handle = await start_run(env.client, run_id)
+        literature = await awaiting(handle, db, "literature")
+    await Replayer(workflows=[RunWorkflow]).replay_workflow(await handle.fetch_history())
+
+    async with Worker(
+        env.client, task_queue=TASK_QUEUE, workflows=[RunWorkflow], activities=activities.all()
+    ):
+        changes = dataclasses.replace(literature, decision="request_changes", comment="Fewer")
+        await handle.execute_update(DECIDE_UPDATE, changes)
+        await approve_all(handle, db)
+        assert await handle.result() == "completed"
+    await Replayer(workflows=[RunWorkflow]).replay_workflow(await handle.fetch_history())
+    async with db() as session:
+        caps = await session.execute(
+            select(StageRun.attempt, StageRun.last_attempt)
+            .where(StageRun.stage == "literature")
+            .order_by(StageRun.attempt)
+        )
+        # The old code started attempt 1; the new code records the cap of attempt 2.
+        assert [tuple(row) for row in caps] == [(1, None), (2, 3)]
+
+
 # --- activities under retries ---------------------------------------------------------------
 
 
 async def test_prepare_run_records_a_retry_once(db: Factory, activities: StageActivities) -> None:
-    run_id = await create_run(db, status=RunStatus.FAILED)
+    run_id = await create_run(db, status=RunStatus.RUNNING)  # the API marks a retry running
     async with db() as session:
         session.add(
             StageRun(run_id=uuid.UUID(run_id), stage="literature", status=StageStatus.FAILED)
@@ -454,18 +502,151 @@ async def test_execute_stage_reuses_a_committed_output_on_retry(
         assert len((await session.scalars(select(StageOutput))).all()) == 1
 
 
-async def test_a_stage_finishing_after_a_cancel_does_not_reopen_the_run(
-    db: Factory, activities: StageActivities
-) -> None:
-    run_id = await create_run(db, status=RunStatus.CANCELLED)
+async def test_a_stage_finishing_after_a_cancel_does_not_reopen_the_run(db: Factory) -> None:
+    run_id = await create_run(db, status=RunStatus.RUNNING)
     stage_run_id = await add_stage_run(db, run_id, "literature")
+
+    class CancelledMeanwhile:
+        async def run(self, ctx: StageContext) -> StageOutcome:
+            async with db() as session:
+                run = await session.get(Run, uuid.UUID(run_id))
+                assert run is not None
+                run.status = RunStatus.CANCELLED
+                await session.commit()
+            return StageOutcome(data={"stage": ctx.stage})
+
+    activities = StageActivities(db, FakeValkey(), CancelledMeanwhile())
     request = StageExecIn(run_id=run_id, stage_run_id=stage_run_id, stage="literature", attempt=1)
     with pytest.raises(ApplicationError, match=r"run\.closed"):
         await ActivityEnvironment().run(activities.execute_stage, request)
     assert await run_status(db, run_id) == (RunStatus.CANCELLED, None)
-    assert await run_events(db, run_id, "log") == []
     async with db() as session:
         assert (await session.scalars(select(StageOutput))).all() == []
+
+
+async def test_a_closed_run_is_never_changed_again(
+    db: Factory, activities: StageActivities, planner: FakePlanner
+) -> None:
+    """A cancel can close the run while an older activity still runs; that one changes nothing."""
+    run_id, stage_run_id, output = await method_awaiting_review(db)
+    async with db() as session:
+        run = await session.get(Run, uuid.UUID(run_id))
+        assert run is not None
+        run.status = RunStatus.CANCELLED
+        await session.commit()
+    environment = ActivityEnvironment()
+    with pytest.raises(ApplicationError, match=r"run\.closed"):
+        await environment.run(
+            activities.prepare_run, RunPrepareIn(run_id=run_id, start_stage="method")
+        )
+    with pytest.raises(ApplicationError, match=r"run\.closed"):
+        await activities.start_stage(StageStartIn(run_id=run_id, stage="method", attempt=2))
+    with pytest.raises(ApplicationError, match=r"run\.closed"):
+        await environment.run(
+            activities.execute_stage,
+            StageExecIn(run_id=run_id, stage_run_id=stage_run_id, stage="method", attempt=1),
+        )
+    with pytest.raises(ApplicationError, match=r"run\.closed"):
+        await activities.stage_waiting(
+            StageWaitIn(
+                run_id=run_id,
+                stage="method",
+                attempt=1,
+                reason="lab_balance.exhausted",
+                retry_at="2026-10-30T12:15:00+00:00",
+                pause=True,
+            )
+        )
+    with pytest.raises(ApplicationError, match=r"run\.closed"):
+        await activities.resume_run(RunResumeIn(run_id=run_id))
+    decision = DecisionInput(
+        stage="method",
+        stage_output_id=str(output.id),
+        sha256=output.sha256,
+        decision="approve",
+        actor_id="alice",
+    )
+    with pytest.raises(ApplicationError, match=r"run\.closed"):
+        await activities.record_decision(
+            DecisionRecordIn(run_id=run_id, stage_run_id=stage_run_id, decision=decision)
+        )
+    await activities.finish_run(FinishIn(run_id=run_id, status="failed", error="stage.error"))
+
+    assert await run_status(db, run_id) == (RunStatus.CANCELLED, None)
+    assert await stage_runs(db, run_id) == [("method", 1, StageStatus.OUTPUT_READY)]
+    assert planner.seen == []
+    async with db() as session:
+        assert (await session.scalars(select(Approval))).all() == []
+        assert (await session.scalars(select(RunEvent))).all() == []
+
+
+@dataclass
+class CallingPlanner:
+    """Reports its gateway call as it arrives, like CrewAIPlanner; fails while there are errors."""
+
+    errors: list[BaseException]
+    seen: list[StageContext] = field(default_factory=list)
+
+    async def plan(self, ctx: StageContext) -> PlannedSearch:
+        self.seen.append(ctx)
+        call = {
+            "model": "paid/a",
+            "tier": "paid",
+            "cost_usd": "0.002",
+            "replayed": len(self.seen) > 1,  # a rerun of the attempt replays its first call
+            "idempotency_key": f"{ctx.stage_run_id}:call-1",
+        }
+        ctx.llm_calls.append(call)
+        if self.errors:
+            raise self.errors.pop(0)
+        plan = demo.research_plan(ctx.topic, 1, config=ctx.config)
+        return PlannedSearch(plan=plan, model="paid/a", llm_calls=[call])
+
+
+async def test_calls_of_an_unsuccessful_attempt_are_recorded_once(db: Factory) -> None:
+    planner = CallingPlanner(
+        errors=[
+            GatewayUnavailableError("HTTP 502"),
+            GatewayRateLimitedError(90, "call.in_progress"),
+        ]
+    )
+    activities = StageActivities(
+        db, FakeValkey(), PipelineStageRunner(planner, demo_stage_seconds=0)
+    )
+    run_id = await create_run(db, status=RunStatus.RUNNING)
+    stage_run_id = await add_stage_run(db, run_id, "literature")
+    request = StageExecIn(run_id=run_id, stage_run_id=stage_run_id, stage="literature", attempt=1)
+    environment = ActivityEnvironment()
+    recorded = [(f"{stage_run_id}:call-1", "0.002")]
+    with pytest.raises(ApplicationError) as gateway:
+        await environment.run(activities.execute_stage, request)
+    assert (gateway.value.type, gateway.value.message) == ("GatewayError", "gateway.error")
+    assert not gateway.value.non_retryable
+    calls = await run_events(db, run_id, "llm.call")
+    assert [(c["idempotency_key"], c["cost_usd"]) for c in calls] == recorded
+
+    with pytest.raises(ApplicationError) as limited:
+        await environment.run(activities.execute_stage, request)
+    assert (limited.value.type, limited.value.message) == ("RateLimited", "call.in_progress")
+    assert limited.value.next_retry_delay == timedelta(seconds=90)
+    await environment.run(activities.execute_stage, request)
+    calls = await run_events(db, run_id, "llm.call")
+    assert [(c["idempotency_key"], c["cost_usd"]) for c in calls] == recorded  # replays: once
+    assert all(ctx.cancelled.is_set() for ctx in planner.seen[:2])  # the attempts that ended
+
+
+async def test_a_stuck_valkey_does_not_stall_an_activity(
+    db: Factory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("agentic_worker.activities.WAKE_TIMEOUT_SECONDS", 0.05)
+    runner = PipelineStageRunner(FakePlanner(), demo_stage_seconds=0)
+    activities = StageActivities(db, HangingValkey(), runner)
+    run_id = await create_run(db)
+    start = StageStartIn(run_id=run_id, stage="literature", attempt=1, last_attempt=3)
+    started = await asyncio.wait_for(activities.start_stage(start), timeout=10)
+    async with db() as session:
+        stage_run = await session.get(StageRun, uuid.UUID(started.stage_run_id))
+    assert stage_run is not None and stage_run.last_attempt == 3
 
 
 async def test_record_decision_stores_an_edit_once_under_retries(

@@ -19,7 +19,7 @@ def stage_started(stage: str, attempt: int) -> Event:
 
 
 def run_status(status: RunStatus) -> Event:
-    """The run moved between running and awaiting approval."""
+    """The run moved between running and awaiting approval, or ran again after a pause."""
     return EventType.RUN_STATUS, {"status": status.value}
 
 
@@ -29,14 +29,35 @@ def run_finished(status: RunStatus, error: str | None) -> Event:
 
 
 def llm_call(stage: str, call: Mapping[str, Any]) -> Event:
-    """One gateway answer, as GatewayLLM recorded it."""
-    return EventType.LLM_CALL, {
+    """One gateway answer, as GatewayLLM recorded it.
+
+    ``idempotency_key`` (``<stage run id>:call-<n>``) identifies the call, so an attempt that
+    runs again records its replayed calls only once.
+    """
+    payload = {
         "stage": stage,
         "model": call.get("model"),
         "tier": call.get("tier"),
         "cost_usd": str(call.get("cost_usd")),
         "switched_to_free": call.get("switched_to_free", False),
         "replayed": call.get("replayed", False),
+    }
+    if call.get("idempotency_key"):
+        payload["idempotency_key"] = call["idempotency_key"]
+    return EventType.LLM_CALL, payload
+
+
+def stage_waiting(stage: str, attempt: int, reason: str, retry_at: str) -> Event:
+    """The attempt waits until ``retry_at`` (ISO 8601, UTC), then runs again by itself.
+
+    ``reason`` is an error code: free_quota.exhausted, free_quota.unavailable,
+    call.in_progress or lab_balance.exhausted.
+    """
+    return EventType.STAGE_WAITING, {
+        "stage": stage,
+        "attempt": attempt,
+        "reason": reason,
+        "retry_at": retry_at,
     }
 
 

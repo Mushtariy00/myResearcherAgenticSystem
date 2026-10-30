@@ -8,7 +8,9 @@ its progress as log events, so the front end sees what a real run looks like.
 """
 
 import asyncio
+import json
 import logging
+import threading
 from collections.abc import Awaitable, Callable, Coroutine, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -77,6 +79,15 @@ class StageContext:
     # Per-run override of the simulated stage duration (runs.config "demo_stage_seconds").
     demo_stage_seconds: float | None = None
     log: LogEvent = _discard_log
+    # A request-changes attempt: the output the reviewer asked to change, and every comment
+    # that led to this attempt, oldest first (``feedback`` is the latest one).
+    previous_output: Mapping[str, Any] | None = None
+    feedback_history: tuple[str, ...] = ()
+    # Set when the attempt ends without an output (a cancel too): work still running in a
+    # thread then makes no more gateway calls.
+    cancelled: threading.Event = field(default_factory=threading.Event)
+    # Each gateway answer as it arrives: an attempt that fails has still paid for them.
+    llm_calls: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -118,7 +129,7 @@ RESEARCHER = {
 }
 
 PLAN_PROMPT = """Plan a literature search on this research topic: {topic}
-{feedback}
+{revision}
 Return ONLY a JSON object with exactly these keys:
 - "topic": the topic restated precisely
 - "queries": 3 to 6 search queries suitable for arXiv and Semantic Scholar
@@ -126,11 +137,36 @@ Return ONLY a JSON object with exactly these keys:
 - "inclusion_criteria": the criteria a paper must meet to be included
 - "subtopics": the main subtopics the review should cover"""
 
+REVISED_PLAN = """
+The reviewer asked for changes to your previous plan. Revise that plan: keep what the reviewer
+did not ask to change.
+Previous plan:
+{plan}
+"""
+
+REVIEWER_FEEDBACK = """
+Reviewer feedback, oldest first; address every point:
+{comments}
+"""
+
 REPAIR_PROMPT = """Your previous answer could not be used: {error}
 Previous answer:
 {answer}
 Return ONLY the corrected JSON object with the keys topic, queries, scope, inclusion_criteria,
 subtopics."""
+
+
+def plan_prompt(ctx: StageContext) -> str:
+    """The research-plan request; a request-changes attempt shows the plan it revises."""
+    revision = ""
+    if ctx.previous_output is not None:
+        # The plan inside a literature output; Phase 1 stored the plan on its own.
+        plan = ctx.previous_output.get("plan", ctx.previous_output)
+        revision += REVISED_PLAN.format(plan=json.dumps(plan, ensure_ascii=False, indent=2))
+    if ctx.feedback_history:
+        comments = "\n".join(f"{n}. {c}" for n, c in enumerate(ctx.feedback_history, 1))
+        revision += REVIEWER_FEEDBACK.format(comments=comments)
+    return PLAN_PROMPT.format(topic=ctx.topic, revision=revision)
 
 
 class CrewAIPlanner:
@@ -156,6 +192,8 @@ class CrewAIPlanner:
             policy=ctx.llm_policy,
             budget_cap_usd=ctx.budget_cap_usd,
             max_output_tokens=1500,
+            cancelled=ctx.cancelled,  # also stops the repair call below
+            on_call=ctx.llm_calls.append,
         )
 
     def _plan(self, ctx: StageContext) -> PlannedSearch:
@@ -171,12 +209,7 @@ class CrewAIPlanner:
             max_iter=2,
             verbose=False,
         )
-        feedback = (
-            f"\nReviewer feedback on the previous version, address it:\n{ctx.feedback}\n"
-            if ctx.feedback
-            else ""
-        )
-        result = agent.kickoff(PLAN_PROMPT.format(topic=ctx.topic, feedback=feedback))
+        result = agent.kickoff(plan_prompt(ctx))
         if isinstance(result, Coroutine):  # only when called inside an event loop; we use a thread
             result.close()
             raise StageFailedError("crewai.kickoff_returned_coroutine")

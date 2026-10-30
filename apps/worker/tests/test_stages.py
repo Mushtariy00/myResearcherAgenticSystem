@@ -1,6 +1,7 @@
 """The pipeline stage runner: demo outputs built on approved inputs, with simulated progress."""
 
 import copy
+import dataclasses
 import json
 import time
 from dataclasses import dataclass, field
@@ -27,10 +28,12 @@ from agentic_worker.outputs import (
 )
 from agentic_worker.stages import (
     MAX_DEMO_STAGE_SECONDS,
+    CrewAIPlanner,
     PipelineStageRunner,
     StageContext,
     StageFailedError,
     StageOutcome,
+    plan_prompt,
 )
 from worker_testkit import FakePlanner
 
@@ -222,3 +225,29 @@ async def test_a_missing_input_fails_the_stage(runner: PipelineStageRunner) -> N
         await runner.run(context("method"))
     with pytest.raises(StageFailedError, match=r"^stage\.unknown"):
         await runner.run(context("review"))
+
+
+def test_a_revision_shows_the_plan_it_revises_and_every_comment() -> None:
+    plan = demo.research_plan("Monocular depth", 4)
+    previous = demo.literature("Monocular depth", plan, RunConfig(), 4).model_dump(mode="json")
+    comments = ("Focus on 2024", "Add a query on self-supervised methods")
+    revision = dataclasses.replace(
+        context("literature", attempt=3, feedback=comments[-1]),
+        previous_output=previous,
+        feedback_history=comments,
+    )
+    prompt = plan_prompt(revision)
+    assert json.dumps(previous["plan"], ensure_ascii=False, indent=2) in prompt
+    assert previous["papers"][0]["title"] not in prompt  # the plan only, not the demo papers
+    assert prompt.index(f"1. {comments[0]}") < prompt.index(f"2. {comments[1]}")
+    first = plan_prompt(context("literature"))
+    assert "Previous plan" not in first and "Reviewer feedback" not in first
+
+
+def test_the_planners_gateway_calls_belong_to_the_attempt() -> None:
+    ctx = context("literature")
+    llm = CrewAIPlanner("http://gw", "secret")._llm(ctx)
+    assert llm.cancelled is ctx.cancelled and llm.key_prefix == ctx.stage_run_id
+    assert llm.on_call is not None
+    llm.on_call({"model": "free/a", "idempotency_key": "k:call-1"})
+    assert ctx.llm_calls == [{"model": "free/a", "idempotency_key": "k:call-1"}]

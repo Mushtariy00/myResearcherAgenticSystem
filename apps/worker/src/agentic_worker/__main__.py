@@ -12,6 +12,7 @@ for _name, _value in {
 
 import asyncio  # noqa: E402
 import logging  # noqa: E402
+from datetime import timedelta  # noqa: E402
 
 import redis.asyncio as redis  # noqa: E402
 from temporalio.client import Client  # noqa: E402
@@ -19,7 +20,7 @@ from temporalio.worker import Worker  # noqa: E402
 
 from agentic_core.contracts import TASK_QUEUE  # noqa: E402
 from agentic_db import create_engine, session_factory  # noqa: E402
-from agentic_worker.activities import StageActivities  # noqa: E402
+from agentic_worker.activities import HEARTBEAT_SECONDS, StageActivities  # noqa: E402
 from agentic_worker.settings import WorkerSettings  # noqa: E402
 from agentic_worker.stages import CrewAIPlanner, PipelineStageRunner  # noqa: E402
 from agentic_worker.workflows import RunWorkflow  # noqa: E402
@@ -29,7 +30,8 @@ async def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = WorkerSettings()
     engine = create_engine(settings.database_url)
-    valkey = redis.from_url(settings.valkey_url)
+    # Wake-ups only spare SSE a poll: a Valkey that hangs must not hold up an activity.
+    valkey = redis.from_url(settings.valkey_url, socket_connect_timeout=2, socket_timeout=2)
     planner = CrewAIPlanner(settings.gateway_url, settings.gateway_token.get_secret_value())
     activities = StageActivities(
         session_factory(engine),
@@ -43,6 +45,9 @@ async def main() -> None:
         workflows=[RunWorkflow],
         activities=activities.all(),
         max_concurrent_activities=settings.max_concurrent_activities,
+        # A cancel reaches a running stage in a heartbeat response, and the run closes only
+        # once the stage has stopped: send every heartbeat instead of one a minute.
+        max_heartbeat_throttle_interval=timedelta(seconds=HEARTBEAT_SECONDS),
     )
     logging.getLogger(__name__).info("worker listening on task queue %s", TASK_QUEUE)
     try:
