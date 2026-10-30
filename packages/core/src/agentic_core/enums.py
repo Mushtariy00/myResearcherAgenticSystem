@@ -68,3 +68,12 @@ class LlmCallState(StrEnum):
     SETTLED = "settled"
     UNKNOWN = "unknown"  # crashed or timed out mid-call; the sweeper settles it later
     RELEASED = "released"  # never sent, or failed before any cost
+
+
+class PdfStatus(StrEnum):
+    """Whether the library holds a paper's full text."""
+
+    UNKNOWN = "unknown"  # not looked for yet
+    AVAILABLE = "available"  # stored; papers.pdf_sha256 names the file
+    ABSTRACT_ONLY = "abstract_only"  # no open-access copy anywhere in the waterfall
+    FAILED = "failed"  # a copy was found but could not be fetched or was not a valid PDF

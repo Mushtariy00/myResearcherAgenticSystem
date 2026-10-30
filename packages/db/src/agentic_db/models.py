@@ -10,8 +10,11 @@ from typing import Any, ClassVar
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
+    Computed,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -23,7 +26,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from agentic_core.enums import (
@@ -31,6 +34,7 @@ from agentic_core.enums import (
     LlmCallState,
     LlmPolicy,
     LlmTier,
+    PdfStatus,
     Privacy,
     ProjectRole,
     RunStatus,
@@ -277,3 +281,104 @@ class NotificationRead(Base):
     user_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     notification_key: Mapped[str] = mapped_column(String(200), primary_key=True)
     read_at: Mapped[datetime] = _created_at()
+
+
+class Paper(Base):
+    """A paper in the lab's library, kept across runs (docs/design/literature.md).
+
+    ``key`` is the paper's id in stage outputs and URLs ("doi:10.1234/x", "arxiv:2301.07041",
+    "s2:<id>", "openalex:W123"): the first external id the paper was found under. It never
+    changes. The external id columns are unique, so the same paper found again under another
+    id merges into its row.
+    """
+
+    __tablename__ = "papers"
+    __table_args__ = (Index("ix_papers_search", "search", postgresql_using="gin"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    key: Mapped[str] = mapped_column(String(300), unique=True)
+    doi: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)  # lowercase
+    arxiv_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    s2_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    openalex_id: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
+    pmcid: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    title: Mapped[str] = mapped_column(Text)
+    authors: Mapped[list[Any]] = mapped_column(default=list)  # names, in order
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    venue: Mapped[str | None] = mapped_column(Text, nullable=True)
+    abstract: Mapped[str | None] = mapped_column(Text, nullable=True)
+    citation_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)  # https landing page
+    retracted: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
+    # Seeded demo papers (make demo-seed), shown with a Demo badge.
+    demo: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
+    pdf_status: Mapped[PdfStatus] = mapped_column(str_enum(PdfStatus), default=PdfStatus.UNKNOWN)
+    # The stored file: ARP_DATA_DIR/papers/<sha256[:2]>/<sha256>.pdf (agentic_scholarly.storage).
+    pdf_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    pdf_source: Mapped[str | None] = mapped_column(String(32), nullable=True)  # OaCandidate source
+    pdf_url: Mapped[str | None] = mapped_column(Text, nullable=True)  # where the file came from
+    # When the waterfall last ran: a failed or abstract-only paper is retried only after a while.
+    pdf_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    search: Mapped[Any] = mapped_column(
+        TSVECTOR,
+        Computed(
+            "to_tsvector('english'::regconfig, "
+            "coalesce(title, '') || ' ' || coalesce(abstract, ''))",
+            persisted=True,
+        ),
+    )
+    created_at: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class PaperText(Base):
+    """A paper's parsed full text: page text (evidence quotes, the viewer) and sections (the
+    analysis prompt and full-text search)."""
+
+    __tablename__ = "paper_texts"
+    __table_args__ = (Index("ix_paper_texts_tsv", "tsv", postgresql_using="gin"),)
+
+    paper_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("papers.id", ondelete="CASCADE"), primary_key=True
+    )
+    parser: Mapped[str] = mapped_column(String(32))  # "grobid-0.9.1", "pdfium"
+    page_count: Mapped[int] = mapped_column(Integer, default=0)
+    pages: Mapped[list[Any]] = mapped_column(default=list)  # text per page, page 1 first
+    sections: Mapped[list[Any]] = mapped_column(default=list)  # [{"title", "text"}], in order
+    references: Mapped[list[Any]] = mapped_column(default=list)  # [{"title", "authors", ...}]
+    tsv: Mapped[Any] = mapped_column(
+        TSVECTOR,
+        Computed(
+            "jsonb_to_tsvector('english'::regconfig, sections, '[\"string\"]'::jsonb)",
+            persisted=True,
+        ),
+    )
+    created_at: Mapped[datetime] = _created_at()
+
+
+class RunPaper(Base):
+    """A paper as one literature stage attempt saw it: where it was found, how it ranked and was
+    screened, and its analysis. An attempt that runs again (after a wait or a crash) resumes
+    from these rows instead of searching and analysing again."""
+
+    __tablename__ = "run_papers"
+    __table_args__ = (Index("ix_run_papers_run_id", "run_id"),)
+
+    stage_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("stage_runs.id", ondelete="CASCADE"), primary_key=True
+    )
+    paper_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("papers.id", ondelete="CASCADE"), primary_key=True
+    )
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("runs.id", ondelete="CASCADE"))
+    hits: Mapped[list[Any]] = mapped_column(default=list)  # [{"source", "query", "position"}]
+    rank: Mapped[int] = mapped_column(Integer)  # 1 = best before screening
+    score: Mapped[float] = mapped_column(Float)  # agentic_scholarly.rank's score
+    relevance: Mapped[float | None] = mapped_column(Float, nullable=True)  # screening, 0-1
+    decision: Mapped[str | None] = mapped_column(String(16), nullable=True)  # ScreeningDecision
+    decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    analysis: Mapped[dict[str, Any] | None] = mapped_column(nullable=True)  # PaperAnalysis
+    analysis_model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = _created_at()

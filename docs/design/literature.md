@@ -26,37 +26,54 @@ plan (LLM) → search (per query × source) → merge & de-duplicate → rank �
 → LiteratureOutput
 ```
 
-The stage is a child workflow, `LiteratureWorkflow`, one per stage attempt. RunWorkflow starts
-it under a new `workflow.patched` marker instead of `execute_stage` for the literature stage;
-older runs keep the current path. The child orchestrates small activities on two task queues:
+### First version: one activity whose steps are cached in the database
 
-| Activity | Queue (role) | Does |
-|---|---|---|
-| `lit_plan` | `arp-main` (agents) | research plan (exists today inside execute_stage) |
-| `lit_search` | `arp-fetch` (fetch) | one source × all queries; writes candidates to `run_papers` |
-| `lit_screen` | `arp-main` | LLM screening, 10 papers per call; decision, relevance, reason |
-| `lit_fetch_pdf` | `arp-fetch` | one paper: waterfall → validated PDF → content-addressed file |
-| `lit_parse_pdf` | `arp-fetch` | one paper: GROBID → sections; fallback page text |
-| `lit_analyze` | `arp-main` | one paper: PaperAnalysis with verified evidence quotes |
-| `lit_synthesize` | `arp-main` | key findings and synthesis from the analyses |
-| `lit_store_output` | `arp-main` | builds and validates LiteratureOutput, stores the StageOutput |
+The stage stays one `execute_stage` activity. The literature runner works through the steps
+above, and every step's result lands in the database as it is produced:
+- the candidates, their ranks and screening decisions in `run_papers`;
+- PDFs and their parsed text at the paper level (`papers`, `paper_texts`);
+- each analysis in `run_papers.analysis`.
 
-- Payloads carry ids only; intermediate results live in the database (`papers`, `paper_texts`,
-  `run_papers`), so a retried activity resumes instead of starting over.
-- The fetch role has internet egress and no gateway token; the agents role reaches only the
-  gateway. In dev both run in one worker process unless `ARP_WORKER_ROLES` splits them.
-- Fetch and parse run per paper with bounded concurrency (4); analyses run 4 at a time. Each
-  activity heartbeats; cancel reaches all of them (`WAIT_CANCELLATION_COMPLETED`).
-- Gateway waits (429, paused budget) use the same workflow helper as RunWorkflow, so a rate
-  limit pauses one activity, not the run.
-- Progress goes to the run's event log as `log` events with message codes and counts
-  (`literature.searched`, `literature.screened`, `literature.fetched`, `literature.analyzed`).
+Every LLM call has a semantic idempotency key: `<stage_run_id>:screen:<batch>`,
+`<stage_run_id>:analyze:<paper key>`, `<stage_run_id>:synthesize`, plus `:call-N` per retry
+inside a step. An attempt that runs again therefore resumes rather than starting over:
+- after a gateway wait (429), a pause for the lab balance or a worker crash, finished steps
+  are read back from the database;
+- paid answers are replayed from the gateway journal for free.
 
-## Sources (`packages/scholarly`, a new uv workspace member, no DB access)
+Because it stays one activity, the workflow is unchanged. The waits and pauses RunWorkflow
+handles (STAGE_WAITS_PATCH) and cancel (`WAIT_CANCELLATION_COMPLETED`) apply as they are:
+- The activity heartbeats throughout.
+- PDF fetch and parse run per paper with bounded concurrency (4), and analyses run 3 at a
+  time.
+- The literature stage gets a 2-hour `start_to_close_timeout`. Changing an activity option
+  doesn't change the workflow's command sequence.
+
+Progress goes to the run's event log as `log` events with message codes and counts:
+`literature.searched`, `literature.screened`, `literature.fetched`, `literature.analyzed` and
+`literature.synthesized`. A source that fails or runs out of quota is logged, and the stage
+continues with the others.
+
+### Later: trust zones (Phase 4 hardening)
+
+Fetching moves to its own worker process and task queue (`arp-fetch`). That process has
+internet egress and no gateway token; the agents process reaches only the gateway. It needs a
+child workflow per stage attempt that orchestrates activities on both queues. Until then, the
+SSRF guard in `agentic_scholarly.fetch` is the protection: every resolved address must be
+public, and the socket connects to the address that was vetted.
+
+## Sources (`packages/scholarly`, a uv workspace member, no DB access)
+
+The live check on 2026-10-30 found these limits:
+- **OpenAlex without a key:** a budget of $0.10 a day at $0.001 per search, about 100
+  searches for the whole lab. A free key raises the budget to $1 a day.
+- **Semantic Scholar without a key:** answers 429. It needs `ARP_S2_API_KEY`; until then the
+  stage logs that the source is unavailable and goes on without it.
+- **Europe PMC:** refuses this network with 403, so the PMC cloud bucket comes first.
 
 | Source | Use | Limit (lab-wide, Valkey token bucket) |
 |---|---|---|
-| OpenAlex | search with `publication_year` filter; OA locations; abstracts (inverted index) | 10 req/s without a key, 30 with `ARP_OPENALEX_API_KEY` (`api_key` param) |
+| OpenAlex | search with `publication_year` filter; OA locations; abstracts (inverted index) | 10 req/s without a key, 30 with `ARP_OPENALEX_API_KEY` (sent as a Bearer header, never in the URL) |
 | Semantic Scholar | search; `openAccessPdf`, `externalIds` | 1 req/s (`x-api-key` header when `ARP_S2_API_KEY` is set) |
 | arXiv | search (Atom API at export.arxiv.org); PDFs | 1 request / 3 s, one connection at a time |
 | Crossref | DOI metadata, retraction notices (`update-to`) | 10 req/s, `mailto` in the User-Agent |
@@ -123,23 +140,53 @@ The fetcher (`scholarly.fetch`) is the only code that downloads from URLs found 
 - Evidence quotes are kept only when they match the page text of the cited page (normalised
   whitespace and hyphenation); an analysis whose quotes all fail keeps its text but no quotes.
 
-## Data model (migration after 7c3e9a51d2b4)
+## Data model (migration 8d4f2b6a1c37)
 
-- `papers`: uuid id; unique nullable `doi`, `arxiv_id`, `s2_id`, `openalex_id`; `pmcid`;
-  title; authors (JSONB); year; venue; abstract; citation_count; `pdf_sha256`; `pdf_status`
-  (`unknown | available | abstract_only | failed`); `pdf_source`; `retracted`; timestamps.
-- `paper_texts`: paper_id (PK, FK); parser (`grobid-0.9.1 | pdfium | abstract`); sections
-  (JSONB); references (JSONB); page_count; pages (JSONB, text per page); `tsv` with a GIN index.
-- `run_papers`: (stage_run_id, paper_id) PK; run_id; query; source; rank; relevance;
-  decision; decision_reason; analysed.
-- The stage output keeps a snapshot of `PaperRef`s for review; `paper_id` is `papers.id`.
+- `papers`:
+  - `key`: unique, the paper's id in stage outputs and URLs. It is the first external id the
+    paper was found under: `doi:<doi>`, `arxiv:<id>`, `s2:<id>` or `openalex:<W id>`. It never
+    changes.
+  - unique nullable `doi` (lowercase), `arxiv_id` (no version), `s2_id`, `openalex_id`;
+    `pmcid`. A paper found again under another id merges into its row.
+  - title, authors (JSONB), year, venue, abstract, citation_count, url, `retracted`, `demo`
+    (seeded).
+  - `pdf_status` (`unknown | available | abstract_only | failed`), `pdf_sha256`, `pdf_source`,
+    `pdf_url`, `pdf_checked_at`.
+  - `search`: a generated tsvector over title and abstract, with a GIN index.
+- `paper_texts`:
+  - paper_id (PK, FK); parser (`grobid-0.9.1 | pdfium`); page_count;
+  - pages (JSONB, the text of each page); sections (JSONB `[{title, text}]`); references
+    (JSONB);
+  - `tsv`: generated from the sections, with a GIN index.
+- `run_papers`:
+  - (stage_run_id, paper_id) PK; run_id;
+  - hits (JSONB `[{source, query, position}]`); rank; score;
+  - relevance, decision and decision_reason from screening;
+  - analysis (PaperAnalysis JSON) and analysis_model.
+- The stage output keeps a snapshot of `PaperRef`s for review. `PaperRef.paper_id` is
+  `papers.key`.
+
+## Settings (worker and API, repo-root `.env`)
+
+- `ARP_DATA_DIR`: where files live. PDFs go under `papers/`. The default is
+  `~/.local/share/arp`, outside the repo, because the Next dev server watches the repo.
+- `ARP_CONTACT_EMAIL`: the contact in the scholarly APIs' User-Agent, and the email Unpaywall
+  requires. Without it Unpaywall is skipped.
+- `ARP_OPENALEX_API_KEY`, `ARP_S2_API_KEY`, `ARP_CORE_API_KEY`: optional; a source without
+  its key runs at its keyless limits or is skipped.
+- `ARP_GROBID_URL` (default `http://127.0.0.1:8070`). Start GROBID with
+  `docker compose --profile parse up -d grobid`. When it is down, sections fall back to page
+  text.
 
 ## API (contract unchanged)
 
-- `GET /papers?q=`, `GET /papers/{id}`: from `papers` + `run_papers` (+ `paper_texts.tsv` for
-  `q`), `demo: false`. Demo outputs from seeded runs stay visible in their runs.
-- `GET /papers/{id}/file`: streams the stored PDF to project members (`nosniff`, inline for the
-  viewer, `attachment` for downloads); 404 when the paper has no file.
+- `GET /papers?q=` and `GET /papers/{id}` read `papers` and `run_papers`; for `q` they use
+  `papers.search` and `paper_texts.tsv`. A paper is visible to members of a project with a
+  run that found it, and to lab admins. `demo` comes from `papers.demo`; the seed writes its
+  demo papers into these tables too.
+- `GET /papers/{id}/file` streams the stored PDF to those same users as an attachment with
+  `nosniff`; the viewer fetches it itself. A seeded demo paper without a stored file still
+  gets the generated preview PDF. Any other paper without a file gets 404.
 
 ## Later in Phase 2
 

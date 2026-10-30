@@ -29,6 +29,7 @@ source = { editable = "apps/api" }
 dependencies = [
     { name = "agentic-core" },
     { name = "agentic-db" },
+    { name = "agentic-scholarly" },
     { name = "anyio" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -42,6 +43,7 @@ dependencies = [
 requires-dist = [
     { name = "agentic-core", editable = "packages/core" },
     { name = "agentic-db", editable = "packages/db" },
+    { name = "agentic-scholarly", editable = "packages/scholarly" },
     { name = "anyio", specifier = ">=4.15,<5" },
     { name = "fastapi", specifier = ">=0.162,<0.163" },
     { name = "httpx", specifier = ">=0.28,<0.29" },
@@ -136,6 +138,7 @@ source = { editable = "apps/worker" }
 dependencies = [
     { name = "agentic-core" },
     { name = "agentic-db" },
+    { name = "agentic-scholarly" },
     { name = "crewai" },
     { name = "httpx" },
     { name = "json5" },
@@ -148,6 +151,7 @@ dependencies = [
 requires-dist = [
     { name = "agentic-core", editable = "packages/core" },
     { name = "agentic-db", editable = "packages/db" },
+    { name = "agentic-scholarly", editable = "packages/scholarly" },
     { name = "crewai", specifier = "==1.15.33" },
     { name = "httpx", specifier = ">=0.28,<0.29" },
     { name = "json5", specifier = ">=0.10,<1" },
