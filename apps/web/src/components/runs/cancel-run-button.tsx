@@ -1,11 +1,9 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SquareIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
-import { cancelRunMutation, getRunQueryKey } from "@/client/@tanstack/react-query.gen";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,35 +16,27 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useCancelRun } from "@/hooks/use-cancel-run";
 import { useErrorMessage } from "@/hooks/use-error-message";
-import { toApiError } from "@/lib/api-error";
 
+/** Cancels the run after a confirmation (useCancelRun); a run that already ended is no error. */
 export function CancelRunButton({ runId }: { runId: string }) {
   const t = useTranslations("run.cancel");
   const errorMessage = useErrorMessage();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const cancel = useMutation({
-    ...cancelRunMutation(),
-    onSuccess: () => toast.success(t("requested")),
-    onError: (error) => {
-      if (toApiError(error).code === "run.already_finished") {
-        toast.info(errorMessage(error));
-      } else {
-        toast.error(errorMessage(error));
-      }
-    },
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: getRunQueryKey({ path: { run_id: runId } }) }),
+  const cancel = useCancelRun({
+    onCancelled: () => toast.success(t("requested")),
+    onAlreadyFinished: (_runId, error) => toast.info(errorMessage(error)),
+    onError: (error) => toast.error(errorMessage(error)),
   });
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
-          <Button variant="outline" disabled={cancel.isPending}>
+          <Button variant="outline" disabled={cancel.pending}>
             <SquareIcon aria-hidden />
-            {cancel.isPending ? t("cancelling") : t("button")}
+            {cancel.pending ? t("cancelling") : t("button")}
           </Button>
         }
       />
@@ -61,7 +51,7 @@ export function CancelRunButton({ runId }: { runId: string }) {
             variant="destructive"
             onClick={() => {
               setOpen(false);
-              cancel.mutate({ path: { run_id: runId } });
+              cancel.cancel(runId);
             }}
           >
             {t("confirm")}

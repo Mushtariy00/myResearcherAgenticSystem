@@ -3,6 +3,7 @@
 import { RotateCwIcon } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
+import type { PaperRef } from "@/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { StreamState } from "@/hooks/use-run-events";
@@ -19,11 +20,220 @@ const STATE_DOT: Record<StreamState, string> = {
   error: "bg-destructive",
 };
 
+/** Event types with a translated label under `run.events.types` (others show their id). */
+const EVENT_TYPES = [
+  "run.created",
+  "run.status",
+  "run.retried",
+  "stage.started",
+  "stage.output_ready",
+  "stage.decided",
+  "stage.failed",
+  "stage.invalidated",
+  "llm.call",
+  "log",
+] as const;
+type EventType = (typeof EVENT_TYPES)[number];
+
+function isEventType(value: string): value is EventType {
+  return (EVENT_TYPES as readonly string[]).includes(value);
+}
+
+type Params = Record<string, unknown>;
+
+const SOURCES: readonly PaperRef["source"][] = [
+  "arxiv",
+  "semantic_scholar",
+  "openalex",
+  "crossref",
+  "core",
+  "demo",
+];
+
+function isSource(value: string): value is PaperRef["source"] {
+  return (SOURCES as readonly string[]).includes(value);
+}
+
+function paramsOf(value: unknown): Params {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Params)
+    : {};
+}
+
+function text(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function count(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function texts(value: unknown): string[] | null {
+  return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : null;
+}
+
+/**
+ * Progress lines of the demo stages (apps/worker outputs.py `progress_steps`), each with a code
+ * and params the browser translates; the English `message` is the fallback for anything else.
+ */
+function useLogLine() {
+  const t = useTranslations("run.events.log");
+  const tSources = useTranslations("shared.papers.sources");
+  const format = useFormatter();
+  const source = (id: string) => (isSource(id) ? tSources(id) : id);
+
+  return (code: string, p: Params): string | null => {
+    switch (code) {
+      case "demo.search": {
+        const sources = texts(p.sources);
+        const queries = count(p.queries);
+        return sources && queries !== null
+          ? t("demo.search", { sources: format.list(sources.map(source)), queries })
+          : null;
+      }
+      case "demo.screen": {
+        const candidates = count(p.candidates);
+        const papers = count(p.papers);
+        return candidates !== null && papers !== null
+          ? t("demo.screen", { candidates, papers })
+          : null;
+      }
+      case "demo.analyse": {
+        const papers = count(p.papers);
+        return papers !== null ? t("demo.analyse", { papers }) : null;
+      }
+      case "demo.synthesise": {
+        const findings = count(p.findings);
+        return findings !== null ? t("demo.synthesise", { findings }) : null;
+      }
+      case "demo.gaps": {
+        const gaps = count(p.gaps);
+        return gaps !== null ? t("demo.gaps", { gaps }) : null;
+      }
+      case "demo.propose": {
+        const proposals = count(p.proposals);
+        return proposals !== null ? t("demo.propose", { proposals }) : null;
+      }
+      case "demo.recommend": {
+        const option = text(p.option);
+        return option ? t("demo.recommend", { option }) : null;
+      }
+      case "demo.code": {
+        const files = count(p.files);
+        const entrypoint = text(p.entrypoint);
+        return files !== null && entrypoint ? t("demo.code", { files, entrypoint }) : null;
+      }
+      case "demo.test": {
+        const tests = count(p.tests);
+        return tests !== null ? t("demo.test", { tests }) : null;
+      }
+      case "demo.smoke_test": {
+        const seconds = count(p.seconds);
+        return typeof p.passed === "boolean" && seconds !== null
+          ? t("demo.smoke_test", {
+              result: p.passed ? t("passed") : t("failed"),
+              seconds: format.number(seconds, { maximumFractionDigits: 1 }),
+            })
+          : null;
+      }
+      case "demo.train": {
+        const epochs = count(p.epochs);
+        const dataset = text(p.dataset);
+        return epochs !== null && dataset
+          ? t("demo.train", { epochs, dataset, gpu: text(p.gpu) ?? t("unknownGpu") })
+          : null;
+      }
+      case "demo.epoch": {
+        const epoch = count(p.epoch);
+        const epochs = count(p.epochs);
+        const metric = text(p.metric);
+        const value = p.value === null ? null : count(p.value);
+        if (epoch === null || epochs === null || !metric || (p.value !== null && value === null)) {
+          return null;
+        }
+        return t("demo.epoch", {
+          epoch,
+          epochs,
+          metric,
+          value:
+            value === null ? t("notMeasured") : format.number(value, { maximumFractionDigits: 3 }),
+        });
+      }
+      case "demo.outline": {
+        const sections = count(p.sections);
+        return sections !== null ? t("demo.outline", { sections }) : null;
+      }
+      case "demo.draft": {
+        const section = text(p.section);
+        const index = count(p.index);
+        const sections = count(p.sections);
+        return section && index !== null && sections !== null
+          ? t("demo.draft", { section, index, sections })
+          : null;
+      }
+      case "demo.cite": {
+        const citations = count(p.citations);
+        return citations !== null ? t("demo.cite", { citations }) : null;
+      }
+      default:
+        return null;
+    }
+  };
+}
+
 function useSummary() {
   const t = useTranslations("run.events");
   const format = useFormatter();
   const labels = useLabels();
+  const logLine = useLogLine();
+  /** Prefixes a line with its stage, when the event names one. */
+  const inStage = (stage: unknown, line: string) => {
+    const name = text(stage);
+    return name ? t("inStage", { stage: labels.stage(name), line }) : line;
+  };
+
   return (event: RunEvent): string => {
+    const p = event.payload;
+    // Event types the shared summary does not know yet, and the richer forms of two it does.
+    switch (event.type) {
+      case "stage.invalidated": {
+        const stage = text(p.stage);
+        const retryStage = text(p.retry_stage);
+        if (stage) {
+          const attempt = count(p.attempt) ?? 1;
+          return retryStage
+            ? t("stageInvalidated", {
+                stage: labels.stage(stage),
+                attempt,
+                retryStage: labels.stage(retryStage),
+              })
+            : t("stageInvalidatedPlain", { stage: labels.stage(stage), attempt });
+        }
+        break;
+      }
+      case "run.retried": {
+        const stage = text(p.stage);
+        const requested = text(p.requested_stage);
+        if (stage) {
+          return requested && requested !== stage
+            ? t("runRetriedEarlier", {
+                stage: labels.stage(stage),
+                requested: labels.stage(requested),
+              })
+            : t("runRetried", { stage: labels.stage(stage) });
+        }
+        break;
+      }
+      case "log": {
+        const code = text(p.code);
+        const line = (code ? logLine(code, paramsOf(p.params)) : null) ?? text(p.message);
+        if (line) {
+          return inStage(p.stage, line);
+        }
+        break;
+      }
+    }
+
     const summary = summarizeEvent(event);
     switch (summary.kind) {
       case "runCreated":
@@ -62,7 +272,7 @@ function useSummary() {
         if (summary.replayed) {
           parts.push(t("replayed"));
         }
-        return parts.join(" · ");
+        return inStage(p.stage, parts.join(" · "));
       }
       case "log":
         return summary.message;
@@ -144,7 +354,9 @@ export function EventLog({
                         })
                       : `#${event.seq}`}
                   </time>
-                  <span className="truncate font-semibold">{event.type}</span>
+                  <span className="truncate font-semibold" title={event.type}>
+                    {isEventType(event.type) ? t(`types.${event.type}`) : event.type}
+                  </span>
                   <span className="col-span-2 break-words whitespace-pre-wrap sm:col-span-1">
                     {summarize(event)}
                   </span>

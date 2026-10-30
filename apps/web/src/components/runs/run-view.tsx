@@ -1,25 +1,31 @@
 "use client";
 
-import { ChevronLeftIcon, CircleAlertIcon, PauseCircleIcon } from "lucide-react";
-import Link from "next/link";
-import { useFormatter, useTranslations } from "next-intl";
-import { LoadingRows, PageHeader, QueryError } from "@/components/app/query-state";
-import { RunStatusBadge } from "@/components/app/status-badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CircleAlertIcon, EyeIcon, PauseCircleIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useMemo } from "react";
+import { LoadingRows, QueryError } from "@/components/app/query-state";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { useRunView } from "@/hooks/use-run-view";
-import { toAmount, USD } from "@/lib/format";
-import { ApprovalPanel, AwaitingPreview } from "./approval-panel";
-import { CancelRunButton } from "./cancel-run-button";
 import { EventLog } from "./event-log";
+import { defaultStage, literatureOf } from "./run-data";
+import { RunHeader } from "./run-header";
+import { StagePanel } from "./stage-panel";
+import { StageTabs, stageTabId } from "./stage-tabs";
 import { StageTimeline } from "./stage-timeline";
 import { useLabels } from "./use-labels";
+import { useStageParam } from "./use-stage-param";
 
+/**
+ * The Classic run page: header and actions, the stage timeline, one tab per stage with its
+ * output (and the review, while an output waits for a decision), and the live event log.
+ */
 export function RunView({ runId }: { runId: string }) {
   const t = useTranslations("run");
-  const tp = useTranslations("project.newRun.policies");
-  const format = useFormatter();
   const labels = useLabels();
   const view = useRunView(runId);
+  const [stageParam, setStage] = useStageParam();
+  const literature = useMemo(() => literatureOf(view.run), [view.run]);
   const run = view.query;
 
   if (run.isPending) {
@@ -30,40 +36,21 @@ export function RunView({ runId }: { runId: string }) {
   }
 
   const detail = run.data;
+  const selected =
+    stageParam && view.timeline.some((entry) => entry.stage === stageParam)
+      ? stageParam
+      : defaultStage(view.timeline, detail.awaiting_stage);
+  const awaitingStage = view.awaiting?.stage ?? null;
+
+  function openReview(stage: string) {
+    setStage(stage);
+    // The callout goes away with the switch; keep focus on the stage it opened.
+    requestAnimationFrame(() => document.getElementById(stageTabId(stage))?.focus());
+  }
 
   return (
     <div className="grid gap-6">
-      <div>
-        <Link
-          href={`/projects/${detail.project_id}`}
-          className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeftIcon className="size-4" aria-hidden />
-          {t("backToProject")}
-        </Link>
-        <PageHeader
-          title={detail.topic}
-          actions={view.canCancel ? <CancelRunButton runId={detail.id} /> : null}
-        >
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-sm text-muted-foreground">
-            <RunStatusBadge status={detail.status} />
-            <span>
-              {t("meta.created", {
-                date: format.dateTime(new Date(detail.created_at), {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                }),
-              })}
-            </span>
-            <span>{t("meta.policy", { policy: tp(`${detail.llm_policy}.label`) })}</span>
-            <span>
-              {detail.budget_cap_usd === null
-                ? t("meta.noCap")
-                : t("meta.cap", { amount: format.number(toAmount(detail.budget_cap_usd), USD) })}
-            </span>
-          </div>
-        </PageHeader>
-      </div>
+      <RunHeader run={detail} view={view} />
 
       {detail.error && (
         <Alert variant="destructive">
@@ -81,15 +68,28 @@ export function RunView({ runId }: { runId: string }) {
           <AlertDescription>{t("pausedDescription")}</AlertDescription>
         </Alert>
       )}
+      {awaitingStage !== null && selected !== awaitingStage && (
+        // A status, not an alert: it reappears whenever another stage is opened.
+        <Alert role="status" className="border-amber-500/40">
+          <EyeIcon aria-hidden />
+          <AlertTitle>
+            {view.canDecide
+              ? t("review.callout", { stage: labels.stage(awaitingStage) })
+              : t("review.calloutReadOnly", { stage: labels.stage(awaitingStage) })}
+          </AlertTitle>
+          <AlertAction>
+            <Button size="sm" variant="outline" onClick={() => openReview(awaitingStage)}>
+              {view.canDecide ? t("review.open") : t("review.view")}
+            </Button>
+          </AlertAction>
+        </Alert>
+      )}
 
       <StageTimeline entries={view.timeline} />
 
-      {view.awaiting &&
-        (view.canSteer ? (
-          <ApprovalPanel key={detail.awaiting_stage ?? "awaiting"} run={detail} />
-        ) : (
-          <AwaitingPreview run={detail} />
-        ))}
+      <StageTabs timeline={view.timeline} selected={selected} onSelect={setStage}>
+        {(entry) => <StagePanel run={detail} entry={entry} literature={literature} />}
+      </StageTabs>
 
       <EventLog events={view.events} state={view.streamState} onReconnect={view.reconnect} />
     </div>
