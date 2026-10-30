@@ -3,17 +3,6 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback } from "react";
 
-/** Codes of the real literature stage's progress lines (apps/worker literature/progress.py). */
-export const LITERATURE_LOG_CODES = [
-  "literature.searched",
-  "literature.source_failed",
-  "literature.screened",
-  "literature.fetched",
-  "literature.parsed",
-  "literature.analyzed",
-  "literature.synthesized",
-] as const;
-
 /** Why a source could not be searched (agentic_scholarly SourceError codes). */
 const SOURCE_ERRORS = [
   "source.rate_limited",
@@ -31,6 +20,10 @@ function count(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
 }
 
+function text(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
 function texts(value: unknown): string[] | null {
   return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : null;
 }
@@ -40,12 +33,12 @@ function member<T extends string>(list: readonly T[], value: unknown): value is 
 }
 
 /**
- * The literature stage's progress lines, worded once for both interfaces. Returns null for any
- * other code, or when the params don't fit the code; the caller then shows the worker's English
- * message.
+ * The progress lines of the real LLM stages (apps/worker: literature/progress.py and the method
+ * and writing runners), worded once for both interfaces. Returns null for any other code, or
+ * when the params don't fit the code; the caller then shows the worker's English message.
  */
-export function useLiteratureLogLine(): (code: string, p: Params) => string | null {
-  const t = useTranslations("shared.literatureLog");
+export function useStageLogLine(): (code: string, p: Params) => string | null {
+  const t = useTranslations("shared.stageLog");
   const tSources = useTranslations("shared.papers.sources");
   const format = useFormatter();
 
@@ -67,20 +60,23 @@ export function useLiteratureLogLine(): (code: string, p: Params) => string | nu
             found,
             incomplete,
           };
-          return incomplete > 0 ? t("searchedIncomplete", values) : t("searched", values);
+          return incomplete > 0
+            ? t("literature.searchedIncomplete", values)
+            : t("literature.searched", values);
         }
         case "literature.source_failed": {
           if (typeof p.source !== "string" || !member(SOURCE_ERRORS, p.error)) {
             return null;
           }
-          const reason = t(`sourceErrors.${p.error.slice("source.".length) as SourceError}`);
-          return t("sourceFailed", { source: source(p.source), reason });
+          const error = p.error.slice("source.".length) as SourceError;
+          const reason = t(`literature.sourceErrors.${error}`);
+          return t("literature.sourceFailed", { source: source(p.source), reason });
         }
         case "literature.screened": {
           const candidates = count(p.candidates);
           const included = count(p.included);
           return candidates !== null && included !== null
-            ? t("screened", { candidates, included })
+            ? t("literature.screened", { candidates, included })
             : null;
         }
         case "literature.fetched": {
@@ -90,18 +86,47 @@ export function useLiteratureLogLine(): (code: string, p: Params) => string | nu
             return null;
           }
           return abstractOnly > 0
-            ? t("fetched", { pdfs, abstractOnly })
-            : t("fetchedAll", { pdfs });
+            ? t("literature.fetched", { pdfs, abstractOnly })
+            : t("literature.fetchedAll", { pdfs });
         }
         case "literature.parsed":
         case "literature.analyzed": {
           const papers = count(p.papers);
-          const key = code === "literature.parsed" ? "parsed" : "analyzed";
+          const key = code === "literature.parsed" ? "literature.parsed" : "literature.analyzed";
           return papers !== null ? t(key, { papers }) : null;
         }
         case "literature.synthesized": {
           const findings = count(p.findings);
-          return findings !== null ? t("synthesized", { findings }) : null;
+          return findings !== null ? t("literature.synthesized", { findings }) : null;
+        }
+        case "method.proposed": {
+          const proposals = count(p.proposals);
+          const gaps = count(p.gaps);
+          return proposals !== null && gaps !== null
+            ? t("method.proposed", { proposals, gaps })
+            : null;
+        }
+        case "writing.outlined": {
+          const sections = count(p.sections);
+          return sections !== null ? t("writing.outlined", { sections }) : null;
+        }
+        case "writing.drafted": {
+          const section = text(p.section);
+          const index = count(p.index);
+          const sections = count(p.sections);
+          return section && index !== null && sections !== null
+            ? t("writing.drafted", { section, index, sections })
+            : null;
+        }
+        case "writing.cited": {
+          const citations = count(p.citations);
+          const removed = count(p.removed) ?? 0;
+          if (citations === null) {
+            return null;
+          }
+          return removed > 0
+            ? t("writing.citedRemoved", { citations, removed })
+            : t("writing.cited", { citations });
         }
         default:
           return null;

@@ -4,7 +4,7 @@ import { RotateCwIcon } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import type { PaperRef } from "@/client";
-import { useLiteratureLogLine } from "@/components/shared/literature-log";
+import { useStageLogLine } from "@/components/shared/stage-log";
 import { useWaitLabels } from "@/components/shared/wait-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -189,7 +189,7 @@ function useSummary() {
   const format = useFormatter();
   const labels = useLabels();
   const logLine = useLogLine();
-  const literatureLine = useLiteratureLogLine();
+  const stageLine = useStageLogLine();
   const waitLabels = useWaitLabels();
   /** Prefixes a line with its stage, when the event names one. */
   const inStage = (stage: unknown, line: string) => {
@@ -232,7 +232,7 @@ function useSummary() {
       case "log": {
         const code = text(p.code);
         const params = paramsOf(p.params);
-        const translated = code ? (literatureLine(code, params) ?? logLine(code, params)) : null;
+        const translated = code ? (stageLine(code, params) ?? logLine(code, params)) : null;
         const line = translated ?? text(p.message);
         if (line) {
           return inStage(p.stage, line);

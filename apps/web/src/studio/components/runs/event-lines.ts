@@ -3,7 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback } from "react";
 import type { PaperRef } from "@/client";
-import { useLiteratureLogLine } from "@/components/shared/literature-log";
+import { useStageLogLine } from "@/components/shared/stage-log";
 import { useWaitLabels } from "@/components/shared/wait-text";
 import { USD } from "@/lib/format";
 import { isRunStatus } from "@/lib/labels";
@@ -86,7 +86,7 @@ export function useEventDescriber(): (event: RunEvent) => EventLine {
   const format = useFormatter();
   const labels = useRunLabels();
   const waitLabels = useWaitLabels();
-  const literatureLine = useLiteratureLogLine();
+  const stageLine = useStageLogLine();
 
   return useCallback(
     (event: RunEvent): EventLine => {
@@ -215,7 +215,7 @@ export function useEventDescriber(): (event: RunEvent) => EventLine {
         case "log": {
           const code = word(payload.code);
           const params = record(payload.params);
-          const translated = code ? (literatureLine(code, params) ?? progress(code, params)) : null;
+          const translated = code ? (stageLine(code, params) ?? progress(code, params)) : null;
           if (translated) {
             return line("progress", "info", translated);
           }
@@ -353,6 +353,6 @@ export function useEventDescriber(): (event: RunEvent) => EventLine {
           );
       }
     },
-    [t, tEvents, tSources, format, labels, waitLabels, literatureLine],
+    [t, tEvents, tSources, format, labels, waitLabels, stageLine],
   );
 }

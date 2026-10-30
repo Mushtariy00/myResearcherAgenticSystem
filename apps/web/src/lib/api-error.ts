@@ -135,6 +135,12 @@ export const KNOWN_DEGRADED_REASONS = [
   // Real literature searches that came back incomplete (docs/design/literature.md).
   "literature.partial_search",
   "literature.no_full_text",
+  // Real method and writing stages built on generated or simulated inputs, or whose citations
+  // pointed outside the review.
+  "method.demo_literature",
+  "writing.demo_literature",
+  "writing.simulated_results",
+  "writing.citations_removed",
 ] as const;
 
 /** Degraded reasons that mean "generated demo data", shown with a Demo badge. */

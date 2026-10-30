@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import type { Locale } from "@/i18n/config";
-import { useLiteratureLogLine } from "./literature-log";
+import { useStageLogLine } from "./stage-log";
 import { renderWithIntl } from "./test-utils";
 
 function Line({ code, params }: { code: string; params: Record<string, unknown> }) {
-  const line = useLiteratureLogLine()(code, params);
+  const line = useStageLogLine()(code, params);
   return <p>{line ?? "(fallback)"}</p>;
 }
 
@@ -16,7 +16,7 @@ function lineOf(code: string, params: Record<string, unknown>, locale: Locale = 
   return text;
 }
 
-describe("useLiteratureLogLine", () => {
+describe("useStageLogLine", () => {
   it("words each step of the real literature stage", () => {
     expect(
       lineOf("literature.searched", {
@@ -56,6 +56,20 @@ describe("useLiteratureLogLine", () => {
     );
   });
 
+  it("words the method and writing stages", () => {
+    expect(lineOf("method.proposed", { proposals: 3, gaps: 2 })).toBe(
+      "Proposed 3 methods for 2 research gaps",
+    );
+    expect(lineOf("writing.outlined", { sections: 6 })).toBe("Outlined 6 sections");
+    expect(lineOf("writing.drafted", { section: "Related work", index: 2, sections: 6 })).toBe(
+      "Drafted Related work (2/6)",
+    );
+    expect(lineOf("writing.cited", { citations: 1, removed: 0 })).toBe("Cited 1 paper");
+    expect(lineOf("writing.cited", { citations: 9, removed: 2 })).toBe(
+      "Cited 9 papers; removed 2 citations of papers that are not in the review",
+    );
+  });
+
   it("reads the same lines in Korean", () => {
     expect(lineOf("literature.screened", { candidates: 15, included: 4 }, "ko")).toBe(
       "후보 15편을 선별해 4편을 정독 대상으로 포함했습니다",
@@ -67,6 +81,9 @@ describe("useLiteratureLogLine", () => {
         "ko",
       ),
     ).toBe("OpenAlex에서 검색하지 못해(일일 한도 소진) 이 출처 없이 계속합니다");
+    expect(lineOf("method.proposed", { proposals: 3, gaps: 2 }, "ko")).toBe(
+      "연구 공백 2개에 대해 방법 3개를 제안했습니다",
+    );
   });
 
   it("leaves other codes and malformed params to the worker's English message", () => {
@@ -76,5 +93,6 @@ describe("useLiteratureLogLine", () => {
       "(fallback)",
     );
     expect(lineOf("literature.parsed", { papers: -1 })).toBe("(fallback)");
+    expect(lineOf("writing.drafted", { section: "", index: 1, sections: 2 })).toBe("(fallback)");
   });
 });

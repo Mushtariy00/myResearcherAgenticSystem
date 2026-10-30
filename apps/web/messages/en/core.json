@@ -228,13 +228,21 @@
   "degradedReasons": {
     "stage": {
       "placeholder": "this stage is not implemented yet, so it returned a stand-in result.",
-      "demo": "this stage isn't built yet, so it shows realistic demo output."
+      "demo": "this stage shows generated demo output: it isn't built yet, or this run or environment uses demo data."
     },
     "literature": {
       "search_pending": "the literature search is not connected yet.",
       "demo_search": "the search plan is real, but the papers, analyses and synthesis are demo data until the literature search is connected.",
       "partial_search": "some sources could not be searched (an error or their daily quota), so papers from them may be missing.",
       "no_full_text": "no open-access full text was found for the included papers, so the analyses are based on their abstracts."
+    },
+    "method": {
+      "demo_literature": "the literature review it builds on was generated for a demo, so the papers it cites are not real."
+    },
+    "writing": {
+      "demo_literature": "the literature review it builds on was generated for a demo, so the papers it cites are not real.",
+      "simulated_results": "the coding and experiment stages are still simulated, so the draft's results are placeholders to be confirmed.",
+      "citations_removed": "some citations pointed at papers outside the literature review and were removed."
     }
   },
   "notFound": {
