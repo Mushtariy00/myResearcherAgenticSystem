@@ -39,6 +39,11 @@ export const authDbPool: Pool = globalPool.__arpAuthPool;
 export const auth = betterAuth({
   appName: "Agentic Research Platform",
   baseURL,
+  // Extra origins allowed to sign in, comma-separated (e.g. localhost next to a demo tunnel URL).
+  trustedOrigins: (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   secret: process.env.BETTER_AUTH_SECRET,
   database: authDbPool,
   emailAndPassword: {

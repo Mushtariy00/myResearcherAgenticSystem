@@ -12,6 +12,7 @@ import redis.asyncio as redis
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from pydantic.json_schema import models_json_schema
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from temporalio.client import Client
 
@@ -34,6 +35,7 @@ from agentic_api.routers import (
 from agentic_api.settings import Settings, get_settings
 from agentic_core import NEVER_AUTO_APPROVE, STAGE_ORDER
 from agentic_core.contracts import DecisionInput
+from agentic_core.schemas import STAGE_OUTPUT_MODELS
 from agentic_db import create_engine, session_factory
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
@@ -49,6 +51,30 @@ class StageInfo(BaseModel):
     id: str
     position: int
     auto_approvable: bool
+
+
+def add_stage_output_schemas(app: FastAPI) -> None:
+    """Publish the stage output models (agentic_core.schemas) in the OpenAPI document.
+
+    Outputs travel as plain JSON in ``StageOutputOut.data``, so no endpoint references these
+    models; listing them still gives the generated TypeScript client a type for each stage.
+    """
+    build = app.openapi
+
+    def openapi() -> dict[str, Any]:
+        if app.openapi_schema is not None:
+            return app.openapi_schema
+        schema = build()
+        _, definitions = models_json_schema(
+            [(model, "serialization") for model in STAGE_OUTPUT_MODELS.values()],
+            ref_template="#/components/schemas/{model}",
+        )
+        components = schema.setdefault("components", {}).setdefault("schemas", {})
+        for name, definition in definitions.get("$defs", {}).items():
+            components.setdefault(name, definition)
+        return schema
+
+    app.openapi = openapi  # pyright: ignore[reportAttributeAccessIssue]
 
 
 class LazyTemporalOrchestrator:
@@ -134,25 +160,33 @@ def create_app(settings: Settings | None = None, *, state: AppState | None = Non
             if engine is not None:
                 await engine.dispose()
 
+    # No interactive docs or published schema in production: the docs page loads scripts from
+    # a CDN, and a public deployment has no reason to publish the API surface.
+    public_docs = settings.environment != "production"
     app = FastAPI(
         title="Agentic Research Platform API",
         version=__version__,
-        openapi_url="/api/v1/openapi.json",
-        docs_url="/api/v1/docs",
+        openapi_url="/api/v1/openapi.json" if public_docs else None,
+        docs_url="/api/v1/docs" if public_docs else None,
         redoc_url=None,
         lifespan=lifespan,
     )
+    add_stage_output_schemas(app)
     app.state.settings = settings
     if state is not None:
         attach_state(app, state)  # also usable without running the lifespan
     app.exception_handler(ErrorWithFields)(error_with_fields_handler)
+
+    # ARP_PUBLIC_ORIGIN may list several origins, comma-separated (e.g. a tunnel URL next to
+    # http://localhost:8080 for a demo).
+    allowed_origins = {o.strip() for o in settings.public_origin.split(",") if o.strip()}
 
     @app.middleware("http")
     async def require_same_origin(request: Request, call_next: Any) -> Any:
         """CSRF guard: browsers send Origin on state-changing requests; it must be ours."""
         if (
             request.method not in SAFE_METHODS
-            and request.headers.get("origin") != settings.public_origin
+            and request.headers.get("origin") not in allowed_origins
         ):
             return JSONResponse({"detail": "csrf.origin_mismatch"}, status_code=403)
         return await call_next(request)

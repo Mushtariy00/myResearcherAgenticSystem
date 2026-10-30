@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addMember, cancelRun, createProject, createRun, decideStage, getHealth, getMe, getPaidModels, getProject, getRun, listBudgets, listMembers, listProjects, listRuns, listStages, type Options, setBudget, setPaidModels, streamRunEvents } from '../sdk.gen';
-import type { AddMemberData, AddMemberError, AddMemberResponse, CancelRunData, CancelRunError, CancelRunResponse, CreateProjectData, CreateProjectError, CreateProjectResponse, CreateRunData, CreateRunError, CreateRunResponse, DecideStageData, DecideStageError, DecideStageResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeResponse, GetPaidModelsData, GetPaidModelsResponse, GetProjectData, GetProjectError, GetProjectResponse, GetRunData, GetRunError, GetRunResponse, ListBudgetsData, ListBudgetsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListProjectsData, ListProjectsResponse, ListRunsData, ListRunsError, ListRunsResponse, ListStagesData, ListStagesResponse, SetBudgetData, SetBudgetError, SetBudgetResponse, SetPaidModelsData, SetPaidModelsError, SetPaidModelsResponse, StreamRunEventsData, StreamRunEventsError } from '../types.gen';
+import { addMember, cancelRun, createProject, createRun, decideStage, estimateRunCost, getArtifact, getGpuQueue, getHealth, getLabBalance, getMe, getModelRouting, getPaidModels, getPaper, getPaperFile, getProject, getProjectSettings, getRun, getStage, getSystemHealth, getUsage, listAuditLog, listBudgets, listDatasets, listMembers, listNotifications, listPapers, listProjects, listRecentRuns, listRunArtifacts, listRuns, listStages, markNotificationsRead, type Options, removeMember, retryRun, setBudget, setPaidModels, streamRunEvents, updateMember, updateProjectSettings } from '../sdk.gen';
+import type { AddMemberData, AddMemberError, AddMemberResponse, CancelRunData, CancelRunError, CancelRunResponse, CreateProjectData, CreateProjectError, CreateProjectResponse, CreateRunData, CreateRunError, CreateRunResponse, DecideStageData, DecideStageError, DecideStageResponse, EstimateRunCostData, EstimateRunCostError, EstimateRunCostResponse, GetArtifactData, GetArtifactError, GetArtifactResponse, GetGpuQueueData, GetGpuQueueResponse, GetHealthData, GetHealthResponse, GetLabBalanceData, GetLabBalanceResponse, GetMeData, GetMeResponse, GetModelRoutingData, GetModelRoutingResponse, GetPaidModelsData, GetPaidModelsResponse, GetPaperData, GetPaperError, GetPaperFileData, GetPaperFileError, GetPaperFileResponse, GetPaperResponse, GetProjectData, GetProjectError, GetProjectResponse, GetProjectSettingsData, GetProjectSettingsError, GetProjectSettingsResponse, GetRunData, GetRunError, GetRunResponse, GetStageData, GetStageError, GetStageResponse, GetSystemHealthData, GetSystemHealthResponse, GetUsageData, GetUsageError, GetUsageResponse, ListAuditLogData, ListAuditLogError, ListAuditLogResponse, ListBudgetsData, ListBudgetsResponse, ListDatasetsData, ListDatasetsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListNotificationsData, ListNotificationsResponse, ListPapersData, ListPapersError, ListPapersResponse, ListProjectsData, ListProjectsResponse, ListRecentRunsData, ListRecentRunsError, ListRecentRunsResponse, ListRunArtifactsData, ListRunArtifactsError, ListRunArtifactsResponse, ListRunsData, ListRunsError, ListRunsResponse, ListStagesData, ListStagesResponse, MarkNotificationsReadData, MarkNotificationsReadError, MarkNotificationsReadResponse, RemoveMemberData, RemoveMemberError, RemoveMemberResponse, RetryRunData, RetryRunError, RetryRunResponse, SetBudgetData, SetBudgetError, SetBudgetResponse, SetPaidModelsData, SetPaidModelsError, SetPaidModelsResponse, StreamRunEventsData, StreamRunEventsError, UpdateMemberData, UpdateMemberError, UpdateMemberResponse, UpdateProjectSettingsData, UpdateProjectSettingsError, UpdateProjectSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -128,6 +128,41 @@ export const getProjectOptions = (options: Options<GetProjectData>) => queryOpti
     queryKey: getProjectQueryKey(options)
 });
 
+export const getProjectSettingsQueryKey = (options: Options<GetProjectSettingsData>) => createQueryKey('getProjectSettings', options);
+
+/**
+ * Get Project Settings
+ */
+export const getProjectSettingsOptions = (options: Options<GetProjectSettingsData>) => queryOptions<GetProjectSettingsResponse, GetProjectSettingsError, GetProjectSettingsResponse, ReturnType<typeof getProjectSettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getProjectSettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getProjectSettingsQueryKey(options)
+});
+
+/**
+ * Update Project Settings
+ */
+export const updateProjectSettingsMutation = (options?: Partial<Options<UpdateProjectSettingsData>>): UseMutationOptions<UpdateProjectSettingsResponse, UpdateProjectSettingsError, Options<UpdateProjectSettingsData>> => {
+    const mutationOptions: UseMutationOptions<UpdateProjectSettingsResponse, UpdateProjectSettingsError, Options<UpdateProjectSettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateProjectSettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const listMembersQueryKey = (options: Options<ListMembersData>) => createQueryKey('listMembers', options);
 
 /**
@@ -153,6 +188,44 @@ export const addMemberMutation = (options?: Partial<Options<AddMemberData>>): Us
     const mutationOptions: UseMutationOptions<AddMemberResponse, AddMemberError, Options<AddMemberData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await addMember({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Remove Member
+ *
+ * Remove a member (owners and lab admins). The last owner can't be removed.
+ */
+export const removeMemberMutation = (options?: Partial<Options<RemoveMemberData>>): UseMutationOptions<RemoveMemberResponse, RemoveMemberError, Options<RemoveMemberData>> => {
+    const mutationOptions: UseMutationOptions<RemoveMemberResponse, RemoveMemberError, Options<RemoveMemberData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await removeMember({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Update Member
+ *
+ * Change a member's role (owners and lab admins). The last owner can't be demoted.
+ */
+export const updateMemberMutation = (options?: Partial<Options<UpdateMemberData>>): UseMutationOptions<UpdateMemberResponse, UpdateMemberError, Options<UpdateMemberData>> => {
+    const mutationOptions: UseMutationOptions<UpdateMemberResponse, UpdateMemberError, Options<UpdateMemberData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateMember({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -198,6 +271,26 @@ export const createRunMutation = (options?: Partial<Options<CreateRunData>>): Us
     return mutationOptions;
 };
 
+export const listRecentRunsQueryKey = (options?: Options<ListRecentRunsData>) => createQueryKey('listRecentRuns', options);
+
+/**
+ * List Recent Runs
+ *
+ * Newest runs across the caller's projects (every project for lab admins): the dashboard.
+ */
+export const listRecentRunsOptions = (options?: Options<ListRecentRunsData>) => queryOptions<ListRecentRunsResponse, ListRecentRunsError, ListRecentRunsResponse, ReturnType<typeof listRecentRunsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listRecentRuns({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listRecentRunsQueryKey(options)
+});
+
 export const getRunQueryKey = (options: Options<GetRunData>) => createQueryKey('getRun', options);
 
 /**
@@ -216,13 +309,60 @@ export const getRunOptions = (options: Options<GetRunData>) => queryOptions<GetR
     queryKey: getRunQueryKey(options)
 });
 
+export const getStageQueryKey = (options: Options<GetStageData>) => createQueryKey('getStage', options);
+
+/**
+ * Get Stage
+ *
+ * Every attempt of one stage, with each attempt's output versions and their decisions.
+ */
+export const getStageOptions = (options: Options<GetStageData>) => queryOptions<GetStageResponse, GetStageError, GetStageResponse, ReturnType<typeof getStageQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getStage({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getStageQueryKey(options)
+});
+
 /**
  * Decide Stage
+ *
+ * Approve, request changes or reject the output waiting for a decision.
+ *
+ * Approve with edits sends ``edited_data``: it must pass the stage's output schema (422
+ * ``decision.invalid_edit`` with ``loc`` and ``type`` of the first error otherwise).
  */
 export const decideStageMutation = (options?: Partial<Options<DecideStageData>>): UseMutationOptions<DecideStageResponse, DecideStageError, Options<DecideStageData>> => {
     const mutationOptions: UseMutationOptions<DecideStageResponse, DecideStageError, Options<DecideStageData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await decideStage({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Retry Run
+ *
+ * Run a finished run again from ``stage``, in a new execution of its workflow.
+ *
+ * The workflow keeps the approved outputs of the stages before ``stage`` and invalidates the
+ * outputs from ``stage`` on.
+ */
+export const retryRunMutation = (options?: Partial<Options<RetryRunData>>): UseMutationOptions<RetryRunResponse, RetryRunError, Options<RetryRunData>> => {
+    const mutationOptions: UseMutationOptions<RetryRunResponse, RetryRunError, Options<RetryRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await retryRun({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -416,3 +556,383 @@ export const setPaidModelsMutation = (options?: Partial<Options<SetPaidModelsDat
     };
     return mutationOptions;
 };
+
+export const listAuditLogQueryKey = (options?: Options<ListAuditLogData>) => createQueryKey('listAuditLog', options);
+
+/**
+ * List Audit Log
+ *
+ * Audit log entries, newest first; ``action`` keeps one action (e.g. ``run.cancel``).
+ */
+export const listAuditLogOptions = (options?: Options<ListAuditLogData>) => queryOptions<ListAuditLogResponse, ListAuditLogError, ListAuditLogResponse, ReturnType<typeof listAuditLogQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAuditLog({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAuditLogQueryKey(options)
+});
+
+export const listAuditLogInfiniteQueryKey = (options?: Options<ListAuditLogData>): QueryKey<Options<ListAuditLogData>> => createQueryKey('listAuditLog', options, true);
+
+/**
+ * List Audit Log
+ *
+ * Audit log entries, newest first; ``action`` keeps one action (e.g. ``run.cancel``).
+ */
+export const listAuditLogInfiniteOptions = (options?: Options<ListAuditLogData>) => {
+    const opts = infiniteQueryOptions<ListAuditLogResponse, ListAuditLogError, InfiniteData<ListAuditLogResponse>, QueryKey<Options<ListAuditLogData>>, number | Pick<QueryKey<Options<ListAuditLogData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListAuditLogData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    offset: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listAuditLog({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listAuditLogInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getSystemHealthQueryKey = (options?: Options<GetSystemHealthData>) => createQueryKey('getSystemHealth', options);
+
+/**
+ * Get System Health
+ *
+ * Probes Postgres, Valkey, Temporal, the gateway and the workers concurrently.
+ */
+export const getSystemHealthOptions = (options?: Options<GetSystemHealthData>) => queryOptions<GetSystemHealthResponse, DefaultError, GetSystemHealthResponse, ReturnType<typeof getSystemHealthQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getSystemHealth({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getSystemHealthQueryKey(options)
+});
+
+export const listNotificationsQueryKey = (options?: Options<ListNotificationsData>) => createQueryKey('listNotifications', options);
+
+/**
+ * List Notifications
+ */
+export const listNotificationsOptions = (options?: Options<ListNotificationsData>) => queryOptions<ListNotificationsResponse, DefaultError, ListNotificationsResponse, ReturnType<typeof listNotificationsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listNotifications({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listNotificationsQueryKey(options)
+});
+
+/**
+ * Mark Notifications Read
+ *
+ * Mark notifications read (idempotent). Keys the caller has no notification for are
+ * ignored, so only real notifications are ever stored.
+ */
+export const markNotificationsReadMutation = (options?: Partial<Options<MarkNotificationsReadData>>): UseMutationOptions<MarkNotificationsReadResponse, MarkNotificationsReadError, Options<MarkNotificationsReadData>> => {
+    const mutationOptions: UseMutationOptions<MarkNotificationsReadResponse, MarkNotificationsReadError, Options<MarkNotificationsReadData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await markNotificationsRead({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listPapersQueryKey = (options?: Options<ListPapersData>) => createQueryKey('listPapers', options);
+
+/**
+ * List Papers
+ *
+ * Papers of the caller's projects (every project for lab admins), best relevance first.
+ *
+ * ``q`` matches title, abstract, an author or the venue, ignoring case. A paper matches when
+ * one run's record of it matches every filter; counts cover all of its runs in scope.
+ */
+export const listPapersOptions = (options?: Options<ListPapersData>) => queryOptions<ListPapersResponse, ListPapersError, ListPapersResponse, ReturnType<typeof listPapersQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listPapers({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listPapersQueryKey(options)
+});
+
+export const listPapersInfiniteQueryKey = (options?: Options<ListPapersData>): QueryKey<Options<ListPapersData>> => createQueryKey('listPapers', options, true);
+
+/**
+ * List Papers
+ *
+ * Papers of the caller's projects (every project for lab admins), best relevance first.
+ *
+ * ``q`` matches title, abstract, an author or the venue, ignoring case. A paper matches when
+ * one run's record of it matches every filter; counts cover all of its runs in scope.
+ */
+export const listPapersInfiniteOptions = (options?: Options<ListPapersData>) => {
+    const opts = infiniteQueryOptions<ListPapersResponse, ListPapersError, InfiniteData<ListPapersResponse>, QueryKey<Options<ListPapersData>>, number | Pick<QueryKey<Options<ListPapersData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListPapersData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    offset: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listPapers({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listPapersInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getPaperFileQueryKey = (options: Options<GetPaperFileData>) => createQueryKey('getPaperFile', options);
+
+/**
+ * Get Paper File
+ *
+ * A generated PDF preview of the paper (always demo content: no PDFs are stored yet).
+ *
+ * It has the paper's metadata and abstract, and prints every evidence quote of its analyses
+ * on the page the quote cites, so the viewer can find and highlight it there.
+ */
+export const getPaperFileOptions = (options: Options<GetPaperFileData>) => queryOptions<GetPaperFileResponse, GetPaperFileError, GetPaperFileResponse, ReturnType<typeof getPaperFileQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getPaperFile({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getPaperFileQueryKey(options)
+});
+
+export const getPaperQueryKey = (options: Options<GetPaperData>) => createQueryKey('getPaper', options);
+
+/**
+ * Get Paper
+ *
+ * The paper, every analysis of it and the runs that found it (404 when the caller can open
+ * none of them).
+ */
+export const getPaperOptions = (options: Options<GetPaperData>) => queryOptions<GetPaperResponse, GetPaperError, GetPaperResponse, ReturnType<typeof getPaperQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getPaper({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getPaperQueryKey(options)
+});
+
+export const listRunArtifactsQueryKey = (options: Options<ListRunArtifactsData>) => createQueryKey('listRunArtifacts', options);
+
+/**
+ * List Run Artifacts
+ *
+ * Every file the run's latest coding, experiment and writing outputs make; anyone who can
+ * open the run may download them.
+ */
+export const listRunArtifactsOptions = (options: Options<ListRunArtifactsData>) => queryOptions<ListRunArtifactsResponse, ListRunArtifactsError, ListRunArtifactsResponse, ReturnType<typeof listRunArtifactsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listRunArtifacts({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listRunArtifactsQueryKey(options)
+});
+
+export const getArtifactQueryKey = (options: Options<GetArtifactData>) => createQueryKey('getArtifact', options);
+
+/**
+ * Get Artifact
+ *
+ * Download one artifact. The id names a stage output and an item of it; both are checked
+ * again here, and the caller must be able to open the run the output belongs to.
+ */
+export const getArtifactOptions = (options: Options<GetArtifactData>) => queryOptions<GetArtifactResponse, GetArtifactError, GetArtifactResponse, ReturnType<typeof getArtifactQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getArtifact({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getArtifactQueryKey(options)
+});
+
+export const listDatasetsQueryKey = (options?: Options<ListDatasetsData>) => createQueryKey('listDatasets', options);
+
+/**
+ * List Datasets
+ *
+ * Datasets experiments can mount (read-only), with their data contracts.
+ */
+export const listDatasetsOptions = (options?: Options<ListDatasetsData>) => queryOptions<ListDatasetsResponse, DefaultError, ListDatasetsResponse, ReturnType<typeof listDatasetsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listDatasets({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listDatasetsQueryKey(options)
+});
+
+export const getGpuQueueQueryKey = (options?: Options<GetGpuQueueData>) => createQueryKey('getGpuQueue', options);
+
+/**
+ * Get Gpu Queue
+ *
+ * The GPU's live readings, the job on it and the jobs waiting, with the caller's place.
+ *
+ * Real experiment stages that are running come from the database, oldest first; runs in
+ * projects the caller can't open show no topic. Telemetry and the other jobs are demo data.
+ */
+export const getGpuQueueOptions = (options?: Options<GetGpuQueueData>) => queryOptions<GetGpuQueueResponse, DefaultError, GetGpuQueueResponse, ReturnType<typeof getGpuQueueQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getGpuQueue({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getGpuQueueQueryKey(options)
+});
+
+export const getUsageQueryKey = (options?: Options<GetUsageData>) => createQueryKey('getUsage', options);
+
+/**
+ * Get Usage
+ *
+ * Paid spend and call counts over the last ``days`` UTC days, today included: the caller's
+ * own calls ("me"), or every user's ("lab", lab admins only). Real figures, zeros included.
+ */
+export const getUsageOptions = (options?: Options<GetUsageData>) => queryOptions<GetUsageResponse, GetUsageError, GetUsageResponse, ReturnType<typeof getUsageQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getUsage({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getUsageQueryKey(options)
+});
+
+/**
+ * Estimate Run Cost
+ *
+ * What a run with these options would likely cost the caller, and why: calls per stage
+ * times typical tokens times the paid chain's prices. Free when it can't use paid models.
+ */
+export const estimateRunCostMutation = (options?: Partial<Options<EstimateRunCostData>>): UseMutationOptions<EstimateRunCostResponse, EstimateRunCostError, Options<EstimateRunCostData>> => {
+    const mutationOptions: UseMutationOptions<EstimateRunCostResponse, EstimateRunCostError, Options<EstimateRunCostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await estimateRunCost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getModelRoutingQueryKey = (options?: Options<GetModelRoutingData>) => createQueryKey('getModelRouting', options);
+
+/**
+ * Get Model Routing
+ *
+ * Per agent role, the paid and free model chains the gateway tries, with catalog details,
+ * and the real state of the paid-models kill switch.
+ */
+export const getModelRoutingOptions = (options?: Options<GetModelRoutingData>) => queryOptions<GetModelRoutingResponse, DefaultError, GetModelRoutingResponse, ReturnType<typeof getModelRoutingQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getModelRouting({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getModelRoutingQueryKey(options)
+});
+
+export const getLabBalanceQueryKey = (options?: Options<GetLabBalanceData>) => createQueryKey('getLabBalance', options);
+
+/**
+ * Get Lab Balance
+ *
+ * The lab's prepaid OpenRouter balance (generated until the gateway reads it), with the
+ * real paid spend this month and the real free-tier use today.
+ */
+export const getLabBalanceOptions = (options?: Options<GetLabBalanceData>) => queryOptions<GetLabBalanceResponse, DefaultError, GetLabBalanceResponse, ReturnType<typeof getLabBalanceQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getLabBalance({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getLabBalanceQueryKey(options)
+});

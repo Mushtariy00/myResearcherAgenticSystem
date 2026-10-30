@@ -15,6 +15,159 @@ export type Accepted = {
 };
 
 /**
+ * ApprovalOut
+ */
+export type ApprovalOut = {
+    decision: Decision;
+    /**
+     * Comment
+     */
+    comment: string;
+    /**
+     * Actor Id
+     */
+    actor_id: string;
+    /**
+     * Actor Name
+     */
+    actor_name: string | null;
+    /**
+     * At
+     */
+    at: string;
+};
+
+/**
+ * ArtifactList
+ */
+export type ArtifactList = {
+    /**
+     * Run Id
+     */
+    run_id: string;
+    /**
+     * Items
+     */
+    items: Array<ArtifactOut>;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * ArtifactOut
+ */
+export type ArtifactOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Stage
+     */
+    stage: string;
+    /**
+     * Kind
+     */
+    kind: 'code_file' | 'code_archive' | 'experiment_log' | 'metrics' | 'draft' | 'references';
+    /**
+     * Filename
+     */
+    filename: string;
+    /**
+     * Path
+     */
+    path: string | null;
+    /**
+     * Media Type
+     */
+    media_type: string;
+    /**
+     * Size Bytes
+     */
+    size_bytes: number;
+    /**
+     * Sha256
+     */
+    sha256: string;
+    /**
+     * Stage Output Id
+     */
+    stage_output_id: string;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * AuditEntryOut
+ */
+export type AuditEntryOut = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Actor Id
+     */
+    actor_id: string;
+    /**
+     * Actor Name
+     */
+    actor_name: string | null;
+    /**
+     * Actor Email
+     */
+    actor_email: string | null;
+    /**
+     * Action
+     */
+    action: string;
+    /**
+     * Target Type
+     */
+    target_type: string;
+    /**
+     * Target Id
+     */
+    target_id: string;
+    /**
+     * Details
+     */
+    details: {
+        [key: string]: unknown;
+    };
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * AuditPage
+ */
+export type AuditPage = {
+    /**
+     * Items
+     */
+    items: Array<AuditEntryOut>;
+    /**
+     * Total
+     */
+    total: number;
+};
+
+/**
  * BudgetIn
  */
 export type BudgetIn = {
@@ -43,6 +196,167 @@ export type BudgetOut = {
 };
 
 /**
+ * BudgetStatusOut
+ */
+export type BudgetStatusOut = {
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Monthly Usd
+     */
+    monthly_usd: string;
+    /**
+     * Spent Usd
+     */
+    spent_usd: string;
+    /**
+     * Remaining Usd
+     */
+    remaining_usd: string;
+};
+
+/**
+ * DataContractOut
+ *
+ * What the experiment harness may rely on when it loads the dataset.
+ */
+export type DataContractOut = {
+    /**
+     * Inputs
+     */
+    inputs: string;
+    /**
+     * Targets
+     */
+    targets: string;
+    /**
+     * Units
+     */
+    units: string | null;
+    /**
+     * Valid Range
+     */
+    valid_range: string | null;
+    /**
+     * Missing Values
+     */
+    missing_values: string | null;
+    /**
+     * Evaluation
+     */
+    evaluation: string | null;
+};
+
+/**
+ * DatasetList
+ */
+export type DatasetList = {
+    /**
+     * Items
+     */
+    items: Array<DatasetOut>;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * DatasetOut
+ */
+export type DatasetOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Version
+     */
+    version: string;
+    /**
+     * Tasks
+     */
+    tasks: Array<string>;
+    /**
+     * Modality
+     */
+    modality: string;
+    /**
+     * Scenes
+     */
+    scenes: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Width
+     */
+    width: number;
+    /**
+     * Height
+     */
+    height: number;
+    /**
+     * Samples
+     */
+    samples: number;
+    /**
+     * Splits
+     */
+    splits: Array<DatasetSplitOut>;
+    /**
+     * Size Bytes
+     */
+    size_bytes: number;
+    /**
+     * License
+     */
+    license: string;
+    /**
+     * Homepage
+     */
+    homepage: string | null;
+    /**
+     * Mount Path
+     */
+    mount_path: string;
+    /**
+     * Checksum Sha256
+     */
+    checksum_sha256: string;
+    /**
+     * Registered At
+     */
+    registered_at: string;
+    contract: DataContractOut;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * DatasetSplitOut
+ */
+export type DatasetSplitOut = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Samples
+     */
+    samples: number;
+};
+
+/**
  * Decision
  */
 export type Decision = 'approve' | 'request_changes' | 'reject';
@@ -64,6 +378,251 @@ export type DecisionIn = {
      * Comment
      */
     comment?: string;
+    /**
+     * Edited Data
+     */
+    edited_data?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+/**
+ * EstimateAssumptions
+ */
+export type EstimateAssumptions = {
+    /**
+     * Paid Chain
+     */
+    paid_chain: Array<ModelPriceOut>;
+    /**
+     * Steps
+     */
+    steps: Array<EstimateStepOut>;
+};
+
+/**
+ * EstimateStepOut
+ *
+ * One step's assumed calls and their cost (before any cap).
+ */
+export type EstimateStepOut = {
+    /**
+     * Stage
+     */
+    stage: string;
+    /**
+     * Role
+     */
+    role: 'researcher' | 'screener' | 'analyst' | 'methodologist' | 'coder' | 'writer';
+    /**
+     * Calls Low
+     */
+    calls_low: number;
+    /**
+     * Calls Expected
+     */
+    calls_expected: number;
+    /**
+     * Calls High
+     */
+    calls_high: number;
+    /**
+     * Prompt Tokens Per Call
+     */
+    prompt_tokens_per_call: number;
+    /**
+     * Completion Tokens Per Call
+     */
+    completion_tokens_per_call: number;
+    /**
+     * Low Usd
+     */
+    low_usd: string;
+    /**
+     * Expected Usd
+     */
+    expected_usd: string;
+    /**
+     * High Usd
+     */
+    high_usd: string;
+};
+
+/**
+ * EvidenceQuote
+ */
+export type EvidenceQuote = {
+    /**
+     * Quote
+     */
+    quote: string;
+    /**
+     * Page
+     */
+    page: number;
+};
+
+/**
+ * GpuJobOut
+ */
+export type GpuJobOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Status
+     */
+    status: 'running' | 'queued';
+    /**
+     * Run Id
+     */
+    run_id: string | null;
+    /**
+     * Topic
+     */
+    topic: string | null;
+    /**
+     * Project Name
+     */
+    project_name: string | null;
+    /**
+     * Owner Name
+     */
+    owner_name: string | null;
+    /**
+     * Is Mine
+     */
+    is_mine: boolean;
+    /**
+     * Dataset
+     */
+    dataset: string | null;
+    /**
+     * Progress
+     */
+    progress: number;
+    /**
+     * Epoch
+     */
+    epoch: number | null;
+    /**
+     * Total Epochs
+     */
+    total_epochs: number | null;
+    /**
+     * Gpu Memory Mb
+     */
+    gpu_memory_mb: number | null;
+    /**
+     * Submitted At
+     */
+    submitted_at: string;
+    /**
+     * Started At
+     */
+    started_at: string | null;
+    /**
+     * Estimated Start At
+     */
+    estimated_start_at: string;
+    /**
+     * Estimated Finish At
+     */
+    estimated_finish_at: string;
+    /**
+     * Eta Seconds
+     */
+    eta_seconds: number;
+    /**
+     * Estimated
+     */
+    estimated: boolean;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * GpuOut
+ */
+export type GpuOut = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Memory Total Mb
+     */
+    memory_total_mb: number;
+    /**
+     * Memory Used Mb
+     */
+    memory_used_mb: number;
+    /**
+     * Utilization Percent
+     */
+    utilization_percent: number;
+    /**
+     * Temperature C
+     */
+    temperature_c: number;
+    /**
+     * Power Draw W
+     */
+    power_draw_w: number;
+    /**
+     * Power Limit W
+     */
+    power_limit_w: number;
+    /**
+     * Fan Percent
+     */
+    fan_percent: number;
+    /**
+     * Sampled At
+     */
+    sampled_at: string;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * GpuQueueOut
+ */
+export type GpuQueueOut = {
+    gpu: GpuOut;
+    /**
+     * Concurrency
+     */
+    concurrency: number;
+    /**
+     * Running
+     */
+    running: Array<GpuJobOut>;
+    /**
+     * Queued
+     */
+    queued: Array<GpuJobOut>;
+    /**
+     * My Position
+     */
+    my_position: number | null;
+    /**
+     * My Jobs
+     */
+    my_jobs: number;
+    /**
+     * Per User Limit
+     */
+    per_user_limit: number;
+    /**
+     * Demo
+     */
+    demo: boolean;
 };
 
 /**
@@ -74,6 +633,28 @@ export type HttpValidationError = {
      * Detail
      */
     detail?: Array<ValidationError>;
+};
+
+/**
+ * HealthCheckOut
+ */
+export type HealthCheckOut = {
+    /**
+     * Name
+     */
+    name: 'postgres' | 'valkey' | 'temporal' | 'gateway' | 'worker';
+    /**
+     * Status
+     */
+    status: 'ok' | 'degraded' | 'down' | 'unknown';
+    /**
+     * Latency Ms
+     */
+    latency_ms: number;
+    /**
+     * Detail
+     */
+    detail: string | null;
 };
 
 /**
@@ -95,9 +676,91 @@ export type HealthResponse = {
 };
 
 /**
+ * LabBalanceOut
+ */
+export type LabBalanceOut = {
+    /**
+     * Balance Usd
+     */
+    balance_usd: string;
+    /**
+     * Month
+     */
+    month: string;
+    /**
+     * Spent This Month Usd
+     */
+    spent_this_month_usd: string;
+    /**
+     * Free Daily Limit
+     */
+    free_daily_limit: number;
+    /**
+     * Free Calls Today
+     */
+    free_calls_today: number;
+    /**
+     * Auto Top Up
+     */
+    auto_top_up: boolean;
+    /**
+     * Alert Floor Usd
+     */
+    alert_floor_usd: string;
+    /**
+     * Below Floor
+     */
+    below_floor: boolean;
+    /**
+     * Checked At
+     */
+    checked_at: string;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * LibraryPaperOut
+ */
+export type LibraryPaperOut = {
+    paper: PaperOut;
+    /**
+     * Run Count
+     */
+    run_count: number;
+    /**
+     * Project Count
+     */
+    project_count: number;
+    /**
+     * Best Relevance
+     */
+    best_relevance: number | null;
+    /**
+     * Decisions
+     */
+    decisions: Array<'include' | 'maybe' | 'exclude'>;
+    /**
+     * Last Seen At
+     */
+    last_seen_at: string;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
  * LlmPolicy
  */
 export type LlmPolicy = 'auto' | 'free';
+
+/**
+ * LlmTier
+ */
+export type LlmTier = 'paid' | 'free';
 
 /**
  * MeOut
@@ -160,6 +823,178 @@ export type MemberOut = {
 };
 
 /**
+ * MemberUpdate
+ */
+export type MemberUpdate = {
+    role: ProjectRole;
+};
+
+/**
+ * ModelPriceOut
+ */
+export type ModelPriceOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Prompt Usd Per Mtok
+     */
+    prompt_usd_per_mtok: string;
+    /**
+     * Completion Usd Per Mtok
+     */
+    completion_usd_per_mtok: string;
+    /**
+     * Known
+     */
+    known: boolean;
+};
+
+/**
+ * ModelRoutingOut
+ */
+export type ModelRoutingOut = {
+    /**
+     * Paid Models Enabled
+     */
+    paid_models_enabled: boolean;
+    /**
+     * Roles
+     */
+    roles: Array<RoleRoutingOut>;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * NotificationList
+ */
+export type NotificationList = {
+    /**
+     * Items
+     */
+    items: Array<NotificationOut>;
+    /**
+     * Unread Count
+     */
+    unread_count: number;
+};
+
+/**
+ * NotificationOut
+ */
+export type NotificationOut = {
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Kind
+     */
+    kind: 'approval_needed' | 'approval_expiring' | 'run_completed' | 'run_failed' | 'run_cancelled' | 'run_rejected' | 'budget_alert';
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Read
+     */
+    read: boolean;
+    /**
+     * Run Id
+     */
+    run_id: string | null;
+    /**
+     * Project Id
+     */
+    project_id: string | null;
+    /**
+     * Stage
+     */
+    stage: string | null;
+    /**
+     * Params
+     */
+    params: {
+        [key: string]: string | number | null;
+    };
+};
+
+/**
+ * NotificationsReadIn
+ */
+export type NotificationsReadIn = {
+    /**
+     * Keys
+     */
+    keys?: Array<string>;
+    /**
+     * All
+     */
+    all?: boolean;
+};
+
+/**
+ * OutputVersionOut
+ */
+export type OutputVersionOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Sha256
+     */
+    sha256: string;
+    /**
+     * Data
+     */
+    data: {
+        [key: string]: unknown;
+    };
+    /**
+     * Degraded
+     */
+    degraded: boolean;
+    /**
+     * Degraded Reason
+     */
+    degraded_reason: string | null;
+    /**
+     * Model
+     */
+    model: string | null;
+    /**
+     * Prompt Version
+     */
+    prompt_version: string | null;
+    /**
+     * Edited By
+     */
+    edited_by: string | null;
+    /**
+     * Edited By Name
+     */
+    edited_by_name: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Schema Ok
+     */
+    schema_ok: boolean;
+    approval: ApprovalOut | null;
+};
+
+/**
  * PaidModelsSetting
  */
 export type PaidModelsSetting = {
@@ -167,6 +1002,196 @@ export type PaidModelsSetting = {
      * Enabled
      */
     enabled: boolean;
+};
+
+/**
+ * PaperAnalysisOut
+ *
+ * One literature output's reading notes on the paper; evidence points into its PDF.
+ */
+export type PaperAnalysisOut = {
+    /**
+     * Run Id
+     */
+    run_id: string;
+    /**
+     * Stage Output Id
+     */
+    stage_output_id: string;
+    /**
+     * Attempt
+     */
+    attempt: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Contribution
+     */
+    contribution: string;
+    /**
+     * Method
+     */
+    method: string;
+    /**
+     * Results
+     */
+    results: string;
+    /**
+     * Limitations
+     */
+    limitations: string;
+    /**
+     * Evidence
+     */
+    evidence: Array<EvidenceQuote>;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * PaperDetail
+ */
+export type PaperDetail = {
+    paper: PaperOut;
+    /**
+     * Best Relevance
+     */
+    best_relevance: number;
+    /**
+     * Runs
+     */
+    runs: Array<PaperRunOut>;
+    /**
+     * Analyses
+     */
+    analyses: Array<PaperAnalysisOut>;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * PaperOut
+ *
+ * A paper's bibliographic record, as its newest appearance in a literature output has it.
+ */
+export type PaperOut = {
+    /**
+     * Paper Id
+     */
+    paper_id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Authors
+     */
+    authors: Array<string>;
+    /**
+     * Year
+     */
+    year: number;
+    /**
+     * Venue
+     */
+    venue: string | null;
+    /**
+     * Doi
+     */
+    doi: string | null;
+    /**
+     * Arxiv Id
+     */
+    arxiv_id: string | null;
+    /**
+     * Url
+     */
+    url: string | null;
+    /**
+     * Abstract
+     */
+    abstract: string;
+    /**
+     * Citation Count
+     */
+    citation_count: number | null;
+    /**
+     * Source
+     */
+    source: 'arxiv' | 'semantic_scholar' | 'openalex' | 'crossref' | 'core' | 'demo';
+    /**
+     * Pdf Available
+     */
+    pdf_available: boolean;
+};
+
+/**
+ * PaperPage
+ */
+export type PaperPage = {
+    /**
+     * Items
+     */
+    items: Array<LibraryPaperOut>;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * PaperRunOut
+ *
+ * A run whose literature stage found the paper, with that run's screening of it.
+ */
+export type PaperRunOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Topic
+     */
+    topic: string;
+    status: RunStatus;
+    /**
+     * Project Id
+     */
+    project_id: string;
+    /**
+     * Project Name
+     */
+    project_name: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Relevance
+     */
+    relevance: number;
+    /**
+     * Decision
+     */
+    decision: 'include' | 'maybe' | 'exclude';
+    /**
+     * Decision Reason
+     */
+    decision_reason: string;
+    /**
+     * Demo
+     */
+    demo: boolean;
 };
 
 /**
@@ -226,6 +1251,188 @@ export type ProjectOut = {
 export type ProjectRole = 'owner' | 'researcher' | 'viewer';
 
 /**
+ * ProjectSettings
+ *
+ * Project options; read by every member, written by owners and lab admins.
+ */
+export type ProjectSettings = {
+    privacy: Privacy;
+    /**
+     * Allow Free Models
+     */
+    allow_free_models: boolean;
+    /**
+     * Auto Approve
+     */
+    auto_approve: boolean;
+    /**
+     * Approval Expiry Days
+     */
+    approval_expiry_days: number;
+};
+
+/**
+ * RecentRunOut
+ */
+export type RecentRunOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Topic
+     */
+    topic: string;
+    status: RunStatus;
+    llm_policy: LlmPolicy;
+    /**
+     * Budget Cap Usd
+     */
+    budget_cap_usd: string | null;
+    config: RunConfigOut;
+    /**
+     * Error
+     */
+    error: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+    /**
+     * Project Name
+     */
+    project_name: string;
+};
+
+/**
+ * RoleRoutingOut
+ */
+export type RoleRoutingOut = {
+    /**
+     * Role
+     */
+    role: 'researcher' | 'screener' | 'analyst' | 'methodologist' | 'coder' | 'writer';
+    /**
+     * Max Output Tokens
+     */
+    max_output_tokens: number;
+    /**
+     * Paid
+     */
+    paid: Array<RoutedModelOut>;
+    /**
+     * Free
+     */
+    free: Array<RoutedModelOut>;
+};
+
+/**
+ * RoutedModelOut
+ */
+export type RoutedModelOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Free
+     */
+    free: boolean;
+    /**
+     * In Catalog
+     */
+    in_catalog: boolean;
+    /**
+     * Context Length
+     */
+    context_length: number | null;
+    /**
+     * Prompt Usd Per Mtok
+     */
+    prompt_usd_per_mtok: string | null;
+    /**
+     * Completion Usd Per Mtok
+     */
+    completion_usd_per_mtok: string | null;
+};
+
+/**
+ * RunConfig
+ *
+ * Options chosen in the new-run wizard, stored in ``runs.config``.
+ */
+export type RunConfig = {
+    /**
+     * Year From
+     */
+    year_from?: number;
+    /**
+     * Year To
+     */
+    year_to?: number;
+    /**
+     * Sources
+     */
+    sources?: Array<'arxiv' | 'semantic_scholar' | 'openalex' | 'crossref' | 'core'>;
+    /**
+     * Max Papers
+     */
+    max_papers?: number;
+    /**
+     * Stages
+     */
+    stages?: Array<Stage>;
+    /**
+     * Dataset
+     */
+    dataset?: string | null;
+};
+
+/**
+ * RunConfigOut
+ *
+ * A run's options as responses carry them: always complete, so every field is required.
+ */
+export type RunConfigOut = {
+    /**
+     * Year From
+     */
+    year_from: number;
+    /**
+     * Year To
+     */
+    year_to: number;
+    /**
+     * Sources
+     */
+    sources: Array<'arxiv' | 'semantic_scholar' | 'openalex' | 'crossref' | 'core'>;
+    /**
+     * Max Papers
+     */
+    max_papers: number;
+    /**
+     * Stages
+     */
+    stages: Array<Stage>;
+    /**
+     * Dataset
+     */
+    dataset: string | null;
+};
+
+/**
  * RunCreate
  */
 export type RunCreate = {
@@ -238,6 +1445,7 @@ export type RunCreate = {
      * Budget Cap Usd
      */
     budget_cap_usd?: number | string | null;
+    config?: RunConfig;
 };
 
 /**
@@ -266,6 +1474,7 @@ export type RunDetail = {
      * Budget Cap Usd
      */
     budget_cap_usd: string | null;
+    config: RunConfigOut;
     /**
      * Error
      */
@@ -294,6 +1503,74 @@ export type RunDetail = {
 };
 
 /**
+ * RunEstimateIn
+ */
+export type RunEstimateIn = {
+    config?: RunConfig;
+    llm_policy?: LlmPolicy;
+    /**
+     * Budget Cap Usd
+     */
+    budget_cap_usd?: number | string | null;
+};
+
+/**
+ * RunEstimateOut
+ */
+export type RunEstimateOut = {
+    llm_policy: LlmPolicy;
+    /**
+     * Low Usd
+     */
+    low_usd: string;
+    /**
+     * Expected Usd
+     */
+    expected_usd: string;
+    /**
+     * High Usd
+     */
+    high_usd: string;
+    /**
+     * Calls Low
+     */
+    calls_low: number;
+    /**
+     * Expected Calls
+     */
+    expected_calls: number;
+    /**
+     * Calls High
+     */
+    calls_high: number;
+    /**
+     * Paid Possible
+     */
+    paid_possible: boolean;
+    /**
+     * Paid Blocked By
+     */
+    paid_blocked_by: 'policy' | 'kill_switch' | 'budget' | 'run_cap' | null;
+    /**
+     * Paid Models Enabled
+     */
+    paid_models_enabled: boolean;
+    /**
+     * Budget Remaining Usd
+     */
+    budget_remaining_usd: string;
+    /**
+     * Capped By
+     */
+    capped_by: 'run_cap' | 'budget' | null;
+    assumptions: EstimateAssumptions;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
  * RunOut
  */
 export type RunOut = {
@@ -319,6 +1596,7 @@ export type RunOut = {
      * Budget Cap Usd
      */
     budget_cap_usd: string | null;
+    config: RunConfigOut;
     /**
      * Error
      */
@@ -337,6 +1615,64 @@ export type RunOut = {
  * RunStatus
  */
 export type RunStatus = 'queued' | 'running' | 'awaiting_approval' | 'completed' | 'rejected' | 'failed' | 'cancelled' | 'paused_budget';
+
+/**
+ * Stage
+ */
+export type Stage = 'literature' | 'method' | 'coding' | 'experiment' | 'writing';
+
+/**
+ * StageAttemptOut
+ */
+export type StageAttemptOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Attempt
+     */
+    attempt: number;
+    status: StageStatus;
+    /**
+     * Feedback
+     */
+    feedback: string | null;
+    /**
+     * Error
+     */
+    error: string | null;
+    /**
+     * Started At
+     */
+    started_at: string | null;
+    /**
+     * Finished At
+     */
+    finished_at: string | null;
+    /**
+     * Outputs
+     */
+    outputs: Array<OutputVersionOut>;
+};
+
+/**
+ * StageDetail
+ */
+export type StageDetail = {
+    /**
+     * Run Id
+     */
+    run_id: string;
+    /**
+     * Stage
+     */
+    stage: string;
+    /**
+     * Attempts
+     */
+    attempts: Array<StageAttemptOut>;
+};
 
 /**
  * StageInfo
@@ -441,6 +1777,235 @@ export type StageRunOut = {
 export type StageStatus = 'pending' | 'running' | 'output_ready' | 'approved' | 'changes_requested' | 'rejected' | 'failed' | 'cancelled' | 'invalidated';
 
 /**
+ * SystemHealthOut
+ */
+export type SystemHealthOut = {
+    /**
+     * Status
+     */
+    status: 'ok' | 'degraded' | 'down' | 'unknown';
+    /**
+     * Checked At
+     */
+    checked_at: string;
+    /**
+     * Checks
+     */
+    checks: Array<HealthCheckOut>;
+};
+
+/**
+ * UsageDayOut
+ */
+export type UsageDayOut = {
+    /**
+     * Paid Usd
+     */
+    paid_usd: string;
+    /**
+     * Paid Calls
+     */
+    paid_calls: number;
+    /**
+     * Free Calls
+     */
+    free_calls: number;
+    /**
+     * Prompt Tokens
+     */
+    prompt_tokens: number;
+    /**
+     * Completion Tokens
+     */
+    completion_tokens: number;
+    /**
+     * Day
+     */
+    day: string;
+};
+
+/**
+ * UsageModelOut
+ */
+export type UsageModelOut = {
+    /**
+     * Paid Usd
+     */
+    paid_usd: string;
+    /**
+     * Paid Calls
+     */
+    paid_calls: number;
+    /**
+     * Free Calls
+     */
+    free_calls: number;
+    /**
+     * Prompt Tokens
+     */
+    prompt_tokens: number;
+    /**
+     * Completion Tokens
+     */
+    completion_tokens: number;
+    /**
+     * Model
+     */
+    model: string;
+    tier: LlmTier;
+};
+
+/**
+ * UsageOut
+ */
+export type UsageOut = {
+    /**
+     * Scope
+     */
+    scope: 'me' | 'lab';
+    /**
+     * Days
+     */
+    days: number;
+    /**
+     * Since
+     */
+    since: string;
+    /**
+     * Until
+     */
+    until: string;
+    totals: UsageTotalsOut;
+    /**
+     * By Day
+     */
+    by_day: Array<UsageDayOut>;
+    /**
+     * By Model
+     */
+    by_model: Array<UsageModelOut>;
+    /**
+     * Top Runs
+     */
+    top_runs: Array<UsageRunOut>;
+    /**
+     * By User
+     */
+    by_user: Array<UsageUserOut>;
+    budget: BudgetStatusOut;
+    /**
+     * Demo
+     */
+    demo: boolean;
+};
+
+/**
+ * UsageRunOut
+ */
+export type UsageRunOut = {
+    /**
+     * Paid Usd
+     */
+    paid_usd: string;
+    /**
+     * Paid Calls
+     */
+    paid_calls: number;
+    /**
+     * Free Calls
+     */
+    free_calls: number;
+    /**
+     * Prompt Tokens
+     */
+    prompt_tokens: number;
+    /**
+     * Completion Tokens
+     */
+    completion_tokens: number;
+    /**
+     * Run Id
+     */
+    run_id: string;
+    /**
+     * Topic
+     */
+    topic: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
+    /**
+     * Project Name
+     */
+    project_name: string;
+};
+
+/**
+ * UsageTotalsOut
+ */
+export type UsageTotalsOut = {
+    /**
+     * Paid Usd
+     */
+    paid_usd: string;
+    /**
+     * Paid Calls
+     */
+    paid_calls: number;
+    /**
+     * Free Calls
+     */
+    free_calls: number;
+    /**
+     * Prompt Tokens
+     */
+    prompt_tokens: number;
+    /**
+     * Completion Tokens
+     */
+    completion_tokens: number;
+};
+
+/**
+ * UsageUserOut
+ */
+export type UsageUserOut = {
+    /**
+     * Paid Usd
+     */
+    paid_usd: string;
+    /**
+     * Paid Calls
+     */
+    paid_calls: number;
+    /**
+     * Free Calls
+     */
+    free_calls: number;
+    /**
+     * Prompt Tokens
+     */
+    prompt_tokens: number;
+    /**
+     * Completion Tokens
+     */
+    completion_tokens: number;
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Name
+     */
+    name: string | null;
+    /**
+     * Email
+     */
+    email: string | null;
+};
+
+/**
  * ValidationError
  */
 export type ValidationError = {
@@ -466,6 +2031,479 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * Citation
+ */
+export type Citation = {
+    /**
+     * Key
+     */
+    key: number;
+    /**
+     * Paper Id
+     */
+    paper_id: string;
+};
+
+/**
+ * CodeFile
+ */
+export type CodeFile = {
+    /**
+     * Path
+     */
+    path: string;
+    /**
+     * Language
+     */
+    language: string;
+    /**
+     * Role
+     */
+    role: 'model' | 'loss' | 'config' | 'test' | 'docs';
+    /**
+     * Content
+     */
+    content: string;
+};
+
+/**
+ * CodingOutput
+ *
+ * Generated model and loss modules. The experiment harness owns data, metrics and the loop.
+ */
+export type CodingOutput = {
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Files
+     */
+    files: Array<CodeFile>;
+    /**
+     * Entrypoint
+     */
+    entrypoint: string;
+    smoke_test: SmokeTest;
+};
+
+/**
+ * ExperimentOutput
+ */
+export type ExperimentOutput = {
+    /**
+     * Status
+     */
+    status: 'succeeded' | 'failed' | 'timeout' | 'cancelled';
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Config
+     */
+    config: {
+        [key: string]: number | number | string | boolean;
+    };
+    /**
+     * Series
+     */
+    series: Array<MetricSeries>;
+    /**
+     * Final Metrics
+     */
+    final_metrics: {
+        [key: string]: number | null;
+    };
+    /**
+     * Logs Tail
+     */
+    logs_tail: string;
+    provenance: Provenance;
+};
+
+/**
+ * LiteratureOutput
+ */
+export type LiteratureOutput = {
+    plan: ResearchPlan;
+    /**
+     * Papers
+     */
+    papers: Array<PaperRef>;
+    /**
+     * Analyses
+     */
+    analyses?: Array<PaperAnalysis>;
+    /**
+     * Key Findings
+     */
+    key_findings: Array<PaperFinding>;
+    /**
+     * Synthesis
+     */
+    synthesis: string;
+};
+
+/**
+ * MethodOutput
+ */
+export type MethodOutput = {
+    /**
+     * Research Gaps
+     */
+    research_gaps: Array<string>;
+    /**
+     * Proposals
+     */
+    proposals: Array<MethodProposal>;
+    /**
+     * Recommended Option
+     */
+    recommended_option: string;
+    /**
+     * Implementation Focus
+     */
+    implementation_focus: string;
+    /**
+     * Datasets
+     */
+    datasets: Array<string>;
+    /**
+     * Evaluation Metrics
+     */
+    evaluation_metrics: Array<string>;
+};
+
+/**
+ * MethodProposal
+ */
+export type MethodProposal = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Rationale
+     */
+    rationale: string;
+    /**
+     * Expected Benefit
+     */
+    expected_benefit: string;
+    /**
+     * Risk
+     */
+    risk: string;
+    /**
+     * Evidence Paper Ids
+     */
+    evidence_paper_ids?: Array<string>;
+};
+
+/**
+ * MetricPoint
+ */
+export type MetricPoint = {
+    /**
+     * Epoch
+     */
+    epoch: number;
+    /**
+     * Value
+     */
+    value: number | null;
+};
+
+/**
+ * MetricSeries
+ */
+export type MetricSeries = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Split
+     */
+    split: 'train' | 'val' | 'test';
+    /**
+     * Higher Is Better
+     */
+    higher_is_better: boolean;
+    /**
+     * Points
+     */
+    points: Array<MetricPoint>;
+};
+
+/**
+ * PaperAnalysis
+ *
+ * Structured reading notes for one included paper; evidence points into its PDF.
+ */
+export type PaperAnalysis = {
+    /**
+     * Paper Id
+     */
+    paper_id: string;
+    /**
+     * Contribution
+     */
+    contribution: string;
+    /**
+     * Method
+     */
+    method: string;
+    /**
+     * Results
+     */
+    results: string;
+    /**
+     * Limitations
+     */
+    limitations: string;
+    /**
+     * Evidence
+     */
+    evidence?: Array<EvidenceQuote>;
+};
+
+/**
+ * PaperFinding
+ */
+export type PaperFinding = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Source
+     */
+    source: string;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Url
+     */
+    url?: string | null;
+    /**
+     * Paper Id
+     */
+    paper_id?: string | null;
+};
+
+/**
+ * PaperRef
+ *
+ * One retrieved paper with its screening result. ``paper_id`` is stable across runs.
+ */
+export type PaperRef = {
+    /**
+     * Paper Id
+     */
+    paper_id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Authors
+     */
+    authors: Array<string>;
+    /**
+     * Year
+     */
+    year: number;
+    /**
+     * Venue
+     */
+    venue?: string | null;
+    /**
+     * Doi
+     */
+    doi?: string | null;
+    /**
+     * Arxiv Id
+     */
+    arxiv_id?: string | null;
+    /**
+     * Url
+     */
+    url?: string | null;
+    /**
+     * Abstract
+     */
+    abstract: string;
+    /**
+     * Citation Count
+     */
+    citation_count?: number | null;
+    /**
+     * Source
+     */
+    source: 'arxiv' | 'semantic_scholar' | 'openalex' | 'crossref' | 'core' | 'demo';
+    /**
+     * Pdf Available
+     */
+    pdf_available: boolean;
+    /**
+     * Relevance
+     */
+    relevance: number;
+    /**
+     * Decision
+     */
+    decision: 'include' | 'maybe' | 'exclude';
+    /**
+     * Decision Reason
+     */
+    decision_reason: string;
+};
+
+/**
+ * Provenance
+ */
+export type Provenance = {
+    /**
+     * Image Digest
+     */
+    image_digest: string;
+    /**
+     * Code Sha256
+     */
+    code_sha256: string;
+    /**
+     * Config Sha256
+     */
+    config_sha256: string;
+    /**
+     * Dataset
+     */
+    dataset: string;
+    /**
+     * Dataset Version
+     */
+    dataset_version: string;
+    /**
+     * Seed
+     */
+    seed: number;
+    /**
+     * Gpu Name
+     */
+    gpu_name?: string | null;
+    /**
+     * Gpu Seconds
+     */
+    gpu_seconds: number;
+    /**
+     * Started At
+     */
+    started_at: string;
+    /**
+     * Finished At
+     */
+    finished_at?: string | null;
+};
+
+/**
+ * ResearchPlan
+ *
+ * The search plan the literature agent writes before searching.
+ */
+export type ResearchPlan = {
+    /**
+     * Topic
+     */
+    topic: string;
+    /**
+     * Queries
+     */
+    queries: Array<string>;
+    /**
+     * Scope
+     */
+    scope: string;
+    /**
+     * Inclusion Criteria
+     */
+    inclusion_criteria: Array<string>;
+    /**
+     * Subtopics
+     */
+    subtopics: Array<string>;
+};
+
+/**
+ * SmokeTest
+ */
+export type SmokeTest = {
+    /**
+     * Passed
+     */
+    passed: boolean;
+    /**
+     * Duration Seconds
+     */
+    duration_seconds: number;
+    /**
+     * Log
+     */
+    log: string;
+};
+
+/**
+ * WritingOutput
+ */
+export type WritingOutput = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Abstract
+     */
+    abstract: string;
+    /**
+     * Markdown
+     */
+    markdown: string;
+    /**
+     * Sections
+     */
+    sections: Array<WritingSection>;
+    /**
+     * Citations
+     */
+    citations?: Array<Citation>;
+    /**
+     * Output Format
+     */
+    output_format: string;
+    /**
+     * Review Focus
+     */
+    review_focus: string;
+};
+
+/**
+ * WritingSection
+ */
+export type WritingSection = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Objective
+     */
+    objective: string;
 };
 
 export type GetHealthData = {
@@ -575,6 +2613,66 @@ export type GetProjectResponses = {
 
 export type GetProjectResponse = GetProjectResponses[keyof GetProjectResponses];
 
+export type GetProjectSettingsData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}/settings';
+};
+
+export type GetProjectSettingsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetProjectSettingsError = GetProjectSettingsErrors[keyof GetProjectSettingsErrors];
+
+export type GetProjectSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProjectSettings;
+};
+
+export type GetProjectSettingsResponse = GetProjectSettingsResponses[keyof GetProjectSettingsResponses];
+
+export type UpdateProjectSettingsData = {
+    body: ProjectSettings;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}/settings';
+};
+
+export type UpdateProjectSettingsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateProjectSettingsError = UpdateProjectSettingsErrors[keyof UpdateProjectSettingsErrors];
+
+export type UpdateProjectSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProjectSettings;
+};
+
+export type UpdateProjectSettingsResponse = UpdateProjectSettingsResponses[keyof UpdateProjectSettingsResponses];
+
 export type ListMembersData = {
     body?: never;
     path: {
@@ -636,6 +2734,74 @@ export type AddMemberResponses = {
 };
 
 export type AddMemberResponse = AddMemberResponses[keyof AddMemberResponses];
+
+export type RemoveMemberData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}/members/{user_id}';
+};
+
+export type RemoveMemberErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RemoveMemberError = RemoveMemberErrors[keyof RemoveMemberErrors];
+
+export type RemoveMemberResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RemoveMemberResponse = RemoveMemberResponses[keyof RemoveMemberResponses];
+
+export type UpdateMemberData = {
+    body: MemberUpdate;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}/members/{user_id}';
+};
+
+export type UpdateMemberErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateMemberError = UpdateMemberErrors[keyof UpdateMemberErrors];
+
+export type UpdateMemberResponses = {
+    /**
+     * Successful Response
+     */
+    200: MemberOut;
+};
+
+export type UpdateMemberResponse = UpdateMemberResponses[keyof UpdateMemberResponses];
 
 export type ListRunsData = {
     body?: never;
@@ -699,6 +2865,42 @@ export type CreateRunResponses = {
 
 export type CreateRunResponse = CreateRunResponses[keyof CreateRunResponses];
 
+export type ListRecentRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Status
+         */
+        status?: RunStatus | null;
+    };
+    url: '/api/v1/runs';
+};
+
+export type ListRecentRunsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListRecentRunsError = ListRecentRunsErrors[keyof ListRecentRunsErrors];
+
+export type ListRecentRunsResponses = {
+    /**
+     * Response Listrecentruns
+     *
+     * Successful Response
+     */
+    200: Array<RecentRunOut>;
+};
+
+export type ListRecentRunsResponse = ListRecentRunsResponses[keyof ListRecentRunsResponses];
+
 export type GetRunData = {
     body?: never;
     path: {
@@ -729,6 +2931,40 @@ export type GetRunResponses = {
 
 export type GetRunResponse = GetRunResponses[keyof GetRunResponses];
 
+export type GetStageData = {
+    body?: never;
+    path: {
+        /**
+         * Run Id
+         */
+        run_id: string;
+        /**
+         * Stage
+         */
+        stage: string;
+    };
+    query?: never;
+    url: '/api/v1/runs/{run_id}/stages/{stage}';
+};
+
+export type GetStageErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetStageError = GetStageErrors[keyof GetStageErrors];
+
+export type GetStageResponses = {
+    /**
+     * Successful Response
+     */
+    200: StageDetail;
+};
+
+export type GetStageResponse = GetStageResponses[keyof GetStageResponses];
+
 export type DecideStageData = {
     body: DecisionIn;
     path: {
@@ -758,6 +2994,41 @@ export type DecideStageResponses = {
 };
 
 export type DecideStageResponse = DecideStageResponses[keyof DecideStageResponses];
+
+export type RetryRunData = {
+    body?: never;
+    path: {
+        /**
+         * Run Id
+         */
+        run_id: string;
+    };
+    query: {
+        /**
+         * Stage
+         */
+        stage: string;
+    };
+    url: '/api/v1/runs/{run_id}/retry';
+};
+
+export type RetryRunErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RetryRunError = RetryRunErrors[keyof RetryRunErrors];
+
+export type RetryRunResponses = {
+    /**
+     * Successful Response
+     */
+    202: Accepted;
+};
+
+export type RetryRunResponse = RetryRunResponses[keyof RetryRunResponses];
 
 export type CancelRunData = {
     body?: never;
@@ -932,3 +3203,399 @@ export type SetPaidModelsResponses = {
 };
 
 export type SetPaidModelsResponse = SetPaidModelsResponses[keyof SetPaidModelsResponses];
+
+export type ListAuditLogData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Offset
+         */
+        offset?: number;
+        /**
+         * Action
+         */
+        action?: string | null;
+    };
+    url: '/api/v1/admin/audit';
+};
+
+export type ListAuditLogErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListAuditLogError = ListAuditLogErrors[keyof ListAuditLogErrors];
+
+export type ListAuditLogResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuditPage;
+};
+
+export type ListAuditLogResponse = ListAuditLogResponses[keyof ListAuditLogResponses];
+
+export type GetSystemHealthData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/health';
+};
+
+export type GetSystemHealthResponses = {
+    /**
+     * Successful Response
+     */
+    200: SystemHealthOut;
+};
+
+export type GetSystemHealthResponse = GetSystemHealthResponses[keyof GetSystemHealthResponses];
+
+export type ListNotificationsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/notifications';
+};
+
+export type ListNotificationsResponses = {
+    /**
+     * Successful Response
+     */
+    200: NotificationList;
+};
+
+export type ListNotificationsResponse = ListNotificationsResponses[keyof ListNotificationsResponses];
+
+export type MarkNotificationsReadData = {
+    body: NotificationsReadIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/notifications/read';
+};
+
+export type MarkNotificationsReadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MarkNotificationsReadError = MarkNotificationsReadErrors[keyof MarkNotificationsReadErrors];
+
+export type MarkNotificationsReadResponses = {
+    /**
+     * Successful Response
+     */
+    200: NotificationList;
+};
+
+export type MarkNotificationsReadResponse = MarkNotificationsReadResponses[keyof MarkNotificationsReadResponses];
+
+export type ListPapersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Q
+         */
+        q?: string | null;
+        /**
+         * Project Id
+         */
+        project_id?: string | null;
+        /**
+         * Year From
+         */
+        year_from?: number | null;
+        /**
+         * Year To
+         */
+        year_to?: number | null;
+        /**
+         * Decision
+         */
+        decision?: 'include' | 'maybe' | 'exclude' | null;
+        /**
+         * Source
+         */
+        source?: 'arxiv' | 'semantic_scholar' | 'openalex' | 'crossref' | 'core' | 'demo' | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Offset
+         */
+        offset?: number;
+    };
+    url: '/api/v1/papers';
+};
+
+export type ListPapersErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListPapersError = ListPapersErrors[keyof ListPapersErrors];
+
+export type ListPapersResponses = {
+    /**
+     * Successful Response
+     */
+    200: PaperPage;
+};
+
+export type ListPapersResponse = ListPapersResponses[keyof ListPapersResponses];
+
+export type GetPaperFileData = {
+    body?: never;
+    path: {
+        /**
+         * Paper Id
+         */
+        paper_id: string;
+    };
+    query?: never;
+    url: '/api/v1/papers/{paper_id}/file';
+};
+
+export type GetPaperFileErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetPaperFileError = GetPaperFileErrors[keyof GetPaperFileErrors];
+
+export type GetPaperFileResponses = {
+    /**
+     * The file
+     */
+    200: Blob | File;
+};
+
+export type GetPaperFileResponse = GetPaperFileResponses[keyof GetPaperFileResponses];
+
+export type GetPaperData = {
+    body?: never;
+    path: {
+        /**
+         * Paper Id
+         */
+        paper_id: string;
+    };
+    query?: never;
+    url: '/api/v1/papers/{paper_id}';
+};
+
+export type GetPaperErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetPaperError = GetPaperErrors[keyof GetPaperErrors];
+
+export type GetPaperResponses = {
+    /**
+     * Successful Response
+     */
+    200: PaperDetail;
+};
+
+export type GetPaperResponse = GetPaperResponses[keyof GetPaperResponses];
+
+export type ListRunArtifactsData = {
+    body?: never;
+    path: {
+        /**
+         * Run Id
+         */
+        run_id: string;
+    };
+    query?: never;
+    url: '/api/v1/runs/{run_id}/artifacts';
+};
+
+export type ListRunArtifactsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListRunArtifactsError = ListRunArtifactsErrors[keyof ListRunArtifactsErrors];
+
+export type ListRunArtifactsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ArtifactList;
+};
+
+export type ListRunArtifactsResponse = ListRunArtifactsResponses[keyof ListRunArtifactsResponses];
+
+export type GetArtifactData = {
+    body?: never;
+    path: {
+        /**
+         * Artifact Id
+         */
+        artifact_id: string;
+    };
+    query?: never;
+    url: '/api/v1/artifacts/{artifact_id}';
+};
+
+export type GetArtifactErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetArtifactError = GetArtifactErrors[keyof GetArtifactErrors];
+
+export type GetArtifactResponses = {
+    /**
+     * The file
+     */
+    200: Blob | File;
+};
+
+export type GetArtifactResponse = GetArtifactResponses[keyof GetArtifactResponses];
+
+export type ListDatasetsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/datasets';
+};
+
+export type ListDatasetsResponses = {
+    /**
+     * Successful Response
+     */
+    200: DatasetList;
+};
+
+export type ListDatasetsResponse = ListDatasetsResponses[keyof ListDatasetsResponses];
+
+export type GetGpuQueueData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/gpu/queue';
+};
+
+export type GetGpuQueueResponses = {
+    /**
+     * Successful Response
+     */
+    200: GpuQueueOut;
+};
+
+export type GetGpuQueueResponse = GetGpuQueueResponses[keyof GetGpuQueueResponses];
+
+export type GetUsageData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Scope
+         */
+        scope?: 'me' | 'lab';
+        /**
+         * Days
+         */
+        days?: number;
+    };
+    url: '/api/v1/usage';
+};
+
+export type GetUsageErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetUsageError = GetUsageErrors[keyof GetUsageErrors];
+
+export type GetUsageResponses = {
+    /**
+     * Successful Response
+     */
+    200: UsageOut;
+};
+
+export type GetUsageResponse = GetUsageResponses[keyof GetUsageResponses];
+
+export type EstimateRunCostData = {
+    body: RunEstimateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/runs/estimate';
+};
+
+export type EstimateRunCostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EstimateRunCostError = EstimateRunCostErrors[keyof EstimateRunCostErrors];
+
+export type EstimateRunCostResponses = {
+    /**
+     * Successful Response
+     */
+    200: RunEstimateOut;
+};
+
+export type EstimateRunCostResponse = EstimateRunCostResponses[keyof EstimateRunCostResponses];
+
+export type GetModelRoutingData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/models';
+};
+
+export type GetModelRoutingResponses = {
+    /**
+     * Successful Response
+     */
+    200: ModelRoutingOut;
+};
+
+export type GetModelRoutingResponse = GetModelRoutingResponses[keyof GetModelRoutingResponses];
+
+export type GetLabBalanceData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/balance';
+};
+
+export type GetLabBalanceResponses = {
+    /**
+     * Successful Response
+     */
+    200: LabBalanceOut;
+};
+
+export type GetLabBalanceResponse = GetLabBalanceResponses[keyof GetLabBalanceResponses];

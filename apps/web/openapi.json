@@ -158,6 +158,100 @@
         }
       }
     },
+    "/api/v1/projects/{project_id}/settings": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Get Project Settings",
+        "operationId": "getProjectSettings",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSettings"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Update Project Settings",
+        "operationId": "updateProjectSettings",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSettings"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project_id}/members": {
       "get": {
         "tags": [
@@ -242,6 +336,117 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/members/{user_id}": {
+      "patch": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Update Member",
+        "description": "Change a member's role (owners and lab admins). The last owner can't be demoted.",
+        "operationId": "updateMember",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Remove Member",
+        "description": "Remove a member (owners and lab admins). The last owner can't be removed.",
+        "operationId": "removeMember",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -354,6 +559,72 @@
         }
       }
     },
+    "/api/v1/runs": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "List Recent Runs",
+        "description": "Newest runs across the caller's projects (every project for lab admins): the dashboard.",
+        "operationId": "listRecentRuns",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RunStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecentRunOut"
+                  },
+                  "title": "Response Listrecentruns"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/runs/{run_id}": {
       "get": {
         "tags": [
@@ -397,12 +668,66 @@
         }
       }
     },
+    "/api/v1/runs/{run_id}/stages/{stage}": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Get Stage",
+        "description": "Every attempt of one stage, with each attempt's output versions and their decisions.",
+        "operationId": "getStage",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "stage",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stage"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StageDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/runs/{run_id}/approvals": {
       "post": {
         "tags": [
           "runs"
         ],
         "summary": "Decide Stage",
+        "description": "Approve, request changes or reject the output waiting for a decision.\n\nApprove with edits sends ``edited_data``: it must pass the stage's output schema (422\n``decision.invalid_edit`` with ``loc`` and ``type`` of the first error otherwise).",
         "operationId": "decideStage",
         "parameters": [
           {
@@ -426,6 +751,61 @@
             }
           }
         },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{run_id}/retry": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Retry Run",
+        "description": "Run a finished run again from ``stage``, in a new execution of its workflow.\n\nThe workflow keeps the approved outputs of the stages before ``stage`` and invalidates the\noutputs from ``stage`` on.",
+        "operationId": "retryRun",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "title": "Stage"
+            }
+          }
+        ],
         "responses": {
           "202": {
             "description": "Successful Response",
@@ -714,6 +1094,735 @@
           }
         }
       }
+    },
+    "/api/v1/admin/audit": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Audit Log",
+        "description": "Audit log entries, newest first; ``action`` keeps one action (e.g. ``run.cancel``).",
+        "operationId": "listAuditLog",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/health": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get System Health",
+        "description": "Probes Postgres, Valkey, Temporal, the gateway and the workers concurrently.",
+        "operationId": "getSystemHealth",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemHealthOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/notifications": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "List Notifications",
+        "operationId": "listNotifications",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/notifications/read": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Mark Notifications Read",
+        "description": "Mark notifications read (idempotent). Keys the caller has no notification for are\nignored, so only real notifications are ever stored.",
+        "operationId": "markNotificationsRead",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationsReadIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/papers": {
+      "get": {
+        "tags": [
+          "papers"
+        ],
+        "summary": "List Papers",
+        "description": "Papers of the caller's projects (every project for lab admins), best relevance first.\n\n``q`` matches title, abstract, an author or the venue, ignoring case. A paper matches when\none run's record of it matches every filter; counts cover all of its runs in scope.",
+        "operationId": "listPapers",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "year_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 1900
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year From"
+            }
+          },
+          {
+            "name": "year_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 1900
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year To"
+            }
+          },
+          {
+            "name": "decision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "include",
+                    "maybe",
+                    "exclude"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Decision"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "arxiv",
+                    "semantic_scholar",
+                    "openalex",
+                    "crossref",
+                    "core",
+                    "demo"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/papers/{paper_id}/file": {
+      "get": {
+        "tags": [
+          "papers"
+        ],
+        "summary": "Get Paper File",
+        "description": "A generated PDF preview of the paper (always demo content: no PDFs are stored yet).\n\nIt has the paper's metadata and abstract, and prints every evidence quote of its analyses\non the page the quote cites, so the viewer can find and highlight it there.",
+        "operationId": "getPaperFile",
+        "parameters": [
+          {
+            "name": "paper_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300,
+              "title": "Paper Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/papers/{paper_id}": {
+      "get": {
+        "tags": [
+          "papers"
+        ],
+        "summary": "Get Paper",
+        "description": "The paper, every analysis of it and the runs that found it (404 when the caller can open\nnone of them).",
+        "operationId": "getPaper",
+        "parameters": [
+          {
+            "name": "paper_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300,
+              "title": "Paper Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{run_id}/artifacts": {
+      "get": {
+        "tags": [
+          "artifacts"
+        ],
+        "summary": "List Run Artifacts",
+        "description": "Every file the run's latest coding, experiment and writing outputs make; anyone who can\nopen the run may download them.",
+        "operationId": "listRunArtifacts",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/artifacts/{artifact_id}": {
+      "get": {
+        "tags": [
+          "artifacts"
+        ],
+        "summary": "Get Artifact",
+        "description": "Download one artifact. The id names a stage output and an item of it; both are checked\nagain here, and the caller must be able to open the run the output belongs to.",
+        "operationId": "getArtifact",
+        "parameters": [
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Artifact Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "text/markdown": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/x-bibtex": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/datasets": {
+      "get": {
+        "tags": [
+          "compute"
+        ],
+        "summary": "List Datasets",
+        "description": "Datasets experiments can mount (read-only), with their data contracts.",
+        "operationId": "listDatasets",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gpu/queue": {
+      "get": {
+        "tags": [
+          "compute"
+        ],
+        "summary": "Get Gpu Queue",
+        "description": "The GPU's live readings, the job on it and the jobs waiting, with the caller's place.\n\nReal experiment stages that are running come from the database, oldest first; runs in\nprojects the caller can't open show no topic. Telemetry and the other jobs are demo data.",
+        "operationId": "getGpuQueue",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GpuQueueOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/usage": {
+      "get": {
+        "tags": [
+          "usage"
+        ],
+        "summary": "Get Usage",
+        "description": "Paid spend and call counts over the last ``days`` UTC days, today included: the caller's\nown calls (\"me\"), or every user's (\"lab\", lab admins only). Real figures, zeros included.",
+        "operationId": "getUsage",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "me",
+                "lab"
+              ],
+              "type": "string",
+              "default": "me",
+              "title": "Scope"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 7,
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/estimate": {
+      "post": {
+        "tags": [
+          "usage"
+        ],
+        "summary": "Estimate Run Cost",
+        "description": "What a run with these options would likely cost the caller, and why: calls per stage\ntimes typical tokens times the paid chain's prices. Free when it can't use paid models.",
+        "operationId": "estimateRunCost",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunEstimateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunEstimateOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/models": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Model Routing",
+        "description": "Per agent role, the paid and free model chains the gateway tries, with catalog details,\nand the real state of the paid-models kill switch.",
+        "operationId": "getModelRouting",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelRoutingOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/balance": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Lab Balance",
+        "description": "The lab's prepaid OpenRouter balance (generated until the gateway reads it), with the\nreal paid spend this month and the real free-tier use today.",
+        "operationId": "getLabBalance",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabBalanceOut"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -729,6 +1838,248 @@
         },
         "type": "object",
         "title": "Accepted"
+      },
+      "ApprovalOut": {
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/Decision"
+          },
+          "comment": {
+            "type": "string",
+            "title": "Comment"
+          },
+          "actor_id": {
+            "type": "string",
+            "title": "Actor Id"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision",
+          "comment",
+          "actor_id",
+          "actor_name",
+          "at"
+        ],
+        "title": "ApprovalOut"
+      },
+      "ArtifactList": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run Id"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ArtifactOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "items",
+          "demo"
+        ],
+        "title": "ArtifactList"
+      },
+      "ArtifactOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "code_file",
+              "code_archive",
+              "experiment_log",
+              "metrics",
+              "draft",
+              "references"
+            ],
+            "title": "Kind"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          },
+          "stage_output_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Output Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "stage",
+          "kind",
+          "filename",
+          "path",
+          "media_type",
+          "size_bytes",
+          "sha256",
+          "stage_output_id",
+          "version",
+          "created_at",
+          "demo"
+        ],
+        "title": "ArtifactOut"
+      },
+      "AuditEntryOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "actor_id": {
+            "type": "string",
+            "title": "Actor Id"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "actor_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Email"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "target_type": {
+            "type": "string",
+            "title": "Target Type"
+          },
+          "target_id": {
+            "type": "string",
+            "title": "Target Id"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "actor_id",
+          "actor_name",
+          "actor_email",
+          "action",
+          "target_type",
+          "target_id",
+          "details",
+          "created_at"
+        ],
+        "title": "AuditEntryOut"
+      },
+      "AuditPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEntryOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "AuditPage"
       },
       "BudgetIn": {
         "properties": {
@@ -779,6 +2130,259 @@
         ],
         "title": "BudgetOut"
       },
+      "BudgetStatusOut": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "monthly_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly Usd"
+          },
+          "spent_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent Usd"
+          },
+          "remaining_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining Usd"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "monthly_usd",
+          "spent_usd",
+          "remaining_usd"
+        ],
+        "title": "BudgetStatusOut"
+      },
+      "DataContractOut": {
+        "properties": {
+          "inputs": {
+            "type": "string",
+            "title": "Inputs"
+          },
+          "targets": {
+            "type": "string",
+            "title": "Targets"
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units"
+          },
+          "valid_range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Range"
+          },
+          "missing_values": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing Values"
+          },
+          "evaluation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "inputs",
+          "targets",
+          "units",
+          "valid_range",
+          "missing_values",
+          "evaluation"
+        ],
+        "title": "DataContractOut",
+        "description": "What the experiment harness may rely on when it loads the dataset."
+      },
+      "DatasetList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "demo"
+        ],
+        "title": "DatasetList"
+      },
+      "DatasetOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "tasks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "modality": {
+            "type": "string",
+            "title": "Modality"
+          },
+          "scenes": {
+            "type": "string",
+            "title": "Scenes"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "samples": {
+            "type": "integer",
+            "title": "Samples"
+          },
+          "splits": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetSplitOut"
+            },
+            "type": "array",
+            "title": "Splits"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "license": {
+            "type": "string",
+            "title": "License"
+          },
+          "homepage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Homepage"
+          },
+          "mount_path": {
+            "type": "string",
+            "title": "Mount Path"
+          },
+          "checksum_sha256": {
+            "type": "string",
+            "title": "Checksum Sha256"
+          },
+          "registered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Registered At"
+          },
+          "contract": {
+            "$ref": "#/components/schemas/DataContractOut"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "version",
+          "tasks",
+          "modality",
+          "scenes",
+          "description",
+          "width",
+          "height",
+          "samples",
+          "splits",
+          "size_bytes",
+          "license",
+          "homepage",
+          "mount_path",
+          "checksum_sha256",
+          "registered_at",
+          "contract",
+          "demo"
+        ],
+        "title": "DatasetOut"
+      },
+      "DatasetSplitOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "samples": {
+            "type": "integer",
+            "title": "Samples"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "samples"
+        ],
+        "title": "DatasetSplitOut"
+      },
       "Decision": {
         "type": "string",
         "enum": [
@@ -808,6 +2412,18 @@
             "maxLength": 5000,
             "title": "Comment",
             "default": ""
+          },
+          "edited_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited Data"
           }
         },
         "additionalProperties": false,
@@ -818,6 +2434,415 @@
           "decision"
         ],
         "title": "DecisionIn"
+      },
+      "EstimateAssumptions": {
+        "properties": {
+          "paid_chain": {
+            "items": {
+              "$ref": "#/components/schemas/ModelPriceOut"
+            },
+            "type": "array",
+            "title": "Paid Chain"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/EstimateStepOut"
+            },
+            "type": "array",
+            "title": "Steps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid_chain",
+          "steps"
+        ],
+        "title": "EstimateAssumptions"
+      },
+      "EstimateStepOut": {
+        "properties": {
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "researcher",
+              "screener",
+              "analyst",
+              "methodologist",
+              "coder",
+              "writer"
+            ],
+            "title": "Role"
+          },
+          "calls_low": {
+            "type": "integer",
+            "title": "Calls Low"
+          },
+          "calls_expected": {
+            "type": "integer",
+            "title": "Calls Expected"
+          },
+          "calls_high": {
+            "type": "integer",
+            "title": "Calls High"
+          },
+          "prompt_tokens_per_call": {
+            "type": "integer",
+            "title": "Prompt Tokens Per Call"
+          },
+          "completion_tokens_per_call": {
+            "type": "integer",
+            "title": "Completion Tokens Per Call"
+          },
+          "low_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Low Usd"
+          },
+          "expected_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Expected Usd"
+          },
+          "high_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "High Usd"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stage",
+          "role",
+          "calls_low",
+          "calls_expected",
+          "calls_high",
+          "prompt_tokens_per_call",
+          "completion_tokens_per_call",
+          "low_usd",
+          "expected_usd",
+          "high_usd"
+        ],
+        "title": "EstimateStepOut",
+        "description": "One step's assumed calls and their cost (before any cap)."
+      },
+      "EvidenceQuote": {
+        "properties": {
+          "quote": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Quote"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quote",
+          "page"
+        ],
+        "title": "EvidenceQuote"
+      },
+      "GpuJobOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "queued"
+            ],
+            "title": "Status"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "topic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topic"
+          },
+          "project_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Name"
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name"
+          },
+          "is_mine": {
+            "type": "boolean",
+            "title": "Is Mine"
+          },
+          "dataset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset"
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress"
+          },
+          "epoch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Epoch"
+          },
+          "total_epochs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Epochs"
+          },
+          "gpu_memory_mb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Memory Mb"
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Submitted At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "estimated_start_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Estimated Start At"
+          },
+          "estimated_finish_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Estimated Finish At"
+          },
+          "eta_seconds": {
+            "type": "integer",
+            "title": "Eta Seconds"
+          },
+          "estimated": {
+            "type": "boolean",
+            "title": "Estimated"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "run_id",
+          "topic",
+          "project_name",
+          "owner_name",
+          "is_mine",
+          "dataset",
+          "progress",
+          "epoch",
+          "total_epochs",
+          "gpu_memory_mb",
+          "submitted_at",
+          "started_at",
+          "estimated_start_at",
+          "estimated_finish_at",
+          "eta_seconds",
+          "estimated",
+          "demo"
+        ],
+        "title": "GpuJobOut"
+      },
+      "GpuOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "memory_total_mb": {
+            "type": "integer",
+            "title": "Memory Total Mb"
+          },
+          "memory_used_mb": {
+            "type": "integer",
+            "title": "Memory Used Mb"
+          },
+          "utilization_percent": {
+            "type": "integer",
+            "title": "Utilization Percent"
+          },
+          "temperature_c": {
+            "type": "integer",
+            "title": "Temperature C"
+          },
+          "power_draw_w": {
+            "type": "number",
+            "title": "Power Draw W"
+          },
+          "power_limit_w": {
+            "type": "number",
+            "title": "Power Limit W"
+          },
+          "fan_percent": {
+            "type": "integer",
+            "title": "Fan Percent"
+          },
+          "sampled_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Sampled At"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "memory_total_mb",
+          "memory_used_mb",
+          "utilization_percent",
+          "temperature_c",
+          "power_draw_w",
+          "power_limit_w",
+          "fan_percent",
+          "sampled_at",
+          "demo"
+        ],
+        "title": "GpuOut"
+      },
+      "GpuQueueOut": {
+        "properties": {
+          "gpu": {
+            "$ref": "#/components/schemas/GpuOut"
+          },
+          "concurrency": {
+            "type": "integer",
+            "title": "Concurrency"
+          },
+          "running": {
+            "items": {
+              "$ref": "#/components/schemas/GpuJobOut"
+            },
+            "type": "array",
+            "title": "Running"
+          },
+          "queued": {
+            "items": {
+              "$ref": "#/components/schemas/GpuJobOut"
+            },
+            "type": "array",
+            "title": "Queued"
+          },
+          "my_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Position"
+          },
+          "my_jobs": {
+            "type": "integer",
+            "title": "My Jobs"
+          },
+          "per_user_limit": {
+            "type": "integer",
+            "title": "Per User Limit"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gpu",
+          "concurrency",
+          "running",
+          "queued",
+          "my_position",
+          "my_jobs",
+          "per_user_limit",
+          "demo"
+        ],
+        "title": "GpuQueueOut"
       },
       "HTTPValidationError": {
         "properties": {
@@ -831,6 +2856,54 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HealthCheckOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "postgres",
+              "valkey",
+              "temporal",
+              "gateway",
+              "worker"
+            ],
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "down",
+              "unknown"
+            ],
+            "title": "Status"
+          },
+          "latency_ms": {
+            "type": "number",
+            "title": "Latency Ms"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "status",
+          "latency_ms",
+          "detail"
+        ],
+        "title": "HealthCheckOut"
       },
       "HealthResponse": {
         "properties": {
@@ -855,6 +2928,126 @@
         ],
         "title": "HealthResponse"
       },
+      "LabBalanceOut": {
+        "properties": {
+          "balance_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Balance Usd"
+          },
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "spent_this_month_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spent This Month Usd"
+          },
+          "free_daily_limit": {
+            "type": "integer",
+            "title": "Free Daily Limit"
+          },
+          "free_calls_today": {
+            "type": "integer",
+            "title": "Free Calls Today"
+          },
+          "auto_top_up": {
+            "type": "boolean",
+            "title": "Auto Top Up"
+          },
+          "alert_floor_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Alert Floor Usd"
+          },
+          "below_floor": {
+            "type": "boolean",
+            "title": "Below Floor"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "balance_usd",
+          "month",
+          "spent_this_month_usd",
+          "free_daily_limit",
+          "free_calls_today",
+          "auto_top_up",
+          "alert_floor_usd",
+          "below_floor",
+          "checked_at",
+          "demo"
+        ],
+        "title": "LabBalanceOut"
+      },
+      "LibraryPaperOut": {
+        "properties": {
+          "paper": {
+            "$ref": "#/components/schemas/PaperOut"
+          },
+          "run_count": {
+            "type": "integer",
+            "title": "Run Count"
+          },
+          "project_count": {
+            "type": "integer",
+            "title": "Project Count"
+          },
+          "best_relevance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Relevance"
+          },
+          "decisions": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "include",
+                "maybe",
+                "exclude"
+              ]
+            },
+            "type": "array",
+            "title": "Decisions"
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen At"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paper",
+          "run_count",
+          "project_count",
+          "best_relevance",
+          "decisions",
+          "last_seen_at",
+          "demo"
+        ],
+        "title": "LibraryPaperOut"
+      },
       "LlmPolicy": {
         "type": "string",
         "enum": [
@@ -862,6 +3055,14 @@
           "free"
         ],
         "title": "LlmPolicy"
+      },
+      "LlmTier": {
+        "type": "string",
+        "enum": [
+          "paid",
+          "free"
+        ],
+        "title": "LlmTier"
       },
       "MeOut": {
         "properties": {
@@ -950,6 +3151,329 @@
         ],
         "title": "MemberOut"
       },
+      "MemberUpdate": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "MemberUpdate"
+      },
+      "ModelPriceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "prompt_usd_per_mtok": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Prompt Usd Per Mtok"
+          },
+          "completion_usd_per_mtok": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Completion Usd Per Mtok"
+          },
+          "known": {
+            "type": "boolean",
+            "title": "Known"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "prompt_usd_per_mtok",
+          "completion_usd_per_mtok",
+          "known"
+        ],
+        "title": "ModelPriceOut"
+      },
+      "ModelRoutingOut": {
+        "properties": {
+          "paid_models_enabled": {
+            "type": "boolean",
+            "title": "Paid Models Enabled"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleRoutingOut"
+            },
+            "type": "array",
+            "title": "Roles"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid_models_enabled",
+          "roles",
+          "demo"
+        ],
+        "title": "ModelRoutingOut"
+      },
+      "NotificationList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "unread_count": {
+            "type": "integer",
+            "title": "Unread Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "unread_count"
+        ],
+        "title": "NotificationList"
+      },
+      "NotificationOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "approval_needed",
+              "approval_expiring",
+              "run_completed",
+              "run_failed",
+              "run_cancelled",
+              "run_rejected",
+              "budget_alert"
+            ],
+            "title": "Kind"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "read": {
+            "type": "boolean",
+            "title": "Read"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "kind",
+          "created_at",
+          "read",
+          "run_id",
+          "project_id",
+          "stage",
+          "params"
+        ],
+        "title": "NotificationOut"
+      },
+      "NotificationsReadIn": {
+        "properties": {
+          "keys": {
+            "items": {
+              "type": "string",
+              "maxLength": 200,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 500,
+            "title": "Keys"
+          },
+          "all": {
+            "type": "boolean",
+            "title": "All",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NotificationsReadIn"
+      },
+      "OutputVersionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          },
+          "degraded": {
+            "type": "boolean",
+            "title": "Degraded"
+          },
+          "degraded_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Degraded Reason"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "prompt_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Version"
+          },
+          "edited_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited By"
+          },
+          "edited_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited By Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "schema_ok": {
+            "type": "boolean",
+            "title": "Schema Ok"
+          },
+          "approval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "sha256",
+          "data",
+          "degraded",
+          "degraded_reason",
+          "model",
+          "prompt_version",
+          "edited_by",
+          "edited_by_name",
+          "created_at",
+          "schema_ok",
+          "approval"
+        ],
+        "title": "OutputVersionOut"
+      },
       "PaidModelsSetting": {
         "properties": {
           "enabled": {
@@ -963,6 +3487,316 @@
           "enabled"
         ],
         "title": "PaidModelsSetting"
+      },
+      "PaperAnalysisOut": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run Id"
+          },
+          "stage_output_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Output Id"
+          },
+          "attempt": {
+            "type": "integer",
+            "title": "Attempt"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "contribution": {
+            "type": "string",
+            "title": "Contribution"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "results": {
+            "type": "string",
+            "title": "Results"
+          },
+          "limitations": {
+            "type": "string",
+            "title": "Limitations"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceQuote"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "stage_output_id",
+          "attempt",
+          "created_at",
+          "contribution",
+          "method",
+          "results",
+          "limitations",
+          "evidence",
+          "demo"
+        ],
+        "title": "PaperAnalysisOut",
+        "description": "One literature output's reading notes on the paper; evidence points into its PDF."
+      },
+      "PaperDetail": {
+        "properties": {
+          "paper": {
+            "$ref": "#/components/schemas/PaperOut"
+          },
+          "best_relevance": {
+            "type": "number",
+            "title": "Best Relevance"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/PaperRunOut"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "analyses": {
+            "items": {
+              "$ref": "#/components/schemas/PaperAnalysisOut"
+            },
+            "type": "array",
+            "title": "Analyses"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paper",
+          "best_relevance",
+          "runs",
+          "analyses",
+          "demo"
+        ],
+        "title": "PaperDetail"
+      },
+      "PaperOut": {
+        "properties": {
+          "paper_id": {
+            "type": "string",
+            "title": "Paper Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "authors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Authors"
+          },
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "venue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "arxiv_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arxiv Id"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "abstract": {
+            "type": "string",
+            "title": "Abstract"
+          },
+          "citation_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation Count"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "arxiv",
+              "semantic_scholar",
+              "openalex",
+              "crossref",
+              "core",
+              "demo"
+            ],
+            "title": "Source"
+          },
+          "pdf_available": {
+            "type": "boolean",
+            "title": "Pdf Available"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paper_id",
+          "title",
+          "authors",
+          "year",
+          "venue",
+          "doi",
+          "arxiv_id",
+          "url",
+          "abstract",
+          "citation_count",
+          "source",
+          "pdf_available"
+        ],
+        "title": "PaperOut",
+        "description": "A paper's bibliographic record, as its newest appearance in a literature output has it."
+      },
+      "PaperPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryPaperOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "demo"
+        ],
+        "title": "PaperPage"
+      },
+      "PaperRunOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "topic": {
+            "type": "string",
+            "title": "Topic"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "relevance": {
+            "type": "number",
+            "title": "Relevance"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "include",
+              "maybe",
+              "exclude"
+            ],
+            "title": "Decision"
+          },
+          "decision_reason": {
+            "type": "string",
+            "title": "Decision Reason"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "topic",
+          "status",
+          "project_id",
+          "project_name",
+          "created_at",
+          "relevance",
+          "decision",
+          "decision_reason",
+          "demo"
+        ],
+        "title": "PaperRunOut",
+        "description": "A run whose literature stage found the paper, with that run's screening of it."
       },
       "Privacy": {
         "type": "string",
@@ -1057,6 +3891,360 @@
         ],
         "title": "ProjectRole"
       },
+      "ProjectSettings": {
+        "properties": {
+          "privacy": {
+            "$ref": "#/components/schemas/Privacy"
+          },
+          "allow_free_models": {
+            "type": "boolean",
+            "title": "Allow Free Models"
+          },
+          "auto_approve": {
+            "type": "boolean",
+            "title": "Auto Approve"
+          },
+          "approval_expiry_days": {
+            "type": "integer",
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Approval Expiry Days"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "privacy",
+          "allow_free_models",
+          "auto_approve",
+          "approval_expiry_days"
+        ],
+        "title": "ProjectSettings",
+        "description": "Project options; read by every member, written by owners and lab admins."
+      },
+      "RecentRunOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "title": "Owner Id"
+          },
+          "topic": {
+            "type": "string",
+            "title": "Topic"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "llm_policy": {
+            "$ref": "#/components/schemas/LlmPolicy"
+          },
+          "budget_cap_usd": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Cap Usd"
+          },
+          "config": {
+            "$ref": "#/components/schemas/RunConfigOut"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "owner_id",
+          "topic",
+          "status",
+          "llm_policy",
+          "budget_cap_usd",
+          "config",
+          "error",
+          "created_at",
+          "updated_at",
+          "project_name"
+        ],
+        "title": "RecentRunOut"
+      },
+      "RoleRoutingOut": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "researcher",
+              "screener",
+              "analyst",
+              "methodologist",
+              "coder",
+              "writer"
+            ],
+            "title": "Role"
+          },
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens"
+          },
+          "paid": {
+            "items": {
+              "$ref": "#/components/schemas/RoutedModelOut"
+            },
+            "type": "array",
+            "title": "Paid"
+          },
+          "free": {
+            "items": {
+              "$ref": "#/components/schemas/RoutedModelOut"
+            },
+            "type": "array",
+            "title": "Free"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "max_output_tokens",
+          "paid",
+          "free"
+        ],
+        "title": "RoleRoutingOut"
+      },
+      "RoutedModelOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "free": {
+            "type": "boolean",
+            "title": "Free"
+          },
+          "in_catalog": {
+            "type": "boolean",
+            "title": "In Catalog"
+          },
+          "context_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Length"
+          },
+          "prompt_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Usd Per Mtok"
+          },
+          "completion_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Usd Per Mtok"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "free",
+          "in_catalog",
+          "context_length",
+          "prompt_usd_per_mtok",
+          "completion_usd_per_mtok"
+        ],
+        "title": "RoutedModelOut"
+      },
+      "RunConfig": {
+        "properties": {
+          "year_from": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 1990.0,
+            "title": "Year From",
+            "default": 2018
+          },
+          "year_to": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 1990.0,
+            "title": "Year To",
+            "default": 2026
+          },
+          "sources": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "arxiv",
+                "semantic_scholar",
+                "openalex",
+                "crossref",
+                "core"
+              ]
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Sources"
+          },
+          "max_papers": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 5.0,
+            "title": "Max Papers",
+            "default": 20
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/Stage"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Stages"
+          },
+          "dataset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset",
+            "default": "nyu2"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RunConfig",
+        "description": "Options chosen in the new-run wizard, stored in ``runs.config``."
+      },
+      "RunConfigOut": {
+        "properties": {
+          "year_from": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 1990.0,
+            "title": "Year From",
+            "default": 2018
+          },
+          "year_to": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 1990.0,
+            "title": "Year To",
+            "default": 2026
+          },
+          "sources": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "arxiv",
+                "semantic_scholar",
+                "openalex",
+                "crossref",
+                "core"
+              ]
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Sources"
+          },
+          "max_papers": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 5.0,
+            "title": "Max Papers",
+            "default": 20
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/Stage"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Stages"
+          },
+          "dataset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset",
+            "default": "nyu2"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "year_from",
+          "year_to",
+          "sources",
+          "max_papers",
+          "stages",
+          "dataset"
+        ],
+        "title": "RunConfigOut",
+        "description": "A run's options as responses carry them: always complete, so every field is required."
+      },
       "RunCreate": {
         "properties": {
           "topic": {
@@ -1085,6 +4273,9 @@
               }
             ],
             "title": "Budget Cap Usd"
+          },
+          "config": {
+            "$ref": "#/components/schemas/RunConfig"
           }
         },
         "additionalProperties": false,
@@ -1131,6 +4322,9 @@
               }
             ],
             "title": "Budget Cap Usd"
+          },
+          "config": {
+            "$ref": "#/components/schemas/RunConfigOut"
           },
           "error": {
             "anyOf": [
@@ -1196,12 +4390,148 @@
           "status",
           "llm_policy",
           "budget_cap_usd",
+          "config",
           "error",
           "created_at",
           "updated_at",
           "stages"
         ],
         "title": "RunDetail"
+      },
+      "RunEstimateIn": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/RunConfig"
+          },
+          "llm_policy": {
+            "$ref": "#/components/schemas/LlmPolicy",
+            "default": "auto"
+          },
+          "budget_cap_usd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Cap Usd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RunEstimateIn"
+      },
+      "RunEstimateOut": {
+        "properties": {
+          "llm_policy": {
+            "$ref": "#/components/schemas/LlmPolicy"
+          },
+          "low_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Low Usd"
+          },
+          "expected_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Expected Usd"
+          },
+          "high_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "High Usd"
+          },
+          "calls_low": {
+            "type": "integer",
+            "title": "Calls Low"
+          },
+          "expected_calls": {
+            "type": "integer",
+            "title": "Expected Calls"
+          },
+          "calls_high": {
+            "type": "integer",
+            "title": "Calls High"
+          },
+          "paid_possible": {
+            "type": "boolean",
+            "title": "Paid Possible"
+          },
+          "paid_blocked_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "policy",
+                  "kill_switch",
+                  "budget",
+                  "run_cap"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid Blocked By"
+          },
+          "paid_models_enabled": {
+            "type": "boolean",
+            "title": "Paid Models Enabled"
+          },
+          "budget_remaining_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Budget Remaining Usd"
+          },
+          "capped_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "run_cap",
+                  "budget"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capped By"
+          },
+          "assumptions": {
+            "$ref": "#/components/schemas/EstimateAssumptions"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "llm_policy",
+          "low_usd",
+          "expected_usd",
+          "high_usd",
+          "calls_low",
+          "expected_calls",
+          "calls_high",
+          "paid_possible",
+          "paid_blocked_by",
+          "paid_models_enabled",
+          "budget_remaining_usd",
+          "capped_by",
+          "assumptions",
+          "demo"
+        ],
+        "title": "RunEstimateOut"
       },
       "RunOut": {
         "properties": {
@@ -1241,6 +4571,9 @@
             ],
             "title": "Budget Cap Usd"
           },
+          "config": {
+            "$ref": "#/components/schemas/RunConfigOut"
+          },
           "error": {
             "anyOf": [
               {
@@ -1272,6 +4605,7 @@
           "status",
           "llm_policy",
           "budget_cap_usd",
+          "config",
           "error",
           "created_at",
           "updated_at"
@@ -1291,6 +4625,125 @@
           "paused_budget"
         ],
         "title": "RunStatus"
+      },
+      "Stage": {
+        "type": "string",
+        "enum": [
+          "literature",
+          "method",
+          "coding",
+          "experiment",
+          "writing"
+        ],
+        "title": "Stage"
+      },
+      "StageAttemptOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "attempt": {
+            "type": "integer",
+            "title": "Attempt"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StageStatus"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "outputs": {
+            "items": {
+              "$ref": "#/components/schemas/OutputVersionOut"
+            },
+            "type": "array",
+            "title": "Outputs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "attempt",
+          "status",
+          "feedback",
+          "error",
+          "started_at",
+          "finished_at",
+          "outputs"
+        ],
+        "title": "StageAttemptOut"
+      },
+      "StageDetail": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run Id"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/StageAttemptOut"
+            },
+            "type": "array",
+            "title": "Attempts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "stage",
+          "attempts"
+        ],
+        "title": "StageDetail"
       },
       "StageInfo": {
         "properties": {
@@ -1481,6 +4934,354 @@
         ],
         "title": "StageStatus"
       },
+      "SystemHealthOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "down",
+              "unknown"
+            ],
+            "title": "Status"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/HealthCheckOut"
+            },
+            "type": "array",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "checked_at",
+          "checks"
+        ],
+        "title": "SystemHealthOut"
+      },
+      "UsageDayOut": {
+        "properties": {
+          "paid_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Usd"
+          },
+          "paid_calls": {
+            "type": "integer",
+            "title": "Paid Calls"
+          },
+          "free_calls": {
+            "type": "integer",
+            "title": "Free Calls"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens"
+          },
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid_usd",
+          "paid_calls",
+          "free_calls",
+          "prompt_tokens",
+          "completion_tokens",
+          "day"
+        ],
+        "title": "UsageDayOut"
+      },
+      "UsageModelOut": {
+        "properties": {
+          "paid_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Usd"
+          },
+          "paid_calls": {
+            "type": "integer",
+            "title": "Paid Calls"
+          },
+          "free_calls": {
+            "type": "integer",
+            "title": "Free Calls"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/LlmTier"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid_usd",
+          "paid_calls",
+          "free_calls",
+          "prompt_tokens",
+          "completion_tokens",
+          "model",
+          "tier"
+        ],
+        "title": "UsageModelOut"
+      },
+      "UsageOut": {
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "me",
+              "lab"
+            ],
+            "title": "Scope"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Until"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/UsageTotalsOut"
+          },
+          "by_day": {
+            "items": {
+              "$ref": "#/components/schemas/UsageDayOut"
+            },
+            "type": "array",
+            "title": "By Day"
+          },
+          "by_model": {
+            "items": {
+              "$ref": "#/components/schemas/UsageModelOut"
+            },
+            "type": "array",
+            "title": "By Model"
+          },
+          "top_runs": {
+            "items": {
+              "$ref": "#/components/schemas/UsageRunOut"
+            },
+            "type": "array",
+            "title": "Top Runs"
+          },
+          "by_user": {
+            "items": {
+              "$ref": "#/components/schemas/UsageUserOut"
+            },
+            "type": "array",
+            "title": "By User"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/BudgetStatusOut"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scope",
+          "days",
+          "since",
+          "until",
+          "totals",
+          "by_day",
+          "by_model",
+          "top_runs",
+          "by_user",
+          "budget",
+          "demo"
+        ],
+        "title": "UsageOut"
+      },
+      "UsageRunOut": {
+        "properties": {
+          "paid_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Usd"
+          },
+          "paid_calls": {
+            "type": "integer",
+            "title": "Paid Calls"
+          },
+          "free_calls": {
+            "type": "integer",
+            "title": "Free Calls"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens"
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run Id"
+          },
+          "topic": {
+            "type": "string",
+            "title": "Topic"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid_usd",
+          "paid_calls",
+          "free_calls",
+          "prompt_tokens",
+          "completion_tokens",
+          "run_id",
+          "topic",
+          "project_id",
+          "project_name"
+        ],
+        "title": "UsageRunOut"
+      },
+      "UsageTotalsOut": {
+        "properties": {
+          "paid_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Usd"
+          },
+          "paid_calls": {
+            "type": "integer",
+            "title": "Paid Calls"
+          },
+          "free_calls": {
+            "type": "integer",
+            "title": "Free Calls"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid_usd",
+          "paid_calls",
+          "free_calls",
+          "prompt_tokens",
+          "completion_tokens"
+        ],
+        "title": "UsageTotalsOut"
+      },
+      "UsageUserOut": {
+        "properties": {
+          "paid_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Usd"
+          },
+          "paid_calls": {
+            "type": "integer",
+            "title": "Paid Calls"
+          },
+          "free_calls": {
+            "type": "integer",
+            "title": "Free Calls"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid_usd",
+          "paid_calls",
+          "free_calls",
+          "prompt_tokens",
+          "completion_tokens",
+          "user_id",
+          "name",
+          "email"
+        ],
+        "title": "UsageUserOut"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -1520,6 +5321,869 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "Citation": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "minimum": 1,
+            "title": "Key",
+            "type": "integer"
+          },
+          "paper_id": {
+            "minLength": 1,
+            "title": "Paper Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "paper_id"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
+      "CodeFile": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "minLength": 1,
+            "title": "Path",
+            "type": "string"
+          },
+          "language": {
+            "minLength": 1,
+            "title": "Language",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "model",
+              "loss",
+              "config",
+              "test",
+              "docs"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "language",
+          "role",
+          "content"
+        ],
+        "title": "CodeFile",
+        "type": "object"
+      },
+      "CodingOutput": {
+        "additionalProperties": false,
+        "description": "Generated model and loss modules. The experiment harness owns data, metrics and the loop.",
+        "properties": {
+          "summary": {
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/CodeFile"
+            },
+            "minItems": 1,
+            "title": "Files",
+            "type": "array"
+          },
+          "entrypoint": {
+            "minLength": 1,
+            "title": "Entrypoint",
+            "type": "string"
+          },
+          "smoke_test": {
+            "$ref": "#/components/schemas/SmokeTest"
+          }
+        },
+        "required": [
+          "summary",
+          "files",
+          "entrypoint",
+          "smoke_test"
+        ],
+        "title": "CodingOutput",
+        "type": "object"
+      },
+      "ExperimentOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "enum": [
+              "succeeded",
+              "failed",
+              "timeout",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "config": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "title": "Config",
+            "type": "object"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/MetricSeries"
+            },
+            "title": "Series",
+            "type": "array"
+          },
+          "final_metrics": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Final Metrics",
+            "type": "object"
+          },
+          "logs_tail": {
+            "title": "Logs Tail",
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          }
+        },
+        "required": [
+          "status",
+          "summary",
+          "config",
+          "series",
+          "final_metrics",
+          "logs_tail",
+          "provenance"
+        ],
+        "title": "ExperimentOutput",
+        "type": "object"
+      },
+      "LiteratureOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/ResearchPlan"
+          },
+          "papers": {
+            "items": {
+              "$ref": "#/components/schemas/PaperRef"
+            },
+            "minItems": 1,
+            "title": "Papers",
+            "type": "array"
+          },
+          "analyses": {
+            "items": {
+              "$ref": "#/components/schemas/PaperAnalysis"
+            },
+            "title": "Analyses",
+            "type": "array"
+          },
+          "key_findings": {
+            "items": {
+              "$ref": "#/components/schemas/PaperFinding"
+            },
+            "minItems": 1,
+            "title": "Key Findings",
+            "type": "array"
+          },
+          "synthesis": {
+            "minLength": 1,
+            "title": "Synthesis",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan",
+          "papers",
+          "key_findings",
+          "synthesis"
+        ],
+        "title": "LiteratureOutput",
+        "type": "object"
+      },
+      "MethodOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "research_gaps": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Research Gaps",
+            "type": "array"
+          },
+          "proposals": {
+            "items": {
+              "$ref": "#/components/schemas/MethodProposal"
+            },
+            "minItems": 1,
+            "title": "Proposals",
+            "type": "array"
+          },
+          "recommended_option": {
+            "minLength": 1,
+            "title": "Recommended Option",
+            "type": "string"
+          },
+          "implementation_focus": {
+            "minLength": 1,
+            "title": "Implementation Focus",
+            "type": "string"
+          },
+          "datasets": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Datasets",
+            "type": "array"
+          },
+          "evaluation_metrics": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Evaluation Metrics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "research_gaps",
+          "proposals",
+          "recommended_option",
+          "implementation_focus",
+          "datasets",
+          "evaluation_metrics"
+        ],
+        "title": "MethodOutput",
+        "type": "object"
+      },
+      "MethodProposal": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          },
+          "expected_benefit": {
+            "minLength": 1,
+            "title": "Expected Benefit",
+            "type": "string"
+          },
+          "risk": {
+            "minLength": 1,
+            "title": "Risk",
+            "type": "string"
+          },
+          "evidence_paper_ids": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "Evidence Paper Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "rationale",
+          "expected_benefit",
+          "risk"
+        ],
+        "title": "MethodProposal",
+        "type": "object"
+      },
+      "MetricPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "epoch": {
+            "minimum": 0,
+            "title": "Epoch",
+            "type": "integer"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "epoch",
+          "value"
+        ],
+        "title": "MetricPoint",
+        "type": "object"
+      },
+      "MetricSeries": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "split": {
+            "enum": [
+              "train",
+              "val",
+              "test"
+            ],
+            "title": "Split",
+            "type": "string"
+          },
+          "higher_is_better": {
+            "title": "Higher Is Better",
+            "type": "boolean"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/MetricPoint"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "split",
+          "higher_is_better",
+          "points"
+        ],
+        "title": "MetricSeries",
+        "type": "object"
+      },
+      "PaperAnalysis": {
+        "additionalProperties": false,
+        "description": "Structured reading notes for one included paper; evidence points into its PDF.",
+        "properties": {
+          "paper_id": {
+            "minLength": 1,
+            "title": "Paper Id",
+            "type": "string"
+          },
+          "contribution": {
+            "minLength": 1,
+            "title": "Contribution",
+            "type": "string"
+          },
+          "method": {
+            "minLength": 1,
+            "title": "Method",
+            "type": "string"
+          },
+          "results": {
+            "minLength": 1,
+            "title": "Results",
+            "type": "string"
+          },
+          "limitations": {
+            "minLength": 1,
+            "title": "Limitations",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceQuote"
+            },
+            "title": "Evidence",
+            "type": "array"
+          }
+        },
+        "required": [
+          "paper_id",
+          "contribution",
+          "method",
+          "results",
+          "limitations"
+        ],
+        "title": "PaperAnalysis",
+        "type": "object"
+      },
+      "PaperFinding": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "source": {
+            "minLength": 1,
+            "title": "Source",
+            "type": "string"
+          },
+          "summary": {
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "paper_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Paper Id"
+          }
+        },
+        "required": [
+          "title",
+          "source",
+          "summary"
+        ],
+        "title": "PaperFinding",
+        "type": "object"
+      },
+      "PaperRef": {
+        "additionalProperties": false,
+        "description": "One retrieved paper with its screening result. ``paper_id`` is stable across runs.",
+        "properties": {
+          "paper_id": {
+            "minLength": 1,
+            "title": "Paper Id",
+            "type": "string"
+          },
+          "title": {
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "authors": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Authors",
+            "type": "array"
+          },
+          "year": {
+            "maximum": 2100,
+            "minimum": 1900,
+            "title": "Year",
+            "type": "integer"
+          },
+          "venue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Venue"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Doi"
+          },
+          "arxiv_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Arxiv Id"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "abstract": {
+            "minLength": 1,
+            "title": "Abstract",
+            "type": "string"
+          },
+          "citation_count": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Citation Count"
+          },
+          "source": {
+            "enum": [
+              "arxiv",
+              "semantic_scholar",
+              "openalex",
+              "crossref",
+              "core",
+              "demo"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "pdf_available": {
+            "title": "Pdf Available",
+            "type": "boolean"
+          },
+          "relevance": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Relevance",
+            "type": "number"
+          },
+          "decision": {
+            "enum": [
+              "include",
+              "maybe",
+              "exclude"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "decision_reason": {
+            "minLength": 1,
+            "title": "Decision Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "paper_id",
+          "title",
+          "authors",
+          "year",
+          "abstract",
+          "source",
+          "pdf_available",
+          "relevance",
+          "decision",
+          "decision_reason"
+        ],
+        "title": "PaperRef",
+        "type": "object"
+      },
+      "Provenance": {
+        "additionalProperties": false,
+        "properties": {
+          "image_digest": {
+            "minLength": 1,
+            "title": "Image Digest",
+            "type": "string"
+          },
+          "code_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Code Sha256",
+            "type": "string"
+          },
+          "config_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Config Sha256",
+            "type": "string"
+          },
+          "dataset": {
+            "minLength": 1,
+            "title": "Dataset",
+            "type": "string"
+          },
+          "dataset_version": {
+            "minLength": 1,
+            "title": "Dataset Version",
+            "type": "string"
+          },
+          "seed": {
+            "title": "Seed",
+            "type": "integer"
+          },
+          "gpu_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Gpu Name"
+          },
+          "gpu_seconds": {
+            "minimum": 0,
+            "title": "Gpu Seconds",
+            "type": "number"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Finished At"
+          }
+        },
+        "required": [
+          "image_digest",
+          "code_sha256",
+          "config_sha256",
+          "dataset",
+          "dataset_version",
+          "seed",
+          "gpu_seconds",
+          "started_at"
+        ],
+        "title": "Provenance",
+        "type": "object"
+      },
+      "ResearchPlan": {
+        "additionalProperties": false,
+        "description": "The search plan the literature agent writes before searching.",
+        "properties": {
+          "topic": {
+            "minLength": 1,
+            "title": "Topic",
+            "type": "string"
+          },
+          "queries": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 3,
+            "title": "Queries",
+            "type": "array"
+          },
+          "scope": {
+            "minLength": 1,
+            "title": "Scope",
+            "type": "string"
+          },
+          "inclusion_criteria": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Inclusion Criteria",
+            "type": "array"
+          },
+          "subtopics": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Subtopics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "topic",
+          "queries",
+          "scope",
+          "inclusion_criteria",
+          "subtopics"
+        ],
+        "title": "ResearchPlan",
+        "type": "object"
+      },
+      "SmokeTest": {
+        "additionalProperties": false,
+        "properties": {
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "duration_seconds": {
+            "minimum": 0,
+            "title": "Duration Seconds",
+            "type": "number"
+          },
+          "log": {
+            "title": "Log",
+            "type": "string"
+          }
+        },
+        "required": [
+          "passed",
+          "duration_seconds",
+          "log"
+        ],
+        "title": "SmokeTest",
+        "type": "object"
+      },
+      "WritingOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "abstract": {
+            "minLength": 1,
+            "title": "Abstract",
+            "type": "string"
+          },
+          "markdown": {
+            "minLength": 1,
+            "title": "Markdown",
+            "type": "string"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/WritingSection"
+            },
+            "minItems": 1,
+            "title": "Sections",
+            "type": "array"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "output_format": {
+            "minLength": 1,
+            "title": "Output Format",
+            "type": "string"
+          },
+          "review_focus": {
+            "minLength": 1,
+            "title": "Review Focus",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "abstract",
+          "markdown",
+          "sections",
+          "output_format",
+          "review_focus"
+        ],
+        "title": "WritingOutput",
+        "type": "object"
+      },
+      "WritingSection": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "objective": {
+            "minLength": 1,
+            "title": "Objective",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "objective"
+        ],
+        "title": "WritingSection",
+        "type": "object"
       }
     }
   }

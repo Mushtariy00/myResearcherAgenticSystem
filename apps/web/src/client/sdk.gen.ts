@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMemberData, AddMemberErrors, AddMemberResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CreateProjectData, CreateProjectErrors, CreateProjectResponses, CreateRunData, CreateRunErrors, CreateRunResponses, DecideStageData, DecideStageErrors, DecideStageResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeResponses, GetPaidModelsData, GetPaidModelsResponses, GetProjectData, GetProjectErrors, GetProjectResponses, GetRunData, GetRunErrors, GetRunResponses, ListBudgetsData, ListBudgetsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListProjectsData, ListProjectsResponses, ListRunsData, ListRunsErrors, ListRunsResponses, ListStagesData, ListStagesResponses, SetBudgetData, SetBudgetErrors, SetBudgetResponses, SetPaidModelsData, SetPaidModelsErrors, SetPaidModelsResponses, StreamRunEventsData, StreamRunEventsErrors, StreamRunEventsResponses } from './types.gen';
+import type { AddMemberData, AddMemberErrors, AddMemberResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CreateProjectData, CreateProjectErrors, CreateProjectResponses, CreateRunData, CreateRunErrors, CreateRunResponses, DecideStageData, DecideStageErrors, DecideStageResponses, EstimateRunCostData, EstimateRunCostErrors, EstimateRunCostResponses, GetArtifactData, GetArtifactErrors, GetArtifactResponses, GetGpuQueueData, GetGpuQueueResponses, GetHealthData, GetHealthResponses, GetLabBalanceData, GetLabBalanceResponses, GetMeData, GetMeResponses, GetModelRoutingData, GetModelRoutingResponses, GetPaidModelsData, GetPaidModelsResponses, GetPaperData, GetPaperErrors, GetPaperFileData, GetPaperFileErrors, GetPaperFileResponses, GetPaperResponses, GetProjectData, GetProjectErrors, GetProjectResponses, GetProjectSettingsData, GetProjectSettingsErrors, GetProjectSettingsResponses, GetRunData, GetRunErrors, GetRunResponses, GetStageData, GetStageErrors, GetStageResponses, GetSystemHealthData, GetSystemHealthResponses, GetUsageData, GetUsageErrors, GetUsageResponses, ListAuditLogData, ListAuditLogErrors, ListAuditLogResponses, ListBudgetsData, ListBudgetsResponses, ListDatasetsData, ListDatasetsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListNotificationsData, ListNotificationsResponses, ListPapersData, ListPapersErrors, ListPapersResponses, ListProjectsData, ListProjectsResponses, ListRecentRunsData, ListRecentRunsErrors, ListRecentRunsResponses, ListRunArtifactsData, ListRunArtifactsErrors, ListRunArtifactsResponses, ListRunsData, ListRunsErrors, ListRunsResponses, ListStagesData, ListStagesResponses, MarkNotificationsReadData, MarkNotificationsReadErrors, MarkNotificationsReadResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RetryRunData, RetryRunErrors, RetryRunResponses, SetBudgetData, SetBudgetErrors, SetBudgetResponses, SetPaidModelsData, SetPaidModelsErrors, SetPaidModelsResponses, StreamRunEventsData, StreamRunEventsErrors, StreamRunEventsResponses, UpdateMemberData, UpdateMemberErrors, UpdateMemberResponses, UpdateProjectSettingsData, UpdateProjectSettingsErrors, UpdateProjectSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -51,6 +51,23 @@ export const createProject = <ThrowOnError extends boolean = false>(options: Opt
 export const getProject = <ThrowOnError extends boolean = false>(options: Options<GetProjectData, ThrowOnError>): RequestResult<GetProjectResponses, GetProjectErrors, ThrowOnError> => (options.client ?? client).get<GetProjectResponses, GetProjectErrors, ThrowOnError>({ url: '/api/v1/projects/{project_id}', ...options });
 
 /**
+ * Get Project Settings
+ */
+export const getProjectSettings = <ThrowOnError extends boolean = false>(options: Options<GetProjectSettingsData, ThrowOnError>): RequestResult<GetProjectSettingsResponses, GetProjectSettingsErrors, ThrowOnError> => (options.client ?? client).get<GetProjectSettingsResponses, GetProjectSettingsErrors, ThrowOnError>({ url: '/api/v1/projects/{project_id}/settings', ...options });
+
+/**
+ * Update Project Settings
+ */
+export const updateProjectSettings = <ThrowOnError extends boolean = false>(options: Options<UpdateProjectSettingsData, ThrowOnError>): RequestResult<UpdateProjectSettingsResponses, UpdateProjectSettingsErrors, ThrowOnError> => (options.client ?? client).put<UpdateProjectSettingsResponses, UpdateProjectSettingsErrors, ThrowOnError>({
+    url: '/api/v1/projects/{project_id}/settings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List Members
  */
 export const listMembers = <ThrowOnError extends boolean = false>(options: Options<ListMembersData, ThrowOnError>): RequestResult<ListMembersResponses, ListMembersErrors, ThrowOnError> => (options.client ?? client).get<ListMembersResponses, ListMembersErrors, ThrowOnError>({ url: '/api/v1/projects/{project_id}/members', ...options });
@@ -60,6 +77,27 @@ export const listMembers = <ThrowOnError extends boolean = false>(options: Optio
  */
 export const addMember = <ThrowOnError extends boolean = false>(options: Options<AddMemberData, ThrowOnError>): RequestResult<AddMemberResponses, AddMemberErrors, ThrowOnError> => (options.client ?? client).post<AddMemberResponses, AddMemberErrors, ThrowOnError>({
     url: '/api/v1/projects/{project_id}/members',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Remove Member
+ *
+ * Remove a member (owners and lab admins). The last owner can't be removed.
+ */
+export const removeMember = <ThrowOnError extends boolean = false>(options: Options<RemoveMemberData, ThrowOnError>): RequestResult<RemoveMemberResponses, RemoveMemberErrors, ThrowOnError> => (options.client ?? client).delete<RemoveMemberResponses, RemoveMemberErrors, ThrowOnError>({ url: '/api/v1/projects/{project_id}/members/{user_id}', ...options });
+
+/**
+ * Update Member
+ *
+ * Change a member's role (owners and lab admins). The last owner can't be demoted.
+ */
+export const updateMember = <ThrowOnError extends boolean = false>(options: Options<UpdateMemberData, ThrowOnError>): RequestResult<UpdateMemberResponses, UpdateMemberErrors, ThrowOnError> => (options.client ?? client).patch<UpdateMemberResponses, UpdateMemberErrors, ThrowOnError>({
+    url: '/api/v1/projects/{project_id}/members/{user_id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -85,12 +123,31 @@ export const createRun = <ThrowOnError extends boolean = false>(options: Options
 });
 
 /**
+ * List Recent Runs
+ *
+ * Newest runs across the caller's projects (every project for lab admins): the dashboard.
+ */
+export const listRecentRuns = <ThrowOnError extends boolean = false>(options?: Options<ListRecentRunsData, ThrowOnError>): RequestResult<ListRecentRunsResponses, ListRecentRunsErrors, ThrowOnError> => (options?.client ?? client).get<ListRecentRunsResponses, ListRecentRunsErrors, ThrowOnError>({ url: '/api/v1/runs', ...options });
+
+/**
  * Get Run
  */
 export const getRun = <ThrowOnError extends boolean = false>(options: Options<GetRunData, ThrowOnError>): RequestResult<GetRunResponses, GetRunErrors, ThrowOnError> => (options.client ?? client).get<GetRunResponses, GetRunErrors, ThrowOnError>({ url: '/api/v1/runs/{run_id}', ...options });
 
 /**
+ * Get Stage
+ *
+ * Every attempt of one stage, with each attempt's output versions and their decisions.
+ */
+export const getStage = <ThrowOnError extends boolean = false>(options: Options<GetStageData, ThrowOnError>): RequestResult<GetStageResponses, GetStageErrors, ThrowOnError> => (options.client ?? client).get<GetStageResponses, GetStageErrors, ThrowOnError>({ url: '/api/v1/runs/{run_id}/stages/{stage}', ...options });
+
+/**
  * Decide Stage
+ *
+ * Approve, request changes or reject the output waiting for a decision.
+ *
+ * Approve with edits sends ``edited_data``: it must pass the stage's output schema (422
+ * ``decision.invalid_edit`` with ``loc`` and ``type`` of the first error otherwise).
  */
 export const decideStage = <ThrowOnError extends boolean = false>(options: Options<DecideStageData, ThrowOnError>): RequestResult<DecideStageResponses, DecideStageErrors, ThrowOnError> => (options.client ?? client).post<DecideStageResponses, DecideStageErrors, ThrowOnError>({
     url: '/api/v1/runs/{run_id}/approvals',
@@ -100,6 +157,16 @@ export const decideStage = <ThrowOnError extends boolean = false>(options: Optio
         ...options.headers
     }
 });
+
+/**
+ * Retry Run
+ *
+ * Run a finished run again from ``stage``, in a new execution of its workflow.
+ *
+ * The workflow keeps the approved outputs of the stages before ``stage`` and invalidates the
+ * outputs from ``stage`` on.
+ */
+export const retryRun = <ThrowOnError extends boolean = false>(options: Options<RetryRunData, ThrowOnError>): RequestResult<RetryRunResponses, RetryRunErrors, ThrowOnError> => (options.client ?? client).post<RetryRunResponses, RetryRunErrors, ThrowOnError>({ url: '/api/v1/runs/{run_id}/retry', ...options });
 
 /**
  * Cancel Run
@@ -151,3 +218,137 @@ export const setPaidModels = <ThrowOnError extends boolean = false>(options: Opt
         ...options.headers
     }
 });
+
+/**
+ * List Audit Log
+ *
+ * Audit log entries, newest first; ``action`` keeps one action (e.g. ``run.cancel``).
+ */
+export const listAuditLog = <ThrowOnError extends boolean = false>(options?: Options<ListAuditLogData, ThrowOnError>): RequestResult<ListAuditLogResponses, ListAuditLogErrors, ThrowOnError> => (options?.client ?? client).get<ListAuditLogResponses, ListAuditLogErrors, ThrowOnError>({ url: '/api/v1/admin/audit', ...options });
+
+/**
+ * Get System Health
+ *
+ * Probes Postgres, Valkey, Temporal, the gateway and the workers concurrently.
+ */
+export const getSystemHealth = <ThrowOnError extends boolean = false>(options?: Options<GetSystemHealthData, ThrowOnError>): RequestResult<GetSystemHealthResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetSystemHealthResponses, unknown, ThrowOnError>({ url: '/api/v1/admin/health', ...options });
+
+/**
+ * List Notifications
+ */
+export const listNotifications = <ThrowOnError extends boolean = false>(options?: Options<ListNotificationsData, ThrowOnError>): RequestResult<ListNotificationsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListNotificationsResponses, unknown, ThrowOnError>({ url: '/api/v1/me/notifications', ...options });
+
+/**
+ * Mark Notifications Read
+ *
+ * Mark notifications read (idempotent). Keys the caller has no notification for are
+ * ignored, so only real notifications are ever stored.
+ */
+export const markNotificationsRead = <ThrowOnError extends boolean = false>(options: Options<MarkNotificationsReadData, ThrowOnError>): RequestResult<MarkNotificationsReadResponses, MarkNotificationsReadErrors, ThrowOnError> => (options.client ?? client).post<MarkNotificationsReadResponses, MarkNotificationsReadErrors, ThrowOnError>({
+    url: '/api/v1/me/notifications/read',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List Papers
+ *
+ * Papers of the caller's projects (every project for lab admins), best relevance first.
+ *
+ * ``q`` matches title, abstract, an author or the venue, ignoring case. A paper matches when
+ * one run's record of it matches every filter; counts cover all of its runs in scope.
+ */
+export const listPapers = <ThrowOnError extends boolean = false>(options?: Options<ListPapersData, ThrowOnError>): RequestResult<ListPapersResponses, ListPapersErrors, ThrowOnError> => (options?.client ?? client).get<ListPapersResponses, ListPapersErrors, ThrowOnError>({ url: '/api/v1/papers', ...options });
+
+/**
+ * Get Paper File
+ *
+ * A generated PDF preview of the paper (always demo content: no PDFs are stored yet).
+ *
+ * It has the paper's metadata and abstract, and prints every evidence quote of its analyses
+ * on the page the quote cites, so the viewer can find and highlight it there.
+ */
+export const getPaperFile = <ThrowOnError extends boolean = false>(options: Options<GetPaperFileData, ThrowOnError>): RequestResult<GetPaperFileResponses, GetPaperFileErrors, ThrowOnError> => (options.client ?? client).get<GetPaperFileResponses, GetPaperFileErrors, ThrowOnError>({ url: '/api/v1/papers/{paper_id}/file', ...options });
+
+/**
+ * Get Paper
+ *
+ * The paper, every analysis of it and the runs that found it (404 when the caller can open
+ * none of them).
+ */
+export const getPaper = <ThrowOnError extends boolean = false>(options: Options<GetPaperData, ThrowOnError>): RequestResult<GetPaperResponses, GetPaperErrors, ThrowOnError> => (options.client ?? client).get<GetPaperResponses, GetPaperErrors, ThrowOnError>({ url: '/api/v1/papers/{paper_id}', ...options });
+
+/**
+ * List Run Artifacts
+ *
+ * Every file the run's latest coding, experiment and writing outputs make; anyone who can
+ * open the run may download them.
+ */
+export const listRunArtifacts = <ThrowOnError extends boolean = false>(options: Options<ListRunArtifactsData, ThrowOnError>): RequestResult<ListRunArtifactsResponses, ListRunArtifactsErrors, ThrowOnError> => (options.client ?? client).get<ListRunArtifactsResponses, ListRunArtifactsErrors, ThrowOnError>({ url: '/api/v1/runs/{run_id}/artifacts', ...options });
+
+/**
+ * Get Artifact
+ *
+ * Download one artifact. The id names a stage output and an item of it; both are checked
+ * again here, and the caller must be able to open the run the output belongs to.
+ */
+export const getArtifact = <ThrowOnError extends boolean = false>(options: Options<GetArtifactData, ThrowOnError>): RequestResult<GetArtifactResponses, GetArtifactErrors, ThrowOnError> => (options.client ?? client).get<GetArtifactResponses, GetArtifactErrors, ThrowOnError>({ url: '/api/v1/artifacts/{artifact_id}', ...options });
+
+/**
+ * List Datasets
+ *
+ * Datasets experiments can mount (read-only), with their data contracts.
+ */
+export const listDatasets = <ThrowOnError extends boolean = false>(options?: Options<ListDatasetsData, ThrowOnError>): RequestResult<ListDatasetsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListDatasetsResponses, unknown, ThrowOnError>({ url: '/api/v1/datasets', ...options });
+
+/**
+ * Get Gpu Queue
+ *
+ * The GPU's live readings, the job on it and the jobs waiting, with the caller's place.
+ *
+ * Real experiment stages that are running come from the database, oldest first; runs in
+ * projects the caller can't open show no topic. Telemetry and the other jobs are demo data.
+ */
+export const getGpuQueue = <ThrowOnError extends boolean = false>(options?: Options<GetGpuQueueData, ThrowOnError>): RequestResult<GetGpuQueueResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetGpuQueueResponses, unknown, ThrowOnError>({ url: '/api/v1/gpu/queue', ...options });
+
+/**
+ * Get Usage
+ *
+ * Paid spend and call counts over the last ``days`` UTC days, today included: the caller's
+ * own calls ("me"), or every user's ("lab", lab admins only). Real figures, zeros included.
+ */
+export const getUsage = <ThrowOnError extends boolean = false>(options?: Options<GetUsageData, ThrowOnError>): RequestResult<GetUsageResponses, GetUsageErrors, ThrowOnError> => (options?.client ?? client).get<GetUsageResponses, GetUsageErrors, ThrowOnError>({ url: '/api/v1/usage', ...options });
+
+/**
+ * Estimate Run Cost
+ *
+ * What a run with these options would likely cost the caller, and why: calls per stage
+ * times typical tokens times the paid chain's prices. Free when it can't use paid models.
+ */
+export const estimateRunCost = <ThrowOnError extends boolean = false>(options: Options<EstimateRunCostData, ThrowOnError>): RequestResult<EstimateRunCostResponses, EstimateRunCostErrors, ThrowOnError> => (options.client ?? client).post<EstimateRunCostResponses, EstimateRunCostErrors, ThrowOnError>({
+    url: '/api/v1/runs/estimate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get Model Routing
+ *
+ * Per agent role, the paid and free model chains the gateway tries, with catalog details,
+ * and the real state of the paid-models kill switch.
+ */
+export const getModelRouting = <ThrowOnError extends boolean = false>(options?: Options<GetModelRoutingData, ThrowOnError>): RequestResult<GetModelRoutingResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetModelRoutingResponses, unknown, ThrowOnError>({ url: '/api/v1/admin/models', ...options });
+
+/**
+ * Get Lab Balance
+ *
+ * The lab's prepaid OpenRouter balance (generated until the gateway reads it), with the
+ * real paid spend this month and the real free-tier use today.
+ */
+export const getLabBalance = <ThrowOnError extends boolean = false>(options?: Options<GetLabBalanceData, ThrowOnError>): RequestResult<GetLabBalanceResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetLabBalanceResponses, unknown, ThrowOnError>({ url: '/api/v1/admin/balance', ...options });
