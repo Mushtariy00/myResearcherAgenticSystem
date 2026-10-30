@@ -253,6 +253,10 @@ the next try. The activity timeouts are 2 h (coding) and 8 h (experiment).
     parameters and a 422 MB peak at batch 2.
   - The experiment plans batch size 8 from that, trains 2 epochs of 100 steps in 167 s, and
     outputs real validation curves, final metrics and provenance.
+- **Live, the corrected NYU2 copy (version 2026.10):** the depth_unet example trained 3 epochs of
+  150 steps on it (50,688 training and 654 validation samples) with no dataset warning. Training
+  and validation now measure on one scale: RMSE 1.58 and 1.53 m, AbsRel 0.43 and 0.46. It took
+  10 minutes, reading the data from D:'s hard disk.
 - **Live, still to do:**
   - killing the worker mid-job resumes without a second job;
   - an NYU2 run from the UI to real metrics, with the LLM writing the code.
