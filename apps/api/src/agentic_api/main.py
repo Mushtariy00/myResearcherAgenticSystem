@@ -17,8 +17,20 @@ from temporalio.client import Client
 
 from agentic_api import __version__
 from agentic_api.auth import SessionVerifier
-from agentic_api.orchestrator import Orchestrator, TemporalOrchestrator
-from agentic_api.routers import admin, events, projects, runs
+from agentic_api.errors import ErrorWithFields, error_with_fields_handler
+from agentic_api.orchestrator import Orchestrator, TaskQueuePollers, TemporalOrchestrator
+from agentic_api.routers import (
+    admin,
+    artifacts,
+    compute,
+    events,
+    lab,
+    notifications,
+    papers,
+    projects,
+    runs,
+    usage,
+)
 from agentic_api.settings import Settings, get_settings
 from agentic_core import NEVER_AUTO_APPROVE, STAGE_ORDER
 from agentic_core.contracts import DecisionInput
@@ -56,11 +68,20 @@ class LazyTemporalOrchestrator:
     async def start_run(self, run_id: uuid.UUID) -> str:
         return await (await self._get()).start_run(run_id)
 
+    async def restart_run(self, run_id: uuid.UUID, start_stage: str) -> str:
+        return await (await self._get()).restart_run(run_id, start_stage)
+
     async def decide(self, run_id: uuid.UUID, decision: DecisionInput) -> None:
         await (await self._get()).decide(run_id, decision)
 
     async def cancel_run(self, run_id: uuid.UUID) -> None:
         await (await self._get()).cancel_run(run_id)
+
+    async def check_namespace(self) -> None:
+        await (await self._get()).check_namespace()
+
+    async def task_queue_pollers(self) -> TaskQueuePollers | None:
+        return await (await self._get()).task_queue_pollers()
 
 
 @dataclass
@@ -69,6 +90,7 @@ class AppState:
     session_verifier: Any  # SessionVerifier or a test double with the same verify()
     valkey: Any
     orchestrator: Orchestrator
+    http: httpx.AsyncClient | None = None  # outgoing calls (the gateway health check)
 
 
 def attach_state(app: FastAPI, state: AppState) -> None:
@@ -76,6 +98,7 @@ def attach_state(app: FastAPI, state: AppState) -> None:
     app.state.session_verifier = state.session_verifier
     app.state.valkey = state.valkey
     app.state.orchestrator = state.orchestrator
+    app.state.http = state.http
 
 
 def create_app(settings: Settings | None = None, *, state: AppState | None = None) -> FastAPI:
@@ -100,6 +123,7 @@ def create_app(settings: Settings | None = None, *, state: AppState | None = Non
                 ),
                 valkey=valkey,
                 orchestrator=LazyTemporalOrchestrator(settings.temporal_address),
+                http=http,
             ),
         )
         try:
@@ -118,8 +142,10 @@ def create_app(settings: Settings | None = None, *, state: AppState | None = Non
         redoc_url=None,
         lifespan=lifespan,
     )
+    app.state.settings = settings
     if state is not None:
         attach_state(app, state)  # also usable without running the lifespan
+    app.exception_handler(ErrorWithFields)(error_with_fields_handler)
 
     @app.middleware("http")
     async def require_same_origin(request: Request, call_next: Any) -> Any:
@@ -151,6 +177,12 @@ def create_app(settings: Settings | None = None, *, state: AppState | None = Non
     app.include_router(runs.router)
     app.include_router(events.router)
     app.include_router(admin.router)
+    app.include_router(notifications.router)
+    app.include_router(papers.router)
+    app.include_router(artifacts.router)
+    app.include_router(compute.router)
+    app.include_router(usage.router)
+    app.include_router(lab.router)
     return app
 
 

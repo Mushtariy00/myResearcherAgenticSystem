@@ -12,6 +12,7 @@ from agentic_core.enums import ProjectRole
 from agentic_db.models import Project, ProjectMember, Run
 
 EDITORS = frozenset({ProjectRole.OWNER, ProjectRole.RESEARCHER})
+OWNERS = frozenset({ProjectRole.OWNER})  # members and settings (lab admins pass every check)
 
 
 async def get_db(request: Request) -> AsyncIterator[AsyncSession]:
@@ -47,6 +48,18 @@ def require_role(
         raise HTTPException(status.HTTP_403_FORBIDDEN, "permission.denied")
 
 
+def require_admin(user: CurrentUser) -> None:
+    """Lab-wide views and settings (model routing, the lab balance, lab usage)."""
+    if not user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "permission.denied")
+
+
+def membership_scope(user: CurrentUser) -> str | None:
+    """Whose project memberships bound what ``user`` may see across projects: their own id, or
+    None for a lab admin (every project). For queries over many runs, such as the paper library."""
+    return None if user.is_admin else user.id
+
+
 async def load_run(
     db: AsyncSession, run_id: uuid.UUID, user: CurrentUser
 ) -> tuple[Run, ProjectRole | None]:
@@ -58,7 +71,7 @@ async def load_run(
 
 
 def can_steer(user: CurrentUser, role: ProjectRole | None, run: Run) -> bool:
-    """Approve, request changes, reject, cancel. Spending is charged to the run owner."""
+    """Approve, request changes, reject, cancel, retry. Spending is charged to the run owner."""
     return (
         user.is_admin
         or role == ProjectRole.OWNER

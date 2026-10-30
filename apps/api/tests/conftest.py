@@ -25,7 +25,8 @@ async def auth_users(db: async_sessionmaker[AsyncSession]) -> None:
             text(
                 'INSERT INTO auth."user" (id, email, name) VALUES '
                 "('alice', 'alice@lab.test', 'Alice'), ('bob', 'bob@lab.test', 'Bob'), "
-                "('vera', 'vera@lab.test', 'Vera')"
+                "('vera', 'vera@lab.test', 'Vera'), ('carol', 'carol@lab.test', 'Carol'), "
+                "('root', 'root@lab.test', 'Root')"
             )
         )
         await session.commit()
