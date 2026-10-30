@@ -3,12 +3,23 @@
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
+from redis.exceptions import RedisError
+
+UNAVAILABLE_RETRY_SECONDS = 30.0
+
 
 class QuotaExhaustedError(Exception):
     def __init__(self, retry_after: float, scope: str) -> None:
         super().__init__(f"free quota exhausted ({scope}); retry after {retry_after:.0f}s")
         self.retry_after = retry_after
         self.scope = scope
+
+
+class QuotaUnavailableError(Exception):
+    """Valkey, which keeps the counts, can't be reached: free calls wait rather than run
+    uncounted."""
+
+    retry_after = UNAVAILABLE_RETRY_SECONDS
 
 
 class Counter(Protocol):
@@ -29,8 +40,14 @@ class FreeQuota:
         self._limits = (per_minute, per_day, per_user_per_day)
 
     async def acquire(self, user_id: str, now: datetime | None = None) -> None:
-        """Take one free request or raise QuotaExhaustedError with how long to wait."""
-        now = (now or datetime.now(UTC)).astimezone(UTC)
+        """Take one free request, or raise QuotaExhaustedError with how long to wait
+        (QuotaUnavailableError when the counts can't be read)."""
+        try:
+            await self._take(user_id, (now or datetime.now(UTC)).astimezone(UTC))
+        except RedisError as exc:
+            raise QuotaUnavailableError from exc
+
+    async def _take(self, user_id: str, now: datetime) -> None:
         per_minute, per_day, per_user = self._limits
         seconds_to_minute = 60 - now.second
         seconds_to_day = int(

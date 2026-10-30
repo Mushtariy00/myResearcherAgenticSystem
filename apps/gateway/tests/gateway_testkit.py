@@ -1,9 +1,11 @@
 """A fake OpenRouter (catalog + chat) and an in-memory counter for the free quota."""
 
+import asyncio
 import json
 import time
 import uuid
 from collections import defaultdict
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 import httpx
@@ -46,6 +48,9 @@ CATALOG["data"].append(
     }
 )
 
+# What a model does next: (status, JSON body), a whole response, or an error to raise.
+Planned = tuple[int, dict[str, Any]] | httpx.Response | Exception
+
 
 def daily_limit(reset_in_seconds: float) -> tuple[int, dict[str, Any]]:
     """OpenRouter's 429 when the account's free requests for the UTC day are used up."""
@@ -67,23 +72,56 @@ def daily_limit(reset_in_seconds: float) -> tuple[int, dict[str, Any]]:
     )
 
 
+def budget_limit(status: int, limit_source: str) -> tuple[int, dict[str, Any]]:
+    """A spending limit as OpenRouter's errors reference documents it."""
+    return (
+        status,
+        {
+            "error": {
+                "code": status,
+                "message": "budget",
+                "metadata": {"limit_source": limit_source},
+            }
+        },
+    )
+
+
 class FakeOpenRouter:
-    """Answers OK by default; `plan[model]` queues (status, body) failures for that model."""
+    """Answers OK by default; `plan[model]` queues what that model does next."""
 
     def __init__(self) -> None:
         self.calls: list[str] = []
         self.bodies: list[dict[str, Any]] = []
-        self.plan: dict[str, list[tuple[int, dict[str, Any]]]] = defaultdict(list)
+        self.timeouts: list[float] = []  # each chat request's read timeout
+        self.plan: dict[str, list[Planned]] = defaultdict(list)
+        self.delays: dict[str, float] = {}  # seconds a model takes to answer
+        self.hold: asyncio.Event | None = None  # chat requests wait for it while it is unset
+        self.sent = asyncio.Event()  # a chat request has arrived
+        self.costs: dict[str, float] = {}  # what /generation reports, by generation id
+        self.lookups: list[str] = []
+        self.during_lookup: Callable[[], Awaitable[None]] | None = None
 
-    def handler(self, request: httpx.Request) -> httpx.Response:
+    async def handler(self, request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/models"):
             return httpx.Response(200, json=CATALOG)
+        if request.url.path.endswith("/generation"):
+            return await self._generation(request.url.params["id"])
         body = json.loads(request.content)
         model = body["model"]
         self.calls.append(model)
         self.bodies.append(body)
+        self.timeouts.append(request.extensions["timeout"]["read"])
+        self.sent.set()
+        if self.hold is not None:
+            await self.hold.wait()
+        await asyncio.sleep(self.delays.get(model, 0))
         if self.plan[model]:
-            status, error = self.plan[model].pop(0)
+            planned = self.plan[model].pop(0)
+            if isinstance(planned, Exception):
+                raise planned
+            if isinstance(planned, httpx.Response):
+                return planned
+            status, error = planned
             return httpx.Response(status, json=error)
         cost = 0.0021 if not model.endswith(":free") else 0
         return httpx.Response(
@@ -95,6 +133,15 @@ class FakeOpenRouter:
                 "usage": {"prompt_tokens": 120, "completion_tokens": 40, "cost": cost},
             },
         )
+
+    async def _generation(self, generation_id: str) -> httpx.Response:
+        self.lookups.append(generation_id)
+        if self.during_lookup is not None:
+            await self.during_lookup()
+        if generation_id not in self.costs:
+            return httpx.Response(404, json={"error": {"code": 404, "message": "not found"}})
+        cost = self.costs[generation_id]
+        return httpx.Response(200, json={"data": {"id": generation_id, "total_cost": cost}})
 
 
 class FakeCounter:

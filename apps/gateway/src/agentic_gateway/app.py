@@ -1,9 +1,24 @@
-"""Internal HTTP API for workers. Not routed by Caddy; listens on 127.0.0.1 and needs a token."""
+"""Internal HTTP API for workers. Not routed by Caddy; listens on 127.0.0.1 and needs a token.
+
+How /v1/complete fails, and what the worker does about it:
+
+- 429 with Retry-After (seconds): free_quota.exhausted (a rate limit or the daily free quota),
+  free_quota.unavailable (Valkey is down) or call.in_progress (the same key is still being
+  answered). The worker waits, then runs the same attempt again.
+- 402 lab_balance.exhausted: the lab's OpenRouter balance is gone and free models fail too. The
+  worker pauses the run and tries again every 15 minutes.
+- 403 free_models.disabled: paid models are ruled out and the project forbids free ones. Final.
+- 409 run.inactive: the run has ended. Final; the attempt stops.
+- 5xx: an upstream or gateway failure, retried.
+
+Details are codes, never exception text.
+"""
 
 import asyncio
 import contextlib
 import hmac
 import logging
+import math
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -15,28 +30,49 @@ import redis.asyncio as redis
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
+from redis.asyncio.retry import Retry
+from redis.backoff import NoBackoff
 
 from agentic_core.enums import LlmPolicy, LlmTier
 from agentic_db import create_engine, session_factory
-from agentic_gateway.catalog import Catalog
+from agentic_gateway.catalog import Catalog, CatalogUnavailableError
 from agentic_gateway.openrouter import (
     AccountBalanceError,
     AuthError,
     FreeDailyLimitError,
+    KeyLimitError,
+    NoAnswerError,
     OpenRouterClient,
+    UpstreamError,
+    UpstreamInterruptedError,
     UpstreamRateLimitError,
 )
-from agentic_gateway.quota import Counter, FreeQuota, QuotaExhaustedError
+from agentic_gateway.quota import Counter, FreeQuota, QuotaExhaustedError, QuotaUnavailableError
 from agentic_gateway.service import (
+    CallInProgressError,
     CompletionRequest,
+    DeadlineExceededError,
     FreeModelsDisabledError,
     NoModelAvailableError,
     Router,
+    RunInactiveError,
 )
 from agentic_gateway.settings import GatewaySettings, get_settings
 
 log = logging.getLogger(__name__)
 SWEEP_SECONDS = 300
+# A free call checks its quota in Valkey first. A hung Valkey must turn into a quick
+# free_quota.unavailable, not a call that sits until the worker gives up on it.
+VALKEY_TIMEOUT_SECONDS = 2.0
+
+# 429s: the worker waits Retry-After, then runs the same attempt again.
+_WAIT_CODES: dict[type[Exception], str] = {
+    QuotaExhaustedError: "free_quota.exhausted",
+    FreeDailyLimitError: "free_quota.exhausted",
+    UpstreamRateLimitError: "free_quota.exhausted",
+    QuotaUnavailableError: "free_quota.unavailable",
+    CallInProgressError: "call.in_progress",
+}
 
 
 class MessageIn(BaseModel):
@@ -75,6 +111,10 @@ def _split(value: str) -> list[str] | None:
     return items or None
 
 
+def _error(status_code: int, code: str) -> JSONResponse:
+    return JSONResponse({"detail": code}, status_code=status_code)
+
+
 def create_app(settings: GatewaySettings | None = None, *, router: Router | None = None) -> FastAPI:
     settings = settings or get_settings()
 
@@ -86,7 +126,12 @@ def create_app(settings: GatewaySettings | None = None, *, router: Router | None
             return
         engine = create_engine(settings.database_url)
         http = httpx.AsyncClient()
-        valkey = redis.from_url(settings.valkey_url)
+        valkey = redis.from_url(
+            settings.valkey_url,
+            socket_connect_timeout=VALKEY_TIMEOUT_SECONDS,
+            socket_timeout=VALKEY_TIMEOUT_SECONDS,
+            retry=Retry(NoBackoff(), 1),  # once, for a pooled connection a restart left dead
+        )
         api_key = settings.openrouter_api_key.get_secret_value()
         app.state.router = Router(
             session_factory(engine),
@@ -101,6 +146,7 @@ def create_app(settings: GatewaySettings | None = None, *, router: Router | None
             paid_models=_split(settings.paid_models),
             free_models=_split(settings.free_models),
             timeout=settings.request_timeout_seconds,
+            deadline=settings.complete_deadline_seconds,
             lease_seconds=settings.lease_seconds,
         )
 
@@ -160,25 +206,38 @@ def create_app(settings: GatewaySettings | None = None, *, router: Router | None
                     json_mode=body.json_mode,
                 )
             )
-        except (QuotaExhaustedError, UpstreamRateLimitError, FreeDailyLimitError) as exc:
-            code = {
-                QuotaExhaustedError: "free_quota.exhausted",
-                FreeDailyLimitError: "free_quota.daily_exhausted",
-            }.get(type(exc), "upstream.rate_limited")
+        except (
+            QuotaExhaustedError,
+            FreeDailyLimitError,
+            UpstreamRateLimitError,
+            QuotaUnavailableError,
+            CallInProgressError,
+        ) as exc:
+            if isinstance(exc, QuotaUnavailableError):
+                log.warning("free quota unavailable (Valkey): %r", exc.__cause__)
             return JSONResponse(
-                {"detail": code, "retry_after": exc.retry_after},
+                {"detail": _WAIT_CODES[type(exc)], "retry_after": exc.retry_after},
                 status_code=429,
-                headers={"Retry-After": str(int(exc.retry_after))},
+                headers={"Retry-After": str(max(1, math.ceil(exc.retry_after)))},
             )
-        except AccountBalanceError:
-            return JSONResponse({"detail": "lab_balance.exhausted"}, status_code=402)
+        except RunInactiveError:
+            return _error(409, "run.inactive")
+        except (AccountBalanceError, KeyLimitError) as exc:
+            # Paid calls fall back to free models first, so here even those failed (or the
+            # project forbids them): the lab can't pay for any call until an admin tops up.
+            log.error("OpenRouter refused the call for lack of credit: %s", exc)
+            return _error(402, "lab_balance.exhausted")
+        except FreeModelsDisabledError:
+            return _error(403, "free_models.disabled")
         except AuthError:
             log.error("OpenRouter rejected the API key (HTTP 401); check ARP_OPENROUTER_API_KEY")
-            return JSONResponse({"detail": "upstream.auth_failed"}, status_code=502)
-        except FreeModelsDisabledError:
-            return JSONResponse({"detail": "free_models.disabled"}, status_code=403)
-        except NoModelAvailableError:
-            return JSONResponse({"detail": "upstream.unavailable"}, status_code=502)
+            return _error(502, "upstream.auth_failed")
+        except CatalogUnavailableError:
+            return _error(503, "catalog.unavailable")
+        except DeadlineExceededError:
+            return _error(504, "upstream.timeout")
+        except (NoModelAvailableError, UpstreamError, UpstreamInterruptedError, NoAnswerError):
+            return _error(502, "upstream.unavailable")
         return CompleteOut(**result.__dict__)
 
     return app
