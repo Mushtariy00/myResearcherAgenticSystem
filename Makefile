@@ -9,10 +9,10 @@ export ARP_UID := $(shell id -u)
 export ARP_GID := $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor setup env up down ps logs migrate migration bootstrap-admin demo-seed client api gateway worker fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
+.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
 
 help: ## List targets
-	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 doctor: ## Check that this machine has everything installed
 	@bash scripts/doctor.sh
@@ -63,6 +63,17 @@ ps: ## Show infrastructure status
 
 logs: ## Follow infrastructure logs
 	$(COMPOSE) logs -f --tail=100
+
+# Backups and restores (docs/runbooks/backup-restore.md). Replacing the live database is left to
+# scripts/restore.sh with --yes-replace-live, on purpose.
+backup: ## Back up Postgres and ARP_DATA_DIR to ARP_BACKUP_DIR (and restic, if RESTIC_REPOSITORY is set)
+	@bash scripts/backup.sh
+
+restore: ## Restore into a scratch database: make restore backup=<dir> [into=<db>] [files=<dir>]
+	@bash scripts/restore.sh $(if $(backup),"$(backup)") $(if $(into),--into "$(into)") $(if $(files),--files-into "$(files)")
+
+restore-drill: ## Back up, restore into a scratch database and check it (keep=1 keeps the copy)
+	@bash scripts/restore-drill.sh $(if $(keep),--keep)
 
 api: ## Run the API with reload on 127.0.0.1:8000 (browse via http://localhost:8080)
 	uv run --package agentic-api uvicorn agentic_api.main:app --reload --host 127.0.0.1 --port 8000

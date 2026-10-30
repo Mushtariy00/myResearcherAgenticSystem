@@ -29,8 +29,8 @@ apps/web            Next.js front end          (pnpm workspace member)
 packages/core       shared stages + strict stage-output schemas
 sandbox/pytorch     GPU training image + harness (data, metrics, loop)
 infra/compose       dev infrastructure (compose.yaml, Caddyfile.dev)
-scripts/            setup, doctor, sandbox smoke test
-docs/               plan and ADRs
+scripts/            setup, doctor, sandbox smoke test, backup / restore / restore drill
+docs/               plan, ADRs and runbooks (docs/runbooks/backup-restore.md)
 legacy/             the old system, for reference while porting
 ```
 
