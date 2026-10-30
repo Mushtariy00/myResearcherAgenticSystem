@@ -20,6 +20,7 @@ from temporalio.worker import Worker
 from agentic_core.contracts import TASK_QUEUE
 from agentic_core.enums import LlmTier, ProjectRole, RunStatus, StageStatus
 from agentic_core.schemas import validate_stage_output
+from agentic_core.stages import STAGE_ORDER, Stage
 from agentic_db.models import (
     Approval,
     Budget,
@@ -392,13 +393,11 @@ async def test_live_runs_wait_for_review_at_their_stage(db: Factory, temporal: C
     for spec, run_id in started:
         async with db() as session:
             run = await session.get(Run, uuid.UUID(run_id))
-            stage_runs = (
-                await session.scalars(
-                    select(StageRun)
-                    .where(StageRun.run_id == uuid.UUID(run_id))
-                    .order_by(StageRun.started_at)
-                )
-            ).all()
+            found = await session.scalars(
+                select(StageRun).where(StageRun.run_id == uuid.UUID(run_id))
+            )
+        # In pipeline order, not by started_at: a WSL clock may step back between two stages.
+        stage_runs = sorted(found, key=lambda s: (STAGE_ORDER.index(Stage(s.stage)), s.attempt))
         assert run is not None and run.workflow_id == f"run-{run_id}"
         if not spec.advance:
             assert run.status == RunStatus.RUNNING

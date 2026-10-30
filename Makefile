@@ -17,7 +17,7 @@ export ARP_JOBS_DIR := $(call host_path,$(or $(strip $(ARP_DATA_DIR)),~/.local/s
 export ARP_DOCKER_BIND_ALLOWLIST := $(ARP_JOBS_DIR)$(patsubst %,$(comma)%,$(call host_path,$(ARP_DATASET_NYU2)))
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker executor fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch sandbox-limits docker-proxy-check executor-check
+.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker executor fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch sandbox-limits docker-proxy-check executor-check stages-check
 
 help: ## List targets
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -139,3 +139,6 @@ docker-proxy-check: ## Phase 3: the Docker socket proxy passes the executor's ca
 
 executor-check: .env ## Phase 3: the executor runs real GPU jobs (smoke, refused code, cancel, restart)
 	uv run --package agentic-executor python scripts/executor-check.py
+
+stages-check: .env ## Phase 3: the coding and experiment stages on the GPU (the LLM's answer scripted)
+	uv run --all-packages python scripts/stages-check.py

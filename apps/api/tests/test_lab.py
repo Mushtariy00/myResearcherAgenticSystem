@@ -176,7 +176,8 @@ async def test_the_lab_balance_uses_real_spend_and_free_use(db: Factory) -> None
     assert (lab["free_daily_limit"], lab["free_calls_today"]) == (1000, 3)
     assert (lab["auto_top_up"], lab["alert_floor_usd"], lab["demo"]) == (False, "10.00", True)
     assert lab["below_floor"] is (Decimal(lab["balance_usd"]) < 10)
-    assert datetime.fromisoformat(lab["checked_at"]) >= now
+    # A few seconds of slack: a WSL clock can step back by a second or two during a test.
+    assert datetime.fromisoformat(lab["checked_at"]) >= now - timedelta(seconds=5)
 
 
 def test_the_generated_balance_is_stable_within_a_month() -> None:

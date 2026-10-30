@@ -149,24 +149,42 @@ timeout is the job's limit plus the queue wait.
   (stage_run_id, kind, ordinal) and waits on it instead of submitting a new one.
 - **A cancel stops the job:** a cancelled activity sets cancel_requested and waits for the
   job to stop (`WAIT_CANCELLATION_COMPLETED`).
-- **Coding** (`coding@1`, role `coding.write`, then `coding.repair`):
-  - from the approved method (the recommended option and the implementation focus) and the
-    contract above, the LLM writes `model.py` (and `loss.py`) plus the model kwargs;
-  - the AST check, then a smoke job;
-  - a failure goes back to the LLM with the error and the log tail, at most 3 tries; then
-    the stage fails with `coding.smoke_failed`;
-  - the output is CodingOutput (files, entrypoint `model.py:Model`, smoke_test).
+Both run as real stages with `ARP_LLM_STAGES=real` and `ARP_GPU_STAGES=real`, sharing
+`agentic_worker.gpu.GpuJobs`. It submits a job once, waits while the user has 2 jobs queued, and
+polls the job to its end. Its progress lines say queued, running, and the executor not running.
+Only a cancel of the run cancels the job; a timed-out or shut-down activity leaves it running for
+the next try. The activity timeouts are 2 h (coding) and 8 h (experiment).
+- **Coding** (`coding@1`, role `coding.write`, then `coding.repair`; `agentic_worker.coding`):
+  - from the approved method (the recommended option and the implementation focus), the
+    dataset's contract and the contract above, the LLM writes `model.py` (and `loss.py`) in
+    fenced blocks (code inside JSON strings breaks), plus a JSON block of choices: the model
+    kwargs, the loss and the training settings;
+  - before any GPU time: the allowlist checker, and the contract (the classes the harness
+    builds and the arguments it builds them with);
+  - then a smoke job: a dry run of 2 + 2 batches at batch size 2;
+  - a failure goes back to the LLM with the findings, or the job's error and log tail, as data;
+    at most 3 tries, then the stage fails with `coding.smoke_failed`. A failure of the GPU host
+    (`job.bad_input`, `job.start_failed`, `job.lost`) fails it at once: another try of the code
+    would fail the same way;
+  - the output is CodingOutput: the files, entrypoint `model.py:Model`, the smoke test, and
+    `config.json` with the choices and what the smoke test measured (parameters, peak GPU
+    memory, steps per second), which the experiment stage trains with.
   - Coding is never auto-approved.
-- **Experiment:**
-  - the bounded config comes from the approved code, RunConfig.dataset and the method: epochs
-    capped, batch size from free VRAM;
-  - one train job;
-  - the output is ExperimentOutput: series from the epoch records, final metrics (null when
-    not measured), the log tail, and provenance (image digest, sha256 of code and config,
-    dataset version, seed, GPU name, GPU-seconds);
-  - status `succeeded | failed | timeout | cancelled` mirrors the job, honestly.
+- **Experiment** (`experiment@1`, `agentic_worker.experiment`):
+  - the plan: the approved code and its config.json (validated again, since a reviewer may edit
+    it on approval), `ARP_EXPERIMENT_EPOCHS` (3) epochs of `ARP_EXPERIMENT_STEPS_PER_EPOCH`
+    (1000) steps and full validation. The batch size comes from the smoke test's memory per
+    sample and the GPU's free memory in the executor's heartbeat (60% of it, a power of two
+    from 2 to 16);
+  - one train job; an attempt that runs again waits on the job as it was submitted;
+  - the output is ExperimentOutput: series from the job's experiment.epoch events (the worker
+    reads the database, never the executor's files), final metrics (null when not measured),
+    the log tail, and provenance (image digest, sha256 of code and config, dataset version,
+    seed, GPU name, GPU-seconds);
+  - status `succeeded | failed | timeout | cancelled` mirrors the job, honestly. A failed
+    training is still an output, for the reviewer to judge.
 - **Writing:** it stops flagging `writing.simulated_results` once coding and experiment are
-  real.
+  real (their outputs are no longer `stage.demo`).
 
 ## API and web
 
@@ -212,9 +230,16 @@ timeout is the job's limit plus the queue wait.
   - A cancel during training ends the job 1.0 s after the request.
   - An executor killed mid-training leaves the container running. The next one adopts it:
     the job succeeds with one container all along, and each epoch event is sent once.
-- **Live, with the worker's stages (step 3):**
+- **Live, the stages (`make stages-check`, 9 checks in about 3 minutes):** the real coding and
+  experiment runners, with only the LLM's answer scripted (the depth_unet example), so it needs
+  no LLM quota.
+  - The coding stage's smoke test passes on the GPU in 16 s; config.json records 12,097
+    parameters and a 422 MB peak at batch 2.
+  - The experiment plans batch size 8 from that, trains 2 epochs of 100 steps in 167 s, and
+    outputs real validation curves, final metrics and provenance.
+- **Live, still to do:**
   - killing the worker mid-job resumes without a second job;
-  - an NYU2 run from the UI to real metrics.
+  - an NYU2 run from the UI to real metrics, with the LLM writing the code.
 
 ## Order of work
 
@@ -223,6 +248,7 @@ timeout is the job's limit plus the queue wait.
 2. **Executor (done):** the tables and their migration, the socket proxy in compose, the
    executor service, the security tests and the Make targets (`make executor`,
    `make docker-proxy-check`, `make executor-check`).
-3. **Worker stages:** coding (LLM, checks, smoke loop) and experiment.
+3. **Worker stages (done):** coding (LLM, checks, smoke loop) and experiment
+   (`make stages-check`).
 4. **API and web:** the queue, datasets and artifacts become real; live curves.
 5. The exit checks, then delete `legacy/`.

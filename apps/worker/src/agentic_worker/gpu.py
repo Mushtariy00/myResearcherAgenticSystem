@@ -144,7 +144,7 @@ class GpuJobs:
         it first unless the attempt did so before."""
         try:
             job_id = await self._submit(ctx, spec, lines)
-            return await self._ended(job_id, spec, lines)
+            return await self._ended(ctx, job_id, spec, lines)
         except asyncio.CancelledError:
             if self._cancels_job():
                 # Found by its name, not its id: the cancel may come as the submit commits.
@@ -185,15 +185,17 @@ class GpuJobs:
                 )
             await asyncio.sleep(self._poll_seconds)
 
-    async def _ended(self, job_id: uuid.UUID, spec: JobSpec, lines: ProgressLines) -> GpuJob:
+    async def _ended(
+        self, ctx: StageContext, job_id: uuid.UUID, spec: JobSpec, lines: ProgressLines
+    ) -> GpuJob:
         said: set[str] = set()
         params = {"kind": spec.kind.value, "ordinal": spec.ordinal}
         while True:
             async with self._sessions() as session:
                 job = await session.get(GpuJob, job_id)
-                alive = await _executor_alive(session)
+                alive = await executor_alive(session)
             if job is None:  # its run was deleted under the attempt
-                raise StageFailedError(f"{spec.kind.value}.job_gone: the job's row is gone")
+                raise StageFailedError(f"{ctx.stage}.job_gone: the job's row is gone")
             if job.status.is_terminal:
                 return job
             if job.status is GpuJobStatus.RUNNING and STARTED not in said:
@@ -233,9 +235,16 @@ def _name(spec: JobSpec) -> str:
     return f"Smoke test {spec.ordinal}" if spec.kind is GpuJobKind.SMOKE else "Training"
 
 
-async def _executor_alive(session: AsyncSession) -> bool:
+async def executor_status(session: AsyncSession) -> dict[str, Any] | None:
+    """The executor's latest heartbeat (agentic_db.lab_settings.EXECUTOR_STATUS_KEY), if any."""
     status = await session.get(Setting, EXECUTOR_STATUS_KEY)
-    alive_at = status.value.get("alive_at") if status is not None else None
+    return status.value if status is not None else None
+
+
+async def executor_alive(session: AsyncSession) -> bool:
+    """Whether the executor's heartbeat is recent: it writes one every few seconds."""
+    status = await executor_status(session)
+    alive_at = status.get("alive_at") if status is not None else None
     if not isinstance(alive_at, str):
         return False
     try:

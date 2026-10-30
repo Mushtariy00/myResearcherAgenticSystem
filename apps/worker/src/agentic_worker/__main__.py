@@ -22,6 +22,9 @@ from agentic_core.contracts import TASK_QUEUE  # noqa: E402
 from agentic_db import create_engine, session_factory  # noqa: E402
 from agentic_worker.activities import HEARTBEAT_SECONDS, StageActivities  # noqa: E402
 from agentic_worker.agents import StageAgents, gateway_llms  # noqa: E402
+from agentic_worker.coding.runner import CodingRunner  # noqa: E402
+from agentic_worker.experiment.runner import ExperimentRunner  # noqa: E402
+from agentic_worker.gpu import GpuJobs  # noqa: E402
 from agentic_worker.literature.library import Sessions  # noqa: E402
 from agentic_worker.literature.runner import LiteratureRunner  # noqa: E402
 from agentic_worker.literature.sources import Scholarly, open_scholarly  # noqa: E402
@@ -47,10 +50,23 @@ def stage_runner(
         # The source rate limits share this Valkey: they are lab-wide.
         scholarly = open_scholarly(settings, valkey)
         literature = LiteratureRunner(planner, scholarly, sessions, agents)
+    # The GPU stages write their code with the LLM, so they are real only with the LLM stages.
+    gpu_stages = real_llm_stages and settings.gpu_stages == "real"
+    gpu = GpuJobs(sessions)
     runner = PipelineStageRunner(
         planner,
         literature=literature,
         method=MethodRunner(agents, sessions) if real_llm_stages else None,
+        coding=CodingRunner(agents, sessions, gpu) if gpu_stages else None,
+        experiment=ExperimentRunner(
+            sessions,
+            gpu,
+            epochs=settings.experiment_epochs,
+            steps_per_epoch=settings.experiment_steps_per_epoch,
+            max_train_hours=settings.max_train_hours,
+        )
+        if gpu_stages
+        else None,
         writing=WritingRunner(agents, sessions) if real_llm_stages else None,
         # A real search records its papers in the library itself.
         demo_library=sessions if literature is None else None,
@@ -80,10 +96,11 @@ async def main() -> None:
         max_heartbeat_throttle_interval=timedelta(seconds=HEARTBEAT_SECONDS),
     )
     logging.getLogger(__name__).info(
-        "worker listening on task queue %s (literature search: %s, LLM stages: %s)",
+        "worker listening on task queue %s (literature search: %s, LLM stages: %s, GPU stages: %s)",
         TASK_QUEUE,
         settings.literature_search,
         settings.llm_stages,
+        settings.gpu_stages if settings.llm_stages == "real" else "demo",
     )
     try:
         await worker.run()

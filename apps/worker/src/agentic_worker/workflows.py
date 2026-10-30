@@ -135,7 +135,8 @@ _ERROR_CODES = {
 }
 _INVALID_OUTPUT = re.compile(r"[a-z_]+\.invalid_output")
 # What else a stage may fail with (StageFailed "<code>: <details>"); the web translates these.
-_STAGE_FAILURES = frozenset(
+# Not to be mixed up with _STAGE_FAILURES above, the error types no retry fixes.
+_FAILURE_CODES = frozenset(
     {
         "literature.no_papers",
         "coding.no_dataset",  # the run's dataset is not registered, or the harness can't use it
@@ -143,6 +144,7 @@ _STAGE_FAILURES = frozenset(
         "coding.job_cancelled",  # a smoke job was cancelled outside the run
         "experiment.no_dataset",
         "experiment.demo_code",  # the approved code is a demo output, never run
+        "experiment.invalid_code_config",  # config.json, edited on approval, can't be trained
     }
 )
 
@@ -162,7 +164,7 @@ def _error_code(error: ActivityError) -> str:
         return "stage.error"
     if cause.type == "StageFailed":  # "<code>: <details>"
         code = cause.message.split(":")[0]
-        known = _INVALID_OUTPUT.fullmatch(code) or code in _STAGE_FAILURES
+        known = _INVALID_OUTPUT.fullmatch(code) or code in _FAILURE_CODES
         return code if known else "stage.error"
     return _ERROR_CODES.get(cause.type or "", "stage.error")
 

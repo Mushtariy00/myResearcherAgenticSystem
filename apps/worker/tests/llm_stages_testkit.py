@@ -19,6 +19,7 @@ from agentic_core.stages import STAGE_ORDER, Stage
 from agentic_db.models import Approval, StageOutput, StageRun
 from agentic_worker.activities import StageActivities
 from agentic_worker.agents import StageAgents
+from agentic_worker.experiment.output import source_hashes
 from agentic_worker.method.runner import MethodRunner
 from agentic_worker.outputs import STAGE_DEMO_REASON, content_sha256
 from agentic_worker.stages import LogEvent, PipelineStageRunner, StageContext
@@ -371,3 +372,161 @@ def context(
         previous_output=previous_output,
         feedback_history=feedback_history,
     )
+
+
+# --- the experiment stage: approved code, and what a training job reports -------------------------
+
+TRAIN_MODEL_PY = """import torch
+from torch import nn
+
+
+class Model(nn.Module):
+    def __init__(self, base_channels: int = 16) -> None:
+        super().__init__()
+        self.body = nn.Conv2d(3, base_channels, 3, padding=1)
+        self.head = nn.Conv2d(base_channels, 1, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.head(torch.relu(self.body(x)))
+"""
+TRAIN_LOSS_PY = """import torch
+from torch import nn
+
+
+class Loss(nn.Module):
+    def forward(self, prediction, target, valid_mask):
+        return (prediction - target).abs()[valid_mask].mean()
+"""
+TRAIN_GPU = "NVIDIA GeForce GTX 1060 6GB"
+TRAIN_IMAGE_ID = "sha256:" + "a1" * 32
+TRAIN_CONFIG_SHA256 = "c0" * 32  # of the config.json the executor mounted
+
+
+def train_code_config(**changes: Any) -> dict[str, Any]:
+    """The config.json of an approved coding output: its smoke test peaked at 410 MB with a batch
+    of 2, about 205 MB a sample."""
+    config: dict[str, Any] = {
+        "dataset": "nyu2",
+        "model_kwargs": {"base_channels": 16},
+        "loss": "l1",
+        "training": {
+            "learning_rate": 0.0003,
+            "optimizer": "adamw",
+            "weight_decay": 0.0001,
+            "clip_grad_norm": None,
+        },
+        "smoke": {
+            "job_id": "6b0f3c55-2f43-4c3e-a7a9-6a8c1f0e2d11",
+            "batch_size": 2,
+            "peak_gpu_memory_mb": 410,
+            "steps_per_second": 6.5,
+            "param_count": 1_234,
+        },
+    }
+    return config | changes
+
+
+def trained_coding(
+    config: Mapping[str, Any] | None = None, *, loss: bool = False
+) -> dict[str, Any]:
+    """An approved coding output whose smoke test passed: model.py, loss.py when asked, its
+    config.json and a README the training leaves out."""
+    files = [{"path": "model.py", "language": "python", "role": "model", "content": TRAIN_MODEL_PY}]
+    if loss:
+        files.append(
+            {"path": "loss.py", "language": "python", "role": "loss", "content": TRAIN_LOSS_PY}
+        )
+    files += [
+        {
+            "path": "config.json",
+            "language": "json",
+            "role": "config",
+            "content": json.dumps(train_code_config() if config is None else config, indent=2),
+        },
+        {"path": "README.md", "language": "markdown", "role": "docs", "content": "A small net."},
+    ]
+    return {
+        "summary": "A two-layer convolutional depth network.",
+        "files": files,
+        "entrypoint": "model.py:Model",
+        "smoke_test": {"passed": True, "duration_seconds": 17.0, "log": "smoke ok"},
+    }
+
+
+def depth_metrics(
+    loss: float | None, rmse: float | None, mae: float | None, abs_rel: float | None
+) -> dict[str, float | None]:
+    """A split's metrics as the harness reports them (None: not measured)."""
+    return {"loss": loss, "rmse": rmse, "mae": mae, "abs_rel": abs_rel}
+
+
+def epoch_payload(
+    job_id: object,
+    epoch: int,
+    train: Mapping[str, float | None],
+    val: Mapping[str, float | None],
+) -> dict[str, Any]:
+    """An experiment.epoch event's payload, as the executor writes it (its queue.report_epoch)."""
+    return {
+        "stage": "experiment",
+        "job_id": str(job_id),
+        "kind": "train",
+        "ordinal": 1,
+        "epoch": epoch,
+        "train": dict(train),
+        "val": dict(val),
+    }
+
+
+def train_results(val: Mapping[str, float | None], **changes: Any) -> dict[str, Any]:
+    """results.json of a training run that ended ok (sandbox/pytorch/harness/train.py)."""
+    results: dict[str, Any] = {
+        "status": "ok",
+        "train_metrics": depth_metrics(0.31, 0.52, 0.38, 0.12),
+        "val_metrics": dict(val),
+        "best_val_loss": val.get("loss"),
+        "dataset_warnings": [],
+        "param_count": 1_234,
+        "steps_per_second": 7.5,
+        "peak_gpu_memory_bytes": 1_610_612_736,
+        "provenance": {
+            "harness_version": "0.3.0",
+            "config_sha256": TRAIN_CONFIG_SHA256,
+            "seed": 42,
+            "torch": "2.14.1+cu126",
+            "cuda": "12.6",
+            "device": TRAIN_GPU,
+            "train_samples": 47_584,
+            "val_samples": 654,
+        },
+        "duration_s": 1_234.5,
+    }
+    return results | changes
+
+
+def failed_results(error_code: str, error: str) -> dict[str, Any]:
+    """results.json of a training run the harness saw fail."""
+    return {
+        "status": "failed",
+        "error": error,
+        "error_code": error_code,
+        "train_metrics": None,
+        "val_metrics": None,
+        "duration_s": 95.2,
+    }
+
+
+def train_provenance(code: Mapping[str, str], **changes: Any) -> dict[str, Any]:
+    """A job's provenance as the executor records it once the job's container ran."""
+    provenance: dict[str, Any] = {
+        "image": "arp-sandbox-pytorch:dev",
+        "image_id": TRAIN_IMAGE_ID,
+        "code_sha256": source_hashes(code),
+        "config_sha256": TRAIN_CONFIG_SHA256,
+        "dataset": {"name": "nyu2", "version": "2026.05", "checksum": "d4" * 32},
+        "seed": 42,
+        "gpu": TRAIN_GPU,
+        "harness": {"harness_version": "0.3.0", "device": TRAIN_GPU},
+        "outputs": {"results.json": 812, "metrics.jsonl": 4_096},
+    }
+    return provenance | changes
