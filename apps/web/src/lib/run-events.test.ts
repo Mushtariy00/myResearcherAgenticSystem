@@ -5,7 +5,9 @@ import {
   mergeEvents,
   parseRunEvent,
   type RunEvent,
+  stageDetailChanges,
   summarizeEvent,
+  summarizeSpend,
 } from "./run-events";
 
 function event(seq: number, type = "log", payload: Record<string, unknown> = {}): RunEvent {
@@ -166,5 +168,122 @@ describe("summarizeEvent", () => {
   it("never interprets markup in payloads (it stays plain text)", () => {
     const summary = summarizeEvent(event(1, "log", { message: "<img src=x onerror=alert(1)>" }));
     expect(summary).toEqual({ kind: "log", message: "<img src=x onerror=alert(1)>" });
+  });
+});
+
+/** An llm.call payload as apps/worker/src/agentic_worker/events.py writes it. */
+function llmCall(seq: number, stage: string, call: Record<string, unknown>): RunEvent {
+  return event(seq, "llm.call", {
+    stage,
+    model: "fake/model",
+    tier: "paid",
+    cost_usd: "0",
+    switched_to_free: false,
+    replayed: false,
+    ...call,
+  });
+}
+
+describe("summarizeSpend", () => {
+  it("adds up the gateway's decimal strings exactly, per stage", () => {
+    const spend = summarizeSpend([
+      event(1, "stage.started", { stage: "literature", attempt: 1 }),
+      llmCall(2, "literature", { cost_usd: "0.1" }),
+      llmCall(3, "literature", { cost_usd: "0.2" }),
+      llmCall(4, "method", { cost_usd: "0.0125" }),
+      event(5, "log", { message: "cost_usd: 99" }),
+    ]);
+    expect(spend.totalUsd).toBe(0.3125);
+    expect(spend.byStage).toEqual({ literature: 0.3, method: 0.0125 });
+    expect(spend).toMatchObject({ calls: 3, paidCalls: 3, freeCalls: 0, lastSeq: 4 });
+  });
+
+  it("counts free calls and calls without a cost as nothing", () => {
+    const spend = summarizeSpend([
+      llmCall(1, "literature", { tier: "free", model: "fake/model:free" }),
+      // str(None) when the gateway answer had no cost.
+      llmCall(2, "literature", { cost_usd: "None" }),
+      llmCall(3, "literature", { cost_usd: "-1" }),
+    ]);
+    expect(spend).toMatchObject({ totalUsd: 0, calls: 3, paidCalls: 2, freeCalls: 1 });
+    expect(spend.byStage).toEqual({ literature: 0 });
+  });
+
+  it("counts a crash replay's cost once (its original call never reached the log)", () => {
+    const spend = summarizeSpend([
+      llmCall(7, "literature", { cost_usd: "0.004", replayed: true }),
+      llmCall(8, "literature", { cost_usd: "0.006" }),
+    ]);
+    expect(spend).toMatchObject({ totalUsd: 0.01, calls: 2, replayedCalls: 1 });
+  });
+
+  it("notices when the gateway switched to free models", () => {
+    expect(summarizeSpend([llmCall(1, "method", {})]).switchedToFree).toBe(false);
+    const switched = llmCall(2, "method", { tier: "free", switched_to_free: true });
+    expect(summarizeSpend([llmCall(1, "method", {}), switched]).switchedToFree).toBe(true);
+  });
+
+  it("is all zeros before the first call", () => {
+    expect(summarizeSpend([])).toEqual({
+      totalUsd: 0,
+      byStage: {},
+      calls: 0,
+      paidCalls: 0,
+      freeCalls: 0,
+      replayedCalls: 0,
+      switchedToFree: false,
+      lastSeq: 0,
+    });
+  });
+});
+
+describe("stageDetailChanges", () => {
+  const events = [
+    event(1, "run.created", { topic: "Depth" }),
+    event(2, "stage.started", { stage: "literature", attempt: 1 }),
+    event(3, "llm.call", { stage: "literature", tier: "free" }),
+    event(4, "log", { stage: "literature", message: "Searching arXiv" }),
+    event(5, "stage.output_ready", { stage: "literature", attempt: 1 }),
+    event(6, "run.status", { status: "awaiting_approval" }),
+    event(7, "stage.decided", { stage: "literature", decision: "approve" }),
+    event(8, "stage.started", { stage: "method", attempt: 1 }),
+  ];
+
+  it("names the stages whose events arrived after the given seq", () => {
+    expect(stageDetailChanges(events, 0)).toEqual({
+      stages: ["literature", "method"],
+      all: false,
+      lastSeq: 8,
+    });
+    expect(stageDetailChanges(events, 7)).toEqual({ stages: ["method"], all: false, lastSeq: 8 });
+    expect(stageDetailChanges(events, 8)).toEqual({ stages: [], all: false, lastSeq: 8 });
+  });
+
+  it("ignores calls and log lines, which do not change a stage's detail", () => {
+    expect(stageDetailChanges(events.slice(2, 4), 0)).toEqual({
+      stages: [],
+      all: false,
+      lastSeq: 4,
+    });
+  });
+
+  it("follows retries to the stage the run restarts at", () => {
+    const retried = [
+      event(20, "run.status", { status: "running", retry_stage: "method" }),
+      event(21, "stage.invalidated", { stage: "coding", attempt: 1, retry_stage: "method" }),
+      event(22, "run.retried", { stage: "method", requested_stage: "method" }),
+    ];
+    expect(stageDetailChanges(retried, 19)).toEqual({
+      stages: ["coding", "method"],
+      all: false,
+      lastSeq: 22,
+    });
+  });
+
+  it("marks every stage when the run finishes (a cancel closes attempts silently)", () => {
+    const cancelled = [event(30, "run.status", { status: "cancelled", error: null })];
+    expect(stageDetailChanges(cancelled, 0)).toMatchObject({ all: true, lastSeq: 30 });
+    const bogus = [event(31, "run.status", { status: "exploded" })];
+    expect(stageDetailChanges(bogus, 0).all).toBe(false);
   });
 });

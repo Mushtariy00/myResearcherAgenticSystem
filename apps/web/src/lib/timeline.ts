@@ -1,4 +1,4 @@
-import type { RunStatus, StageRunOut, StageStatus } from "@/client";
+import type { RunOut, RunStatus, Stage, StageRunOut, StageStatus } from "@/client";
 
 /** Pipeline order (also served by `GET /api/v1/stages`; this is the fallback while it loads). */
 export const STAGE_ORDER = ["literature", "method", "coding", "experiment", "writing"] as const;
@@ -21,6 +21,21 @@ export type TimelineEntry = {
 
 export function isTerminalRunStatus(status: RunStatus | undefined): boolean {
   return status !== undefined && TERMINAL_RUN_STATUSES.has(status);
+}
+
+/**
+ * The stages `POST /runs/{id}/retry?stage=` accepts, in pipeline order: the run has finished
+ * (completed, rejected, failed or cancelled), and the stage is one of the run's configured
+ * stages and has at least one attempt. Whether the caller may retry is `can_steer`'s job.
+ */
+export function retryableStages(
+  run: Pick<RunOut, "status" | "config"> & { stages: readonly Pick<StageRunOut, "stage">[] },
+): Stage[] {
+  if (!TERMINAL_RUN_STATUSES.has(run.status)) {
+    return [];
+  }
+  const reached = new Set(run.stages.map((stageRun) => stageRun.stage));
+  return run.config.stages.filter((stage) => reached.has(stage));
 }
 
 function latestAttempt(attempts: StageRunOut[]): StageRunOut | undefined {

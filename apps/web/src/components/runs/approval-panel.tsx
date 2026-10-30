@@ -1,6 +1,5 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CircleAlertIcon,
   MessageSquareIcon,
@@ -12,8 +11,8 @@ import {
 import { useFormatter, useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { toast } from "sonner";
-import type { Decision, RunDetail, StageOutputOut } from "@/client";
-import { decideStageMutation, getRunQueryKey } from "@/client/@tanstack/react-query.gen";
+import type { RunDetail, StageOutputOut } from "@/client";
+import { JsonView } from "@/components/shared/json-view";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -36,9 +35,8 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MAX_COMMENT_LENGTH, useApprovalDecision } from "@/hooks/use-approval-decision";
 import { useErrorMessage } from "@/hooks/use-error-message";
-import { APPROVAL_CONFLICT_CODES, toApiError } from "@/lib/api-error";
-import { JsonView } from "./json-view";
 import { useLabels } from "./use-labels";
 
 function OutputMeta({ output }: { output: StageOutputOut }) {
@@ -122,66 +120,32 @@ export function AwaitingPreview({ run }: { run: RunDetail }) {
 }
 
 /**
- * Approve / request changes / reject the output waiting for review. The decision carries the
- * output id and sha256 the reviewer saw; if the output changed meanwhile, the API answers 409,
- * and if a new version arrives while the panel is open, the buttons stay locked until the
- * reviewer acknowledges it.
+ * Approve / request changes / reject the output waiting for review (useApprovalDecision). The
+ * decision carries the output id and sha256 the reviewer saw; if the output changed meanwhile,
+ * the API answers 409, and if a new version arrives while the panel is open, the buttons stay
+ * locked until the reviewer acknowledges it.
  */
 export function ApprovalPanel({ run }: { run: RunDetail }) {
   const t = useTranslations("run.approval");
   const labels = useLabels();
   const errorMessage = useErrorMessage();
-  const queryClient = useQueryClient();
   const ids = useId();
-  const output = run.awaiting;
-  const [comment, setComment] = useState("");
-  const [commentMissing, setCommentMissing] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
-  const [conflict, setConflict] = useState(false);
-  const [seenHash, setSeenHash] = useState(output?.sha256 ?? "");
-
-  const runKey = getRunQueryKey({ path: { run_id: run.id } });
-  const decide = useMutation({
-    ...decideStageMutation(),
-    onSuccess: async (_data, variables) => {
-      toast.success(t(`sent.${variables.body.decision}`));
-      setComment("");
-      setConflict(false);
-      await queryClient.invalidateQueries({ queryKey: runKey });
-    },
-    onError: async (error) => {
-      if (APPROVAL_CONFLICT_CODES.has(toApiError(error).code)) {
-        setConflict(true);
-        toast.warning(t("conflictToast"));
-        await queryClient.invalidateQueries({ queryKey: runKey });
-        return;
-      }
-      toast.error(errorMessage(error));
-    },
+  const approval = useApprovalDecision(run, {
+    onDecided: (decision) => toast.success(t(`sent.${decision}`)),
+    onConflict: () => toast.warning(t("conflictToast")),
+    onError: (error) => toast.error(errorMessage(error)),
   });
+  const { output, comment, commentMissing, conflict, updatedWhileOpen, locked } = approval;
 
   if (!output) {
     return null;
   }
 
-  const updatedWhileOpen = seenHash !== output.sha256;
-  const locked = decide.isPending || updatedWhileOpen;
-
-  function send(decision: Decision) {
-    if (!output) {
-      return;
-    }
-    const text = comment.trim();
-    if (decision === "request_changes" && text.length === 0) {
-      setCommentMissing(true);
+  function requestChanges() {
+    if (approval.requestChanges() === "comment_required") {
       document.getElementById(`${ids}-comment`)?.focus();
-      return;
     }
-    setCommentMissing(false);
-    decide.mutate({
-      path: { run_id: run.id },
-      body: { stage_output_id: output.id, sha256: output.sha256, decision, comment: text },
-    });
   }
 
   return (
@@ -206,14 +170,7 @@ export function ApprovalPanel({ run }: { run: RunDetail }) {
               {t("updatedDescription", { version: output.version })}
             </AlertDescription>
             <AlertAction>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setSeenHash(output.sha256);
-                  setConflict(false);
-                }}
-              >
+              <Button size="sm" variant="outline" onClick={approval.acknowledge}>
                 {t("updatedAcknowledge")}
               </Button>
             </AlertAction>
@@ -227,13 +184,8 @@ export function ApprovalPanel({ run }: { run: RunDetail }) {
           <Textarea
             id={`${ids}-comment`}
             value={comment}
-            onChange={(event) => {
-              setComment(event.target.value);
-              if (commentMissing && event.target.value.trim()) {
-                setCommentMissing(false);
-              }
-            }}
-            maxLength={5000}
+            onChange={(event) => approval.setComment(event.target.value)}
+            maxLength={MAX_COMMENT_LENGTH}
             rows={3}
             placeholder={t("commentPlaceholder")}
             aria-invalid={commentMissing || undefined}
@@ -254,13 +206,13 @@ export function ApprovalPanel({ run }: { run: RunDetail }) {
           <ThumbsDownIcon aria-hidden />
           {t("reject")}
         </Button>
-        <Button variant="outline" disabled={locked} onClick={() => send("request_changes")}>
+        <Button variant="outline" disabled={locked} onClick={requestChanges}>
           <MessageSquareIcon aria-hidden />
           {t("requestChanges")}
         </Button>
-        <Button disabled={locked} onClick={() => send("approve")}>
+        <Button disabled={locked} onClick={approval.approve}>
           <ThumbsUpIcon aria-hidden />
-          {decide.isPending ? t("sending") : t("approve")}
+          {approval.pending ? t("sending") : t("approve")}
         </Button>
       </CardFooter>
 
@@ -276,7 +228,7 @@ export function ApprovalPanel({ run }: { run: RunDetail }) {
               variant="destructive"
               onClick={() => {
                 setConfirmReject(false);
-                send("reject");
+                approval.reject();
               }}
             >
               {t("rejectConfirm")}

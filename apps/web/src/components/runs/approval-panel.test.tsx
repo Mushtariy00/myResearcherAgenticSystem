@@ -9,6 +9,14 @@ import { configureApiClient } from "@/lib/api-client";
 import { enMessages as messages } from "@/test/messages";
 import { ApprovalPanel } from "./approval-panel";
 
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  warning: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+}));
+vi.mock("sonner", () => ({ toast }));
+
 const output: StageOutputOut = {
   id: "11111111-1111-4111-8111-111111111111",
   version: 2,
@@ -81,6 +89,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   fetchMock.mockReset();
+  vi.clearAllMocks();
 });
 
 describe("ApprovalPanel", () => {
@@ -131,6 +140,75 @@ describe("ApprovalPanel", () => {
     renderPanel(run);
     fireEvent.click(button("Approve"));
     expect(await screen.findByText("The output changed")).toBeTruthy();
+    expect(toast.warning).toHaveBeenCalledWith("This output changed while you were reviewing it.");
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("confirms the decision with a toast and clears the comment", async () => {
+    fetchMock.mockResolvedValue(respond(202, { status: "accepted" }));
+    renderPanel(run);
+    const comment = screen.getByLabelText("Comment") as HTMLTextAreaElement;
+    fireEvent.change(comment, { target: { value: "Good set of papers" } });
+    fireEvent.click(button("Approve"));
+
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith("Approved. The next stage will start."),
+    );
+    await waitFor(() => expect(comment.value).toBe(""));
+    const request = fetchMock.mock.calls[0]?.[0] as Request;
+    expect(await request.json()).toMatchObject({ comment: "Good set of papers" });
+  });
+
+  it("shows that the decision is on its way and keeps the buttons locked", async () => {
+    let release: (response: Response) => void = () => {};
+    fetchMock.mockImplementation(() => new Promise<Response>((resolve) => (release = resolve)));
+    renderPanel(run);
+    fireEvent.click(button("Approve"));
+
+    const sending = await screen.findByRole("button", { name: "Sending…" });
+    expect((sending as HTMLButtonElement).disabled).toBe(true);
+    expect(button("Reject").disabled).toBe(true);
+    expect(button("Request changes").disabled).toBe(true);
+
+    release(respond(202, { status: "accepted" }));
+    expect(await screen.findByRole("button", { name: "Approve" })).toBeTruthy();
+    expect(button("Approve").disabled).toBe(false);
+  });
+
+  it("moves focus to the comment when changes are requested without one", () => {
+    renderPanel(run);
+    fireEvent.click(button("Request changes"));
+    expect(document.activeElement).toBe(screen.getByLabelText("Comment"));
+    expect(screen.getByLabelText("Comment").getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("rejects only after the reviewer confirms", async () => {
+    fetchMock.mockResolvedValue(respond(202, { status: "accepted" }));
+    renderPanel(run);
+    fireEvent.click(button("Reject"));
+    fireEvent.click(await screen.findByRole("button", { name: "Keep reviewing" }));
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.click(button("Reject"));
+    fireEvent.click(await screen.findByRole("button", { name: "Reject and stop" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const request = fetchMock.mock.calls[0]?.[0] as Request;
+    expect(await request.json()).toMatchObject({ decision: "reject", comment: "" });
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Rejected. The run will stop."));
+  });
+
+  it("reports other failures as an error and keeps the comment", async () => {
+    fetchMock.mockResolvedValue(respond(403, { detail: "permission.denied" }));
+    renderPanel(run);
+    fireEvent.change(screen.getByLabelText("Comment"), { target: { value: "Keep me" } });
+    fireEvent.click(button("Approve"));
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("You do not have permission to do that."),
+    );
+    expect((screen.getByLabelText("Comment") as HTMLTextAreaElement).value).toBe("Keep me");
+    expect(screen.queryByText("The output changed")).toBeNull();
+    expect(button("Approve").disabled).toBe(false);
   });
 
   it("locks the decision buttons when a new version replaces the one being read", () => {

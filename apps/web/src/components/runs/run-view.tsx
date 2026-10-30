@@ -1,21 +1,13 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeftIcon, CircleAlertIcon, PauseCircleIcon } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
-import { useCallback, useMemo } from "react";
-import {
-  getRunOptions,
-  getRunQueryKey,
-  listStagesOptions,
-} from "@/client/@tanstack/react-query.gen";
 import { LoadingRows, PageHeader, QueryError } from "@/components/app/query-state";
 import { RunStatusBadge } from "@/components/app/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useRunEvents } from "@/hooks/use-run-events";
+import { useRunView } from "@/hooks/use-run-view";
 import { toAmount, USD } from "@/lib/format";
-import { buildTimeline, isTerminalRunStatus, STAGE_ORDER } from "@/lib/timeline";
 import { ApprovalPanel, AwaitingPreview } from "./approval-panel";
 import { CancelRunButton } from "./cancel-run-button";
 import { EventLog } from "./event-log";
@@ -27,31 +19,8 @@ export function RunView({ runId }: { runId: string }) {
   const tp = useTranslations("project.newRun.policies");
   const format = useFormatter();
   const labels = useLabels();
-  const queryClient = useQueryClient();
-
-  const run = useQuery({
-    ...getRunOptions({ path: { run_id: runId } }),
-    // Live events trigger refetches; this is the fallback while the stream is down.
-    refetchInterval: (query) => (isTerminalRunStatus(query.state.data?.status) ? false : 20_000),
-  });
-  const stages = useQuery({ ...listStagesOptions(), staleTime: Number.POSITIVE_INFINITY });
-
-  const refreshRun = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: getRunQueryKey({ path: { run_id: runId } }) });
-  }, [queryClient, runId]);
-  const stream = useRunEvents(runId, refreshRun);
-
-  const stageOrder = useMemo(
-    () =>
-      stages.data
-        ? [...stages.data].sort((a, b) => a.position - b.position).map((stage) => stage.id)
-        : [...STAGE_ORDER],
-    [stages.data],
-  );
-  const timeline = useMemo(
-    () => (run.data ? buildTimeline(stageOrder, run.data.stages, run.data.status) : []),
-    [run.data, stageOrder],
-  );
+  const view = useRunView(runId);
+  const run = view.query;
 
   if (run.isPending) {
     return <LoadingRows rows={5} />;
@@ -61,7 +30,6 @@ export function RunView({ runId }: { runId: string }) {
   }
 
   const detail = run.data;
-  const finished = isTerminalRunStatus(detail.status);
 
   return (
     <div className="grid gap-6">
@@ -75,7 +43,7 @@ export function RunView({ runId }: { runId: string }) {
         </Link>
         <PageHeader
           title={detail.topic}
-          actions={detail.can_steer && !finished ? <CancelRunButton runId={detail.id} /> : null}
+          actions={view.canCancel ? <CancelRunButton runId={detail.id} /> : null}
         >
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-sm text-muted-foreground">
             <RunStatusBadge status={detail.status} />
@@ -114,16 +82,16 @@ export function RunView({ runId }: { runId: string }) {
         </Alert>
       )}
 
-      <StageTimeline entries={timeline} />
+      <StageTimeline entries={view.timeline} />
 
-      {detail.awaiting &&
-        (detail.can_steer ? (
+      {view.awaiting &&
+        (view.canSteer ? (
           <ApprovalPanel key={detail.awaiting_stage ?? "awaiting"} run={detail} />
         ) : (
           <AwaitingPreview run={detail} />
         ))}
 
-      <EventLog events={stream.events} state={stream.state} onReconnect={stream.reconnect} />
+      <EventLog events={view.events} state={view.streamState} onReconnect={view.reconnect} />
     </div>
   );
 }

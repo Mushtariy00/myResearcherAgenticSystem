@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { StageRunOut, StageStatus } from "@/client";
-import { buildTimeline, isTerminalRunStatus, STAGE_ORDER } from "./timeline";
+import type { RunStatus, Stage, StageRunOut, StageStatus } from "@/client";
+import { buildTimeline, isTerminalRunStatus, retryableStages, STAGE_ORDER } from "./timeline";
 
 let counter = 0;
 
@@ -101,5 +101,47 @@ describe("isTerminalRunStatus", () => {
     expect(isTerminalRunStatus("awaiting_approval")).toBe(false);
     expect(isTerminalRunStatus("paused_budget")).toBe(false);
     expect(isTerminalRunStatus(undefined)).toBe(false);
+  });
+});
+
+describe("retryableStages", () => {
+  const run = (status: RunStatus, reached: string[], stages: Stage[] = [...STAGE_ORDER]) => ({
+    status,
+    config: {
+      year_from: 2018,
+      year_to: 2026,
+      sources: ["arxiv" as const],
+      max_papers: 20,
+      stages,
+      dataset: "nyu2",
+    },
+    stages: reached.map((stage) => stageRun(stage, "approved")),
+  });
+
+  it("offers every reached stage of a finished run, in pipeline order", () => {
+    expect(retryableStages(run("completed", ["writing", "literature", "method"]))).toEqual([
+      "literature",
+      "method",
+      "writing",
+    ]);
+    for (const status of ["failed", "rejected", "cancelled"] as const) {
+      expect(retryableStages(run(status, ["literature", "method"]))).toEqual([
+        "literature",
+        "method",
+      ]);
+    }
+  });
+
+  it("offers nothing while the run is still going", () => {
+    for (const status of ["queued", "running", "awaiting_approval", "paused_budget"] as const) {
+      expect(retryableStages(run(status, ["literature"]))).toEqual([]);
+    }
+  });
+
+  it("skips stages the run never reached or no longer includes", () => {
+    expect(
+      retryableStages(run("failed", ["literature", "method", "review"], ["literature"])),
+    ).toEqual(["literature"]);
+    expect(retryableStages(run("cancelled", []))).toEqual([]);
   });
 });
