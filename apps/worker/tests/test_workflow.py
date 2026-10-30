@@ -38,6 +38,7 @@ from agentic_worker.gateway_llm import (
     LabBalanceExhaustedError,
     RunInactiveError,
 )
+from agentic_worker.stages import StageFailedError
 from agentic_worker.types import DecisionRecordIn, FinishIn
 from agentic_worker.workflows import RunWorkflow
 from worker_testkit import (
@@ -475,6 +476,15 @@ async def test_unexpected_errors_are_stored_as_a_code_not_as_text(
     assert await run_status(db, run_id) == (RunStatus.FAILED, "stage.error")
     finished = (await run_events(db, run_id, "run.status"))[-1]
     assert finished == {"status": "failed", "error": "stage.error"}
+
+
+async def test_a_literature_search_that_finds_nothing_says_so(
+    client: Client, db: Factory, runner: FakeRunner
+) -> None:
+    runner.errors["literature"] = [StageFailedError("literature.no_papers: nothing matched")]
+    run_id, handle = await start(client, db)
+    assert await handle.result() == "failed"
+    assert await run_status(db, run_id) == (RunStatus.FAILED, "literature.no_papers")
 
 
 async def test_a_decision_the_database_refuses_fails_the_run_visibly(

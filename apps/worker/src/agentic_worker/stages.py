@@ -1,22 +1,25 @@
 """What each stage produces.
 
-Literature runs its real CrewAI research-plan step, then fills in search, screening and
-analysis with demo data until Phase 2 builds them. Method, coding, experiment and writing
-return demo outputs (``agentic_core.demo``) built on the approved outputs of the stages before
-them. Every demo output is flagged degraded, and each simulated stage takes a while and reports
-its progress as log events, so the front end sees what a real run looks like.
+Literature is the real stage (agentic_worker.literature) when the worker is given one. Without
+it (ARP_LITERATURE_SEARCH=demo) literature runs its real CrewAI research-plan step and fills in
+search, screening and analysis with demo data. Method, coding, experiment and writing return
+demo outputs (``agentic_core.demo``) built on the approved outputs of the stages before them.
+Every demo output is flagged degraded, and each simulated stage takes a while and reports its
+progress as log events, so the front end sees what a real run looks like.
 """
 
 import asyncio
 import json
 import logging
 import threading
+import uuid
 from collections.abc import Awaitable, Callable, Coroutine, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
 from pydantic import ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from agentic_core import demo
 from agentic_core.schemas import (
@@ -30,6 +33,7 @@ from agentic_core.schemas import (
 )
 from agentic_core.stages import Stage
 from agentic_worker.gateway_llm import GatewayLLM
+from agentic_worker.literature.library import record_demo_papers
 from agentic_worker.llm_json import InvalidModelOutputError, parse_model_output
 from agentic_worker.outputs import (
     DEMO_PROMPT_VERSION,
@@ -78,6 +82,9 @@ class StageContext:
     inputs: Mapping[str, dict[str, Any]] = field(default_factory=dict)
     # Per-run override of the simulated stage duration (runs.config "demo_stage_seconds").
     demo_stage_seconds: float | None = None
+    # A simulated run (runs.config "simulated", the demo seed's live runs): its literature stage
+    # is simulated too, so it spends no LLM calls on a real search.
+    simulated: bool = False
     log: LogEvent = _discard_log
     # A request-changes attempt: the output the reviewer asked to change, and every comment
     # that led to this attempt, oldest first (``feedback`` is the latest one).
@@ -234,10 +241,16 @@ class PipelineStageRunner:
         self,
         planner: ResearchPlanner,
         *,
+        literature: StageRunner | None = None,  # the real literature stage
+        # Where a demo search records its papers in the library, so they resolve like real ones
+        # (the demo seed records its own, inside its transaction).
+        demo_library: async_sessionmaker[AsyncSession] | None = None,
         demo_stage_seconds: float = DEFAULT_DEMO_STAGE_SECONDS,
         clock: Callable[[], datetime] = _utc_now,  # the demo seed backdates finished runs
     ) -> None:
         self._planner = planner
+        self._literature_stage = literature
+        self._demo_library = demo_library
         self._demo_stage_seconds = demo_stage_seconds
         self._clock = clock
 
@@ -246,10 +259,22 @@ class PipelineStageRunner:
             stage = Stage(ctx.stage)
         except ValueError:
             raise StageFailedError(f"stage.unknown: {ctx.stage}") from None
+        if stage is Stage.LITERATURE and self._literature_stage is not None and not ctx.simulated:
+            return await self._literature_stage.run(ctx)
         if stage is Stage.LITERATURE:
             planned = await self._planner.plan(ctx)
             seed = demo_seed(ctx.run_id, ctx.stage, ctx.attempt)
             output = demo.literature(ctx.topic, planned.plan, ctx.config, seed, ctx.feedback)
+            if self._demo_library is not None:
+                async with self._demo_library() as session:
+                    await record_demo_papers(
+                        session,
+                        run_id=uuid.UUID(ctx.run_id),
+                        stage_run_id=uuid.UUID(ctx.stage_run_id),
+                        output=output,
+                        model=planned.model,
+                    )
+                    await session.commit()
             await self._simulate(ctx, output)
             return StageOutcome(
                 data=output.model_dump(mode="json"),

@@ -113,6 +113,26 @@ async def test_every_stage_returns_a_flagged_schema_valid_output(
         assert outcome.model is None and outcome.llm_calls == []
 
 
+async def test_simulated_runs_keep_the_demo_literature_when_the_real_one_is_on() -> None:
+    """The demo seed's live runs are marked simulated: they must not spend the free quota on
+    the real search."""
+
+    class RealLiterature:
+        def __init__(self) -> None:
+            self.runs: list[StageContext] = []
+
+        async def run(self, ctx: StageContext) -> StageOutcome:
+            self.runs.append(ctx)
+            return StageOutcome(data={"real": True})
+
+    real = RealLiterature()
+    runner = PipelineStageRunner(FakePlanner(), literature=real, demo_stage_seconds=0)
+    simulated = await runner.run(dataclasses.replace(context("literature"), simulated=True))
+    assert simulated.degraded_reason == LITERATURE_DEMO_REASON and real.runs == []
+    assert (await runner.run(context("literature"))).data == {"real": True}
+    assert len(real.runs) == 1
+
+
 async def test_literature_keeps_the_planners_plan(runner: PipelineStageRunner) -> None:
     planner = FakePlanner()
     outcome = await PipelineStageRunner(planner, demo_stage_seconds=0).run(context("literature"))

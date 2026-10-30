@@ -24,10 +24,12 @@ from agentic_db.models import (
     Approval,
     Budget,
     LlmCall,
+    Paper,
     Project,
     ProjectMember,
     Run,
     RunEvent,
+    RunPaper,
     StageOutput,
     StageRun,
 )
@@ -297,6 +299,53 @@ async def test_seeding_again_replaces_the_demo_projects_and_nothing_else(db: Fac
     assert len(real) == 1
     run_calls = sum(1 for call in seeded_calls if call.run_id is not None)
     assert len(seeded_calls) - run_calls == second.llm_calls == first.llm_calls
+
+
+async def library_by_stage_run(db: Factory) -> dict[uuid.UUID, list[tuple[str, RunPaper]]]:
+    """The (paper key, run_papers row) pairs of each stage run, best ranked first."""
+    async with db() as session:
+        rows = await session.execute(
+            select(Paper.key, RunPaper).join(RunPaper, RunPaper.paper_id == Paper.id)
+        )
+        found: dict[uuid.UUID, list[tuple[str, RunPaper]]] = {}
+        for key, entry in sorted(rows, key=lambda row: row[1].rank):
+            found.setdefault(entry.stage_run_id, []).append((key, entry))
+        return found
+
+
+async def literature_outputs(db: Factory) -> dict[uuid.UUID, StageOutput]:
+    async with db() as session:
+        rows = await session.scalars(
+            select(StageOutput)
+            .join(StageRun, StageRun.id == StageOutput.stage_run_id)
+            .where(StageRun.stage == "literature", StageOutput.version == 1)
+        )
+        return {output.stage_run_id: output for output in rows}
+
+
+async def test_the_seeded_literature_papers_are_in_the_library(db: Factory) -> None:
+    for _ in range(2):  # seeding again replaces them
+        await seed_demo.remove_previous(db, FakeTemporal())  # type: ignore[arg-type]
+        await seeded(db)
+        outputs = await literature_outputs(db)
+        library = await library_by_stage_run(db)
+        assert set(library) == set(outputs)
+        for stage_run_id, output in outputs.items():
+            refs = output.data["papers"]
+            entries = library[stage_run_id]
+            assert [key for key, _ in entries] == [ref["paper_id"] for ref in refs]
+            assert [entry.decision for _, entry in entries] == [ref["decision"] for ref in refs]
+            analysed = {key: entry.analysis for key, entry in entries if entry.analysis}
+            assert analysed == {a["paper_id"]: a for a in output.data["analyses"]}
+            # Last seen when the backdated output was stored, not when the seed ran.
+            assert {entry.created_at for _, entry in entries} == {output.created_at}
+        async with db() as session:
+            papers = (await session.scalars(select(Paper))).all()
+        assert all(paper.demo for paper in papers)
+        # Every demo paper belongs to a seeded output: the last seed's papers are gone.
+        assert {paper.key for paper in papers} == {
+            ref["paper_id"] for output in outputs.values() for ref in output.data["papers"]
+        }
 
 
 # --- live runs ----------------------------------------------------------------------------------

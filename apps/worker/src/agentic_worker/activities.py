@@ -54,8 +54,9 @@ _DECISION_STATUS = {
     Decision.REQUEST_CHANGES: StageStatus.CHANGES_REQUESTED,
     Decision.REJECT: StageStatus.REJECTED,
 }
-# A per-run knob next to the RunConfig keys in runs.config; not a wizard option.
+# Per-run knobs next to the RunConfig keys in runs.config; not wizard options.
 DEMO_STAGE_SECONDS_KEY = "demo_stage_seconds"
+SIMULATED_KEY = "simulated"  # true: every stage simulated, literature too (the demo seed's runs)
 
 __all__ = ["HEARTBEAT_SECONDS", "StageActivities", "content_sha256", "heartbeating"]
 
@@ -388,6 +389,7 @@ class StageActivities:
                 config=run_config(run.config),
                 inputs=await approved_outputs(session, run_id, inp.stage),
                 demo_stage_seconds=demo_stage_seconds(run.config),
+                simulated=run.config.get(SIMULATED_KEY) is True,
                 log=self._logger(run_id, inp.stage),
                 previous_output=revised.data if revised is not None else None,
                 # Scheduled before the workflow sent the history: the latest comment only.

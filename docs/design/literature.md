@@ -129,9 +129,18 @@ The fetcher (`scholarly.fetch`) is the only code that downloads from URLs found 
 | Role | Output | Calls for 20 papers | Max output tokens |
 |---|---|---|---|
 | `literature.plan` | ResearchPlan | 1 | 1,500 |
-| `literature.screen` | decisions for 10 papers | 6 | 2,000 |
-| `literature.analyze` | PaperAnalysis | ≤ 20 | 1,500 |
-| `literature.synthesize` | key findings + synthesis | 1 | 2,500 |
+| `literature.screen` | decisions for 10 papers | 6 | 4,000 |
+| `literature.analyze` | PaperAnalysis | ≤ 20 | 4,000 |
+| `literature.synthesize` | key findings + synthesis | 1 | 4,000 |
+
+The live check raised the budgets from 2,000, 1,500 and 2,500 tokens. Free reasoning models
+write their reasoning into the answer: one spent a whole 2,000-token screening budget on it
+and never reached the JSON. The prompts ask for the JSON alone. When an answer is cut off at
+its budget, the repair request says so.
+
+At most 3 × max_papers candidates go to screening. On free models a 20-paper stage needs
+about 28 calls, more than half of the 50 free requests a day. Use a smaller max_papers on free
+models, or buy the one-time $10 that raises the cap to 1,000 a day.
 
 - Agents that read papers have no tools; the paper text goes in a delimited block marked as
   data, trimmed to a token budget (sections in order: abstract, introduction, method, results,

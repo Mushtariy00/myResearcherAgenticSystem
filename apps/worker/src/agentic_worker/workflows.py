@@ -46,6 +46,9 @@ with workflow.unsafe.imports_passed_through():
 APPROVAL_TIMEOUT = timedelta(days=7)  # runs started before project settings existed
 DB_STEP = timedelta(seconds=30)
 STAGE_STEP = timedelta(minutes=30)
+# The literature stage searches, fetches PDFs and makes tens of LLM calls in one activity. An
+# activity option, so changing it leaves the command sequence (and replay) as it was.
+LITERATURE_STEP = timedelta(hours=2)
 STAGE_HEARTBEAT = timedelta(minutes=2)
 # Database errors that no retry fixes, e.g. a NUL character in a comment. Temporal names an
 # activity's exception by its class, here SQLAlchemy's.
@@ -122,15 +125,22 @@ _ERROR_CODES = {
     **dict.fromkeys(DB_ERRORS, "db.error"),
 }
 _INVALID_OUTPUT = re.compile(r"[a-z_]+\.invalid_output")
+# What else a stage may fail with (StageFailed "<code>: <details>"); the web translates these.
+_STAGE_FAILURES = frozenset({"literature.no_papers"})
+
+
+def _stage_timeout(stage: str) -> timedelta:
+    return LITERATURE_STEP if stage == Stage.LITERATURE.value else STAGE_STEP
 
 
 def _error_code(error: ActivityError) -> str:
     cause = error.cause
     if not isinstance(cause, ApplicationError):
         return "stage.error"
-    if cause.type == "StageFailed":  # "<stage>.invalid_output: <details>"
+    if cause.type == "StageFailed":  # "<code>: <details>"
         code = cause.message.split(":")[0]
-        return code if _INVALID_OUTPUT.fullmatch(code) else "stage.error"
+        known = _INVALID_OUTPUT.fullmatch(code) or code in _STAGE_FAILURES
+        return code if known else "stage.error"
     return _ERROR_CODES.get(cause.type or "", "stage.error")
 
 
@@ -297,7 +307,7 @@ class RunWorkflow:
             return await workflow.execute_activity(
                 "execute_stage",
                 inp,
-                start_to_close_timeout=STAGE_STEP,
+                start_to_close_timeout=_stage_timeout(inp.stage),
                 heartbeat_timeout=STAGE_HEARTBEAT,
                 retry_policy=LEGACY_STAGE_RETRY,
                 result_type=StageResult,
@@ -309,7 +319,7 @@ class RunWorkflow:
                 result = await workflow.execute_activity(
                     "execute_stage",
                     inp,
-                    start_to_close_timeout=STAGE_STEP,
+                    start_to_close_timeout=_stage_timeout(inp.stage),
                     heartbeat_timeout=STAGE_HEARTBEAT,
                     retry_policy=STAGE_RETRY,
                     # finish_run must not race a stage that is still writing.

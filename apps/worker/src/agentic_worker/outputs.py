@@ -20,8 +20,12 @@ from agentic_core.schemas import (
 )
 
 PLAN_PROMPT_VERSION = "literature-plan@1"
+# The real literature stage: the plan prompt (literature-plan@1) with the screening, analysis
+# and synthesis prompts of agentic_worker.literature. Bump it when any of them changes.
+LITERATURE_PROMPT_VERSION = "literature@1"
 DEMO_PROMPT_VERSION = demo.PROMPT_VERSION
-# Degraded reasons the front end shows: the real search (Phase 2) and stages are not built yet.
+# Degraded reasons the front end shows for demo outputs (the search when the worker runs with
+# ARP_LITERATURE_SEARCH=demo, and the stages after literature, which are not built yet).
 LITERATURE_DEMO_REASON = "literature.demo_search"
 STAGE_DEMO_REASON = "stage.demo"
 

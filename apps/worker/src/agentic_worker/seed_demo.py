@@ -8,12 +8,16 @@ It replaces three demo projects (recognised by fixed ids, so running it again is
   paid and free, for the spend charts;
 - finished runs in every final state (completed, failed, cancelled, rejected) and one paused for
   budget, written directly with the stage runs, outputs, approvals and events the workflow
-  writes (the stage outputs come from the same demo stage runner the worker uses);
+  writes (the stage outputs come from the same demo stage runner the worker uses), and the
+  demo papers of their literature outputs in the paper library (papers flagged demo, and
+  run_papers);
 - live runs: real RunWorkflow executions, started through Temporal and advanced with real
   decisions until each waits for review at its stage, plus one run in a 10-minute stage.
 
-Live runs need the dev stack and a worker running this code (`make worker`). Each live run
-makes one real LLM call, the literature plan, through the gateway.
+Live runs need the dev stack and a worker running this code (`make worker`) with
+ARP_LITERATURE_SEARCH=demo: each live run then makes one real LLM call, the literature plan,
+through the gateway, and the worker records its demo papers in the library. With the real
+search each live literature stage searches, screens and analyses for real (tens of calls).
 """
 
 import os
@@ -67,21 +71,25 @@ from agentic_core.enums import (  # noqa: E402
     RunStatus,
     StageStatus,
 )
-from agentic_core.schemas import RunConfig, validate_stage_output  # noqa: E402
+from agentic_core.schemas import LiteratureOutput, RunConfig, validate_stage_output  # noqa: E402
 from agentic_core.stages import STAGE_ORDER, Stage  # noqa: E402
 from agentic_db import append_event, create_engine, session_factory  # noqa: E402
 from agentic_db.models import (  # noqa: E402
     Approval,
     Budget,
     LlmCall,
+    Paper,
     Project,
     ProjectMember,
     Run,
     RunEvent,
+    RunPaper,
     StageOutput,
     StageRun,
 )
 from agentic_worker import events  # noqa: E402
+from agentic_worker.activities import SIMULATED_KEY  # noqa: E402
+from agentic_worker.literature.library import record_demo_papers  # noqa: E402
 from agentic_worker.outputs import content_sha256, demo_seed  # noqa: E402
 from agentic_worker.settings import WorkerSettings  # noqa: E402
 from agentic_worker.stages import (  # noqa: E402
@@ -479,7 +487,8 @@ async def load_demo_users(session: AsyncSession) -> dict[str, str]:
 
 
 async def remove_previous(sessions: Sessions, client: Client | None) -> int:
-    """Delete the demo projects (their runs and events cascade) and the seeded LLM calls.
+    """Delete the demo projects (their runs, events and run_papers cascade), the demo papers no
+    other run found, and the seeded LLM calls.
 
     Workflows of unfinished demo runs are terminated first, so none of them writes into rows
     that are being deleted. Real LLM calls of earlier live runs stay: they were real spend.
@@ -502,6 +511,8 @@ async def remove_previous(sessions: Sessions, client: Client | None) -> int:
                     log.info("workflow %s was not running", workflow_id)
     async with sessions() as session:
         await session.execute(delete(Project).where(Project.id.in_(ids)))
+        found = select(RunPaper.paper_id).where(RunPaper.paper_id == Paper.id).exists()
+        await session.execute(delete(Paper).where(Paper.demo, ~found))
         await session.execute(
             delete(LlmCall).where(LlmCall.idempotency_key.startswith(SEED_KEY_PREFIX))
         )
@@ -823,6 +834,15 @@ async def write_finished_run(
         )
         session.add(output)
         await session.flush()
+        if step.stage is Stage.LITERATURE:
+            await record_demo_papers(
+                session,
+                run_id=run.id,
+                stage_run_id=stage_run.id,
+                output=LiteratureOutput.model_validate(outcome.data),
+                model=outcome.model,
+                created_at=output.created_at,  # seen when the backdated output was stored
+            )
         stage_run.status = StageStatus.OUTPUT_READY
         history.event(
             events.stage_output_ready(step.stage.value, attempt, str(output.id), output.degraded)
@@ -970,7 +990,11 @@ async def start_live_runs(
     users: dict[str, str],
     specs: tuple[LiveRunSpec, ...] = LIVE_RUNS,
 ) -> list[tuple[LiveRunSpec, str]]:
-    """Create the live runs like the API does, and start a RunWorkflow execution for each."""
+    """Create the live runs like the API does, and start a RunWorkflow execution for each.
+
+    Every live run is marked simulated: the worker's real literature search would spend dozens
+    of LLM calls on each.
+    """
     started = []
     for spec in specs:
         async with sessions() as session:
@@ -978,7 +1002,7 @@ async def start_live_runs(
                 project_id=_PROJECTS_BY_KEY[spec.project].id,
                 owner_id=users[spec.owner],
                 topic=spec.topic,
-                config=spec.config,
+                config={**spec.config, SIMULATED_KEY: True},
             )
             session.add(run)
             await session.flush()
