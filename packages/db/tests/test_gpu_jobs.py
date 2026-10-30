@@ -211,3 +211,28 @@ async def test_the_migration_registers_nyu2_and_takes_both_tables_away(
         assert not TABLES & await _tables(db)
     finally:
         await _alembic(database_url, command.upgrade, "head")
+
+
+async def test_nyu2_2026_10_is_the_copy_with_training_depth_in_metres(
+    db: Factory, database_url: str
+) -> None:
+    async def nyu2() -> tuple[str, str | None, str]:
+        async with db() as session:
+            row = await session.get(Dataset, "nyu2", populate_existing=True)
+            assert row is not None
+            return row.version, row.checksum, row.details["description"]
+
+    try:
+        await _alembic(database_url, command.downgrade, BEFORE)
+        await _alembic(database_url, command.upgrade, REVISION)  # registers nyu2 2026.05
+        async with db() as session:
+            await session.execute(text("UPDATE datasets SET checksum = repeat('a', 64)"))
+            await session.commit()
+        await _alembic(database_url, command.upgrade, "5e8b1f0c9d42")
+        version, checksum, description = await nyu2()
+        assert (version, checksum) == ("2026.10", None)  # the export's checksum isn't the copy's
+        assert "training depths converted to metres" in description
+        await _alembic(database_url, command.downgrade, REVISION)
+        assert (await nyu2())[0] == "2026.05"
+    finally:
+        await _alembic(database_url, command.upgrade, "head")

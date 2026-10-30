@@ -17,7 +17,7 @@ export ARP_JOBS_DIR := $(call host_path,$(or $(strip $(ARP_DATA_DIR)),~/.local/s
 export ARP_DOCKER_BIND_ALLOWLIST := $(ARP_JOBS_DIR)$(patsubst %,$(comma)%,$(call host_path,$(ARP_DATASET_NYU2)))
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker executor fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch sandbox-limits docker-proxy-check executor-check stages-check
+.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker executor fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch sandbox-limits docker-proxy-check executor-check stages-check nyu2-fix
 
 help: ## List targets
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -142,3 +142,13 @@ executor-check: .env ## Phase 3: the executor runs real GPU jobs (smoke, refused
 
 stages-check: .env ## Phase 3: the coding and experiment stages on the GPU (the LLM's answer scripted)
 	uv run --all-packages python scripts/stages-check.py
+
+# The lab's NYU2 export holds its training depths in the wrong unit (scripts/nyu2-fix-depth.py).
+nyu2-fix: ## Copy NYU2 with the training depths in metres: make nyu2-fix from=<export> to=<new folder>
+	@test -n "$(from)" -a -n "$(to)" || { echo "usage: make nyu2-fix from=<export folder> to=<new folder>"; exit 1; }
+	mkdir -p "$(to)"
+	docker run --rm --network none --read-only --tmpfs /tmp --user "$$(id -u):$$(id -g)" \
+		--cap-drop ALL --security-opt no-new-privileges \
+		-v "$(abspath $(from)):/source:ro" -v "$(abspath $(to)):/dest" \
+		-v "$(CURDIR)/scripts/nyu2-fix-depth.py:/opt/nyu2-fix-depth.py:ro" \
+		--entrypoint python arp-sandbox-pytorch:dev /opt/nyu2-fix-depth.py /source /dest --workers 3

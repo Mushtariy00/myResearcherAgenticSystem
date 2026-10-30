@@ -32,8 +32,20 @@ no change for them.
 - `scripts/sandbox-smoke.sh` proves the hardened flags of ADR 0006 on this machine: the GPU is
   visible, there is no network, no secrets, the root is read-only, the output is writable, and
   a failure is reported as one.
-- Hardware: a GTX 1060 6 GB. The NYU2 data is at `/mnt/d/DATASET/nyu2/nyu2_metric_ready` (h5
-  files). Reading through WSL's drvfs is slow; copying the data to the ext4 disk is advised.
+- Hardware: a GTX 1060 6 GB. The NYU2 export is at `/mnt/d/DATASET/nyu2/nyu2_metric_ready` (h5
+  files, read through WSL's drvfs).
+- **The export's training depths are not in metres** (found by the harness's unit check, Phase 3
+  step 4):
+  - they are the NYU2 training set's 8-bit PNG values divided by 1000, as if they were
+    millimetres: every one is a multiple of 0.001 up to 0.255, median 0.076;
+  - validation is real millimetres / 1000, median 2.75 m;
+  - so every metric of a model trained on the export means little.
+  - `make nyu2-fix` copies it with the training depths in metres (stored × 1000 / 255 × 10;
+    validation unchanged), beside the export on D:. That copy is dataset version 2026.10, and
+    ARP_DATASET_NYU2 points at it.
+  - Not into WSL's own ext4 disk: that is a VHDX file on a Windows drive, which grows with what
+    is written into it and doesn't shrink by itself. A first copy there filled C: (2026-10-31),
+    and the WSL disk had to move to D:.
 
 ## The generated code contract
 
