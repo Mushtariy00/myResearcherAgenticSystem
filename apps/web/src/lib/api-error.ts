@@ -23,6 +23,8 @@ export const KNOWN_ERROR_CODES = [
   "decision.invalid",
   "decision.edit_requires_approve",
   "decision.invalid_edit",
+  "decision.edit_too_large",
+  "papers.invalid_year_range",
   "member.last_owner",
   "member.not_found",
   "paper.not_found",

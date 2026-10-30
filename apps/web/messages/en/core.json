@@ -195,7 +195,8 @@
     "decision": {
       "invalid": "That decision isn't possible for this output.",
       "edit_requires_approve": "Edits can only be saved together with an approval.",
-      "invalid_edit": "The edited output doesn't match this stage's format. Check the fields and try again."
+      "invalid_edit": "The edited output doesn't match this stage's format. Check the fields and try again.",
+      "edit_too_large": "The edited output is too large to save. Shorten it and try again."
     },
     "member": {
       "last_owner": "A project needs at least one owner.",
@@ -206,6 +207,9 @@
     },
     "artifact": {
       "not_found": "File not found."
+    },
+    "papers": {
+      "invalid_year_range": "The start year must not be after the end year."
     }
   },
   "degradedReasons": {
