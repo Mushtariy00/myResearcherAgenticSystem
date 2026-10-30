@@ -9,6 +9,7 @@
       "runFailed": "“{topic}” failed. {error}",
       "runCancelled": "“{topic}” was cancelled.",
       "runRejected": "“{topic}” stopped because a stage was rejected.",
+      "runPaused": "“{topic}” is paused because the lab's OpenRouter balance is used up. It continues by itself after a top-up.",
       "budgetWarning": "You have used {percent}% of your LLM budget for {month}: {spent} of {budget}.",
       "budgetExhausted": "Your LLM budget for {month} is used up ({spent} of {budget}). Your runs continue on free models.",
       "unknown": "Something changed in one of your runs."

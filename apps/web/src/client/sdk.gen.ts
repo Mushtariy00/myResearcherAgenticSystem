@@ -107,6 +107,11 @@ export const updateMember = <ThrowOnError extends boolean = false>(options: Opti
 
 /**
  * List Runs
+ *
+ * The project's runs, newest first, one page at a time.
+ *
+ * For the next page pass the last run's id as ``before``; a page shorter than ``limit`` is
+ * the last one.
  */
 export const listRuns = <ThrowOnError extends boolean = false>(options: Options<ListRunsData, ThrowOnError>): RequestResult<ListRunsResponses, ListRunsErrors, ThrowOnError> => (options.client ?? client).get<ListRunsResponses, ListRunsErrors, ThrowOnError>({ url: '/api/v1/projects/{project_id}/runs', ...options });
 

@@ -240,6 +240,11 @@ export const listRunsQueryKey = (options: Options<ListRunsData>) => createQueryK
 
 /**
  * List Runs
+ *
+ * The project's runs, newest first, one page at a time.
+ *
+ * For the next page pass the last run's id as ``before``; a page shorter than ``limit`` is
+ * the last one.
  */
 export const listRunsOptions = (options: Options<ListRunsData>) => queryOptions<ListRunsResponse, ListRunsError, ListRunsResponse, ReturnType<typeof listRunsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -253,6 +258,70 @@ export const listRunsOptions = (options: Options<ListRunsData>) => queryOptions<
     },
     queryKey: listRunsQueryKey(options)
 });
+
+const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
+    const params = { ...queryKey[0] };
+    if (page.body) {
+        params.body = {
+            ...queryKey[0].body as any,
+            ...page.body as any
+        };
+    }
+    if (page.headers) {
+        params.headers = {
+            ...queryKey[0].headers,
+            ...page.headers
+        };
+    }
+    if (page.path) {
+        params.path = {
+            ...queryKey[0].path as any,
+            ...page.path as any
+        };
+    }
+    if (page.query) {
+        params.query = {
+            ...queryKey[0].query as any,
+            ...page.query as any
+        };
+    }
+    return params as unknown as typeof page;
+};
+
+export const listRunsInfiniteQueryKey = (options: Options<ListRunsData>): QueryKey<Options<ListRunsData>> => createQueryKey('listRuns', options, true);
+
+/**
+ * List Runs
+ *
+ * The project's runs, newest first, one page at a time.
+ *
+ * For the next page pass the last run's id as ``before``; a page shorter than ``limit`` is
+ * the last one.
+ */
+export const listRunsInfiniteOptions = (options: Options<ListRunsData>) => {
+    const opts = infiniteQueryOptions<ListRunsResponse, ListRunsError, InfiniteData<ListRunsResponse>, QueryKey<Options<ListRunsData>>, string | null | Pick<QueryKey<Options<ListRunsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListRunsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    before: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listRuns({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listRunsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
 
 /**
  * Create Run
@@ -407,35 +476,6 @@ export const streamRunEventsOptions = (options: Options<StreamRunEventsData>) =>
     },
     queryKey: streamRunEventsQueryKey(options)
 });
-
-const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
-    const params = { ...queryKey[0] };
-    if (page.body) {
-        params.body = {
-            ...queryKey[0].body as any,
-            ...page.body as any
-        };
-    }
-    if (page.headers) {
-        params.headers = {
-            ...queryKey[0].headers,
-            ...page.headers
-        };
-    }
-    if (page.path) {
-        params.path = {
-            ...queryKey[0].path as any,
-            ...page.path as any
-        };
-    }
-    if (page.query) {
-        params.query = {
-            ...queryKey[0].query as any,
-            ...page.query as any
-        };
-    }
-    return params as unknown as typeof page;
-};
 
 export const streamRunEventsInfiniteQueryKey = (options: Options<StreamRunEventsData>): QueryKey<Options<StreamRunEventsData>> => createQueryKey('streamRunEvents', options, true);
 

@@ -54,6 +54,10 @@ class EventType(StrEnum):
     STAGE_DECIDED = "stage.decided"
     STAGE_FAILED = "stage.failed"
     STAGE_INVALIDATED = "stage.invalidated"  # a retry of an earlier stage made this output stale
+    # The stage attempt waits and then runs again by itself. Payload: stage, attempt, reason (an
+    # error code: free_quota.exhausted, free_quota.unavailable, call.in_progress or
+    # lab_balance.exhausted) and retry_at (ISO 8601, UTC).
+    STAGE_WAITING = "stage.waiting"
     RUN_RETRIED = "run.retried"
     LLM_CALL = "llm.call"
     LOG = "log"

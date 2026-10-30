@@ -518,6 +518,7 @@
           "runs"
         ],
         "summary": "List Runs",
+        "description": "The project's runs, newest first, one page at a time.\n\nFor the next page pass the last run's id as ``before``; a page shorter than ``limit`` is\nthe last one.",
         "operationId": "listRuns",
         "parameters": [
           {
@@ -528,6 +529,35 @@
               "type": "string",
               "format": "uuid",
               "title": "Project Id"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
             }
           }
         ],
@@ -3256,7 +3286,8 @@
               "run_failed",
               "run_cancelled",
               "run_rejected",
-              "budget_alert"
+              "budget_alert",
+              "run_paused"
             ],
             "title": "Kind"
           },
@@ -4379,6 +4410,28 @@
             "type": "boolean",
             "title": "Can Steer",
             "default": false
+          },
+          "max_attempts": {
+            "type": "integer",
+            "title": "Max Attempts",
+            "default": 3
+          },
+          "attempts_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempts Left"
+          },
+          "spend_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Spend Usd",
+            "default": "0"
           }
         },
         "type": "object",

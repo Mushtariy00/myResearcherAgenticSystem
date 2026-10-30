@@ -894,7 +894,7 @@ export type NotificationOut = {
     /**
      * Kind
      */
-    kind: 'approval_needed' | 'approval_expiring' | 'run_completed' | 'run_failed' | 'run_cancelled' | 'run_rejected' | 'budget_alert';
+    kind: 'approval_needed' | 'approval_expiring' | 'run_completed' | 'run_failed' | 'run_cancelled' | 'run_rejected' | 'budget_alert' | 'run_paused';
     /**
      * Created At
      */
@@ -1500,6 +1500,18 @@ export type RunDetail = {
      * Can Steer
      */
     can_steer?: boolean;
+    /**
+     * Max Attempts
+     */
+    max_attempts?: number;
+    /**
+     * Attempts Left
+     */
+    attempts_left?: number | null;
+    /**
+     * Spend Usd
+     */
+    spend_usd?: string;
 };
 
 /**
@@ -2811,7 +2823,16 @@ export type ListRunsData = {
          */
         project_id: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Before
+         */
+        before?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
     url: '/api/v1/projects/{project_id}/runs';
 };
 

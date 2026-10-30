@@ -135,6 +135,9 @@ class StageRun(Base):
     status: Mapped[StageStatus] = mapped_column(str_enum(StageStatus), default=StageStatus.PENDING)
     # The reviewer comment that caused this attempt (request changes).
     feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # The last attempt number this execution of the run allows for the stage (MAX_ATTEMPTS), so
+    # the API can say how many change requests are left. NULL for attempts recorded before it.
+    last_attempt: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -215,7 +218,17 @@ class LlmCall(Base):
     """Spend journal: reserved → sent → settled | unknown | released."""
 
     __tablename__ = "llm_calls"
-    __table_args__ = (Index("ix_llm_calls_user_created", "user_id", "created_at"),)
+    __table_args__ = (
+        Index("ix_llm_calls_user_created", "user_id", "created_at"),
+        Index("ix_llm_calls_run_id", "run_id"),
+        # The gateway finds a call's attempts with `LIKE '<key>#%'`. The database collation is
+        # not C, so only a pattern_ops index serves a prefix match.
+        Index(
+            "ix_llm_calls_idempotency_key_prefix",
+            "idempotency_key",
+            postgresql_ops={"idempotency_key": "varchar_pattern_ops"},
+        ),
+    )
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     idempotency_key: Mapped[str] = mapped_column(String(200), unique=True)

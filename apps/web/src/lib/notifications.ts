@@ -43,6 +43,7 @@ export const NOTIFICATION_MESSAGE_KEYS = [
   "notifications.items.runFailed",
   "notifications.items.runCancelled",
   "notifications.items.runRejected",
+  "notifications.items.runPaused",
   "notifications.items.budgetWarning",
   "notifications.items.budgetExhausted",
   "notifications.items.unknown",
@@ -53,7 +54,7 @@ export type NotificationMessageKey = (typeof NOTIFICATION_MESSAGE_KEYS)[number];
 /**
  * Values for the message, by kind:
  * - approvals: `topic`, `project`, `stage` (+ `days` and `expiresAt` when expiring);
- * - finished runs: `topic`, `project` (+ `error`, a run error code or "", when failed);
+ * - finished and paused runs: `topic`, `project` (+ `error`, a run error code or "", when failed);
  * - budget alerts: `percent` (80 or 100), `month` ("2026-10"), `budget` and `spent` (USD numbers).
  */
 export type NotificationValues = Record<string, string | number | Date>;
@@ -98,6 +99,7 @@ const KINDS: Record<Exclude<NotificationKind, "budget_alert">, KindMeta> = {
   },
   run_cancelled: { messageKey: "notifications.items.runCancelled", icon: "ban", tone: "neutral" },
   run_rejected: { messageKey: "notifications.items.runRejected", icon: "circle-x", tone: "danger" },
+  run_paused: { messageKey: "notifications.items.runPaused", icon: "wallet", tone: "warning" },
 };
 
 const UNKNOWN: KindMeta = {
@@ -159,6 +161,7 @@ export function notificationValues(notification: NotificationOut): NotificationV
     case "run_completed":
     case "run_cancelled":
     case "run_rejected":
+    case "run_paused":
       return { topic: text(params.topic), project: text(params.project) };
     case "run_failed":
       return {

@@ -26,6 +26,7 @@ from agentic_core.enums import (
     StageStatus,
 )
 from agentic_core.schemas import EvidenceQuote, PaperSource, RunConfig, ScreeningDecision
+from agentic_core.stages import MAX_ATTEMPTS
 
 log = logging.getLogger(__name__)
 
@@ -158,6 +159,13 @@ class RunDetail(RunOut):
     awaiting: StageOutputOut | None = None
     awaiting_stage: str | None = None
     can_steer: bool = False  # may approve, request changes, reject, cancel or retry
+    max_attempts: int = MAX_ATTEMPTS  # per stage in one execution (a retry starts a new one)
+    # Change requests still possible on the awaiting stage: 0 means only approve or reject.
+    # None when nothing awaits a decision or the attempt predates the cap being recorded.
+    attempts_left: int | None = None
+    # What the run has cost so far, failed and cancelled attempts included: settled calls at
+    # their cost, calls still in flight at their reservation.
+    spend_usd: Decimal = Decimal(0)
 
 
 class ApprovalOut(BaseModel):
@@ -253,6 +261,7 @@ NotificationKind = Literal[
     "run_cancelled",
     "run_rejected",
     "budget_alert",
+    "run_paused",  # the lab's OpenRouter balance ran out; the run resumes after a top-up
 ]
 
 

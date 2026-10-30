@@ -7,7 +7,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import ValidationError
-from sqlalchemy import delete, exists, select
+from sqlalchemy import delete, exists, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentic_api.auth import CurrentUser, current_user
@@ -115,11 +115,26 @@ async def create_run(
 
 
 @router.get("/projects/{project_id}/runs", operation_id="listRuns")
-async def list_runs(project_id: uuid.UUID, user: User, db: Db) -> list[RunOut]:
+async def list_runs(
+    project_id: uuid.UUID,
+    user: User,
+    db: Db,
+    before: Annotated[uuid.UUID | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> list[RunOut]:
+    """The project's runs, newest first, one page at a time.
+
+    For the next page pass the last run's id as ``before``; a page shorter than ``limit`` is
+    the last one.
+    """
     await load_project(db, project_id, user)
-    runs = await db.scalars(
-        select(Run).where(Run.project_id == project_id).order_by(Run.created_at.desc()).limit(200)
-    )
+    query = select(Run).where(Run.project_id == project_id)
+    if before is not None:
+        cursor = await db.get(Run, before)
+        if cursor is None or cursor.project_id != project_id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "run.not_found")
+        query = query.where(tuple_(Run.created_at, Run.id) < (cursor.created_at, cursor.id))
+    runs = await db.scalars(query.order_by(Run.created_at.desc(), Run.id.desc()).limit(limit))
     return [RunOut.model_validate(run) for run in runs]
 
 

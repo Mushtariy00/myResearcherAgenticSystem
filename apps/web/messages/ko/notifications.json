@@ -9,6 +9,7 @@
       "runFailed": "“{topic}” 실행이 실패했습니다. {error}",
       "runCancelled": "“{topic}” 실행이 취소되었습니다.",
       "runRejected": "단계가 반려되어 “{topic}” 실행이 중단되었습니다.",
+      "runPaused": "연구실 OpenRouter 잔액이 소진되어 “{topic}” 실행이 일시 중지되었습니다. 잔액을 충전하면 자동으로 이어서 진행됩니다.",
       "budgetWarning": "{month} LLM 예산의 {percent}%를 사용했습니다({budget} 중 {spent}).",
       "budgetExhausted": "{month} LLM 예산을 모두 사용했습니다({budget} 중 {spent}). 실행은 무료 모델로 계속됩니다.",
       "unknown": "내 실행 중 하나에 변경 사항이 있습니다."
