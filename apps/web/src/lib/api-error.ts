@@ -131,6 +131,9 @@ export const KNOWN_DEGRADED_REASONS = [
   // Demo outputs: the stage is not built yet, its output is generated (agentic_core.demo).
   "literature.demo_search",
   "stage.demo",
+  // Real literature searches that came back incomplete (docs/design/literature.md).
+  "literature.partial_search",
+  "literature.no_full_text",
 ] as const;
 
 /** Degraded reasons that mean "generated demo data", shown with a Demo badge. */

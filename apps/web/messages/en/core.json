@@ -229,7 +229,9 @@
     },
     "literature": {
       "search_pending": "the literature search is not connected yet.",
-      "demo_search": "the search plan is real, but the papers, analyses and synthesis are demo data until the literature search is connected."
+      "demo_search": "the search plan is real, but the papers, analyses and synthesis are demo data until the literature search is connected.",
+      "partial_search": "some sources could not be searched (an error or their daily quota), so papers from them may be missing.",
+      "no_full_text": "no open-access full text was found for the included papers, so the analyses are based on their abstracts."
     }
   },
   "notFound": {
