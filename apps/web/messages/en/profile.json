@@ -1,1 +1,59 @@
-{}
+{
+  "profile": {
+    "title": "Profile",
+    "description": "Your account, password, preferences and LLM spending.",
+    "menu": "Profile",
+    "account": {
+      "title": "Account",
+      "description": "Your name and email come from your lab invitation.",
+      "name": "Name",
+      "email": "Email",
+      "labRole": "Lab role",
+      "noName": "No name set"
+    },
+    "password": {
+      "title": "Password",
+      "description": "Change the password you sign in with.",
+      "current": "Current password",
+      "signOutOthers": "Sign me out on my other devices",
+      "submit": "Change password",
+      "submitting": "Changing…",
+      "failed": "Password not changed",
+      "done": "Password changed.",
+      "doneSignedOut": "Password changed. Your other devices are signed out.",
+      "problems": {
+        "currentRequired": "Enter your current password.",
+        "tooShort": "The new password needs at least {min} characters.",
+        "tooLong": "The new password can have at most {max} characters.",
+        "sameAsCurrent": "Choose a new password that differs from the current one.",
+        "mismatch": "The two new passwords do not match.",
+        "INVALID_PASSWORD": "The current password is not right."
+      }
+    },
+    "preferences": {
+      "title": "Language and theme",
+      "description": "The language is kept for this browser, and so is the theme.",
+      "language": "Language",
+      "theme": "Theme"
+    },
+    "usage": {
+      "title": "My LLM budget and spend",
+      "description": "Your paid-model budget this month, and your LLM calls over the last {days} days.",
+      "month": "This month ({month})",
+      "lastDays": "Last {days} days",
+      "paidSpend": "Paid spend",
+      "paidCalls": "Paid calls",
+      "freeCalls": "Free calls",
+      "tokens": "Tokens",
+      "topModels": "Most used models",
+      "noCalls": "No LLM calls in the last {days} days.",
+      "modelLine": "{calls, plural, one {# call} other {# calls}} · {spend}"
+    },
+    "projects": {
+      "title": "My projects",
+      "description": "Projects you are a member of, with your role in each.",
+      "empty": "You are not a member of any project yet.",
+      "adminAccess": "As a lab admin you can also open {count, plural, one {# other project} other {# other projects}}."
+    }
+  }
+}

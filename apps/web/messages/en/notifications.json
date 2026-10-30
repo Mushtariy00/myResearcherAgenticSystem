@@ -1,1 +1,44 @@
-{}
+{
+  "notifications": {
+    "title": "Notifications",
+    "description": "Approvals waiting for you, your finished runs and budget alerts.",
+    "items": {
+      "approvalNeeded": "{stage} for “{topic}” is ready for your review.",
+      "approvalExpiring": "{stage} for “{topic}” expires {expiresAt}. Decide before the run is cancelled.",
+      "runCompleted": "“{topic}” finished: every stage is approved.",
+      "runFailed": "“{topic}” failed. {error}",
+      "runCancelled": "“{topic}” was cancelled.",
+      "runRejected": "“{topic}” stopped because a stage was rejected.",
+      "budgetWarning": "You have used {percent}% of your LLM budget for {month}: {spent} of {budget}.",
+      "budgetExhausted": "Your LLM budget for {month} is used up ({spent} of {budget}). Your runs continue on free models.",
+      "unknown": "Something changed in one of your runs."
+    },
+    "untitled": "Untitled run",
+    "someStage": "A stage",
+    "soon": "soon",
+    "unread": "Unread",
+    "needsAction": "Needs you",
+    "markRead": "Mark as read",
+    "markAllRead": "Mark all as read",
+    "markFailed": "Could not mark as read",
+    "loading": "Loading notifications…",
+    "empty": "You're all caught up",
+    "emptyDescription": "Approvals waiting for you, finished runs and budget alerts appear here.",
+    "emptyUnread": "Nothing unread",
+    "emptyUnreadDescription": "Every notification is read.",
+    "olderUnread": "{count, plural, one {# older unread notification is} other {# older unread notifications are}} not listed here. Mark all as read covers them too.",
+    "listLabel": "Notifications, newest first",
+    "bell": {
+      "label": "Notifications",
+      "labelWithCount": "Notifications, {count} unread",
+      "latest": "Latest notifications",
+      "viewAll": "See all notifications"
+    },
+    "filter": {
+      "label": "Show",
+      "all": "All",
+      "unread": "Unread",
+      "unreadCount": "Unread ({count})"
+    }
+  }
+}

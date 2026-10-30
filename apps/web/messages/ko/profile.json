@@ -1,1 +1,59 @@
-{}
+{
+  "profile": {
+    "title": "프로필",
+    "description": "내 계정, 비밀번호, 환경 설정과 LLM 사용액입니다.",
+    "menu": "프로필",
+    "account": {
+      "title": "계정",
+      "description": "이름과 이메일은 랩 초대에서 정해졌습니다.",
+      "name": "이름",
+      "email": "이메일",
+      "labRole": "랩 역할",
+      "noName": "이름 없음"
+    },
+    "password": {
+      "title": "비밀번호",
+      "description": "로그인할 때 쓰는 비밀번호를 바꿉니다.",
+      "current": "현재 비밀번호",
+      "signOutOthers": "내 다른 기기에서 로그아웃",
+      "submit": "비밀번호 변경",
+      "submitting": "변경하는 중…",
+      "failed": "비밀번호를 바꾸지 못했습니다",
+      "done": "비밀번호를 바꿨습니다.",
+      "doneSignedOut": "비밀번호를 바꿨습니다. 다른 기기에서는 로그아웃되었습니다.",
+      "problems": {
+        "currentRequired": "현재 비밀번호를 입력하세요.",
+        "tooShort": "새 비밀번호는 {min}자 이상이어야 합니다.",
+        "tooLong": "새 비밀번호는 {max}자 이하여야 합니다.",
+        "sameAsCurrent": "현재 비밀번호와 다른 새 비밀번호를 정하세요.",
+        "mismatch": "두 새 비밀번호가 일치하지 않습니다.",
+        "INVALID_PASSWORD": "현재 비밀번호가 올바르지 않습니다."
+      }
+    },
+    "preferences": {
+      "title": "언어와 테마",
+      "description": "언어와 테마는 이 브라우저에 저장됩니다.",
+      "language": "언어",
+      "theme": "테마"
+    },
+    "usage": {
+      "title": "내 LLM 예산과 사용액",
+      "description": "이번 달 유료 모델 예산과 최근 {days}일 동안의 LLM 호출입니다.",
+      "month": "이번 달({month})",
+      "lastDays": "최근 {days}일",
+      "paidSpend": "유료 사용액",
+      "paidCalls": "유료 호출",
+      "freeCalls": "무료 호출",
+      "tokens": "토큰",
+      "topModels": "많이 쓴 모델",
+      "noCalls": "최근 {days}일 동안 LLM 호출이 없습니다.",
+      "modelLine": "{calls, plural, other {#회}} · {spend}"
+    },
+    "projects": {
+      "title": "내 프로젝트",
+      "description": "내가 구성원으로 있는 프로젝트와 각 프로젝트에서의 역할입니다.",
+      "empty": "아직 구성원으로 있는 프로젝트가 없습니다.",
+      "adminAccess": "랩 관리자이므로 다른 프로젝트 {count, plural, other {#개}}도 열 수 있습니다."
+    }
+  }
+}

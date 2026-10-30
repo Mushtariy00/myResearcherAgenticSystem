@@ -1,1 +1,44 @@
-{}
+{
+  "notifications": {
+    "title": "알림",
+    "description": "승인을 기다리는 단계, 끝난 실행, 예산 알림을 모아 보여 줍니다.",
+    "items": {
+      "approvalNeeded": "“{topic}”의 {stage} 단계가 검토를 기다리고 있습니다.",
+      "approvalExpiring": "“{topic}”의 {stage} 단계 승인이 {expiresAt} 만료됩니다. 실행이 취소되기 전에 결정하세요.",
+      "runCompleted": "“{topic}” 실행이 끝났습니다. 모든 단계가 승인되었습니다.",
+      "runFailed": "“{topic}” 실행이 실패했습니다. {error}",
+      "runCancelled": "“{topic}” 실행이 취소되었습니다.",
+      "runRejected": "단계가 반려되어 “{topic}” 실행이 중단되었습니다.",
+      "budgetWarning": "{month} LLM 예산의 {percent}%를 사용했습니다({budget} 중 {spent}).",
+      "budgetExhausted": "{month} LLM 예산을 모두 사용했습니다({budget} 중 {spent}). 실행은 무료 모델로 계속됩니다.",
+      "unknown": "내 실행 중 하나에 변경 사항이 있습니다."
+    },
+    "untitled": "제목 없는 실행",
+    "someStage": "한 단계",
+    "soon": "곧",
+    "unread": "읽지 않음",
+    "needsAction": "결정 필요",
+    "markRead": "읽음으로 표시",
+    "markAllRead": "모두 읽음으로 표시",
+    "markFailed": "읽음으로 표시하지 못했습니다",
+    "loading": "알림을 불러오는 중…",
+    "empty": "새 알림이 없습니다",
+    "emptyDescription": "승인을 기다리는 단계, 끝난 실행, 예산 알림이 여기에 표시됩니다.",
+    "emptyUnread": "읽지 않은 알림이 없습니다",
+    "emptyUnreadDescription": "모든 알림을 읽었습니다.",
+    "olderUnread": "목록에 없는 오래된 읽지 않은 알림이 {count, plural, other {#개}} 있습니다. 모두 읽음으로 표시하면 함께 처리됩니다.",
+    "listLabel": "알림, 최신순",
+    "bell": {
+      "label": "알림",
+      "labelWithCount": "알림, 읽지 않은 알림 {count}개",
+      "latest": "최근 알림",
+      "viewAll": "모든 알림 보기"
+    },
+    "filter": {
+      "label": "보기",
+      "all": "전체",
+      "unread": "읽지 않음",
+      "unreadCount": "읽지 않음({count})"
+    }
+  }
+}

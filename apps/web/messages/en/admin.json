@@ -1,7 +1,16 @@
 {
   "admin": {
     "title": "Administration",
-    "description": "Invite lab members, set monthly LLM budgets and control paid models.",
+    "description": "Manage lab members, budgets and models, and keep an eye on the system.",
+    "tabs": {
+      "label": "Administration sections",
+      "users": "Users and invites",
+      "budgets": "Budgets",
+      "routing": "Model routing",
+      "balance": "Lab balance",
+      "health": "System health",
+      "audit": "Audit log"
+    },
     "link": {
       "inviteTitle": "Invitation created",
       "resetTitle": "New password link",
@@ -32,17 +41,193 @@
     },
     "users": {
       "title": "Users",
-      "description": "Monthly budgets are in USD and reset on the 1st (UTC).",
+      "description": "Everyone with an account in the lab. Suspended accounts cannot sign in.",
       "user": "User",
       "role": "Role",
-      "budget": "Monthly budget",
-      "spent": "Spent this month",
+      "status": "Status",
       "joined": "Joined",
+      "joinedOn": "Joined {date}",
       "actions": "Actions",
-      "newLink": "Password link",
+      "actionsFor": "Actions for {name}",
+      "newLink": "Send a password link",
+      "active": "Active",
       "banned": "Suspended",
-      "budgetSaved": "Budget saved.",
-      "saveBudget": "Save budget"
+      "you": "You",
+      "empty": "No accounts yet."
+    },
+    "offboarding": {
+      "suspend": "Suspend access…",
+      "restore": "Restore access…",
+      "signOut": "Sign out everywhere…",
+      "suspendTitle": "Suspend {name}?",
+      "suspendDescription": "{email} will no longer be able to sign in, and every open session ends within a minute. Their projects, runs and budget stay as they are, and you can restore access at any time.",
+      "suspendConfirm": "Suspend and sign out",
+      "restoreTitle": "Restore access for {name}?",
+      "restoreDescription": "{email} can sign in again with their password. If they no longer know it, send them a new password link.",
+      "restoreConfirm": "Restore access",
+      "signOutTitle": "Sign {name} out everywhere?",
+      "signOutDescription": "Every open session of {email} ends within a minute. Their password keeps working, so they can sign in again.",
+      "signOutConfirm": "Sign out everywhere",
+      "working": "Working…",
+      "suspended": "{name} is suspended and signed out everywhere.",
+      "restored": "{name} can sign in again.",
+      "signedOut": "{name} is signed out everywhere.",
+      "failed": "Not done",
+      "errors": {
+        "OWN_ACCOUNT": "You cannot do this to your own account. Ask another lab admin.",
+        "YOU_CANNOT_BAN_YOURSELF": "You cannot suspend your own account. Ask another lab admin.",
+        "YOU_ARE_NOT_ALLOWED_TO_BAN_USERS": "Only lab admins can suspend or restore accounts.",
+        "YOU_ARE_NOT_ALLOWED_TO_REVOKE_USERS_SESSIONS": "Only lab admins can sign people out."
+      }
+    },
+    "budgets": {
+      "title": "Monthly budgets",
+      "description": "Paid-model budgets in USD. They reset on the 1st of each month (UTC); without one, a person's runs use free models.",
+      "user": "User",
+      "budget": "Monthly budget",
+      "budgetFor": "Monthly budget for {name}, in USD",
+      "spent": "Spent this month",
+      "used": "Used",
+      "usedFor": "Share of {name}'s budget used",
+      "saved": "Budget saved.",
+      "save": "Save budget",
+      "saveFor": "Save the budget for {name}",
+      "empty": "No accounts yet."
+    },
+    "routing": {
+      "title": "Model routing",
+      "description": "The models each agent role tries, in order. Paid models are used while the person's budget allows; then the free models take over.",
+      "paidOn": "Paid models on",
+      "paidOff": "Paid models off",
+      "paidOffNotice": "Paid models are switched off for the whole lab, so every role uses its free models.",
+      "role": "Agent role",
+      "maxOutput": "Up to {tokens} output tokens per call",
+      "paid": "Paid models",
+      "free": "Free models",
+      "skipped": "Skipped while paid models are off",
+      "none": "None configured",
+      "price": "{prompt} in · {completion} out per million tokens",
+      "freePrice": "Free",
+      "context": "{tokens} tokens of context",
+      "notInCatalog": "Not in the model catalog: price and context unknown",
+      "empty": "No agent roles are configured.",
+      "roles": {
+        "researcher": "Researcher",
+        "screener": "Screener",
+        "analyst": "Analyst",
+        "methodologist": "Methodologist",
+        "coder": "Coder",
+        "writer": "Writer"
+      }
+    },
+    "balance": {
+      "title": "Lab balance",
+      "description": "The lab's prepaid OpenRouter credit, this month's paid spend and today's free-model use.",
+      "gauge": "Lab balance",
+      "gaugeValue": "{amount} left, {percent}% of this month's funds",
+      "left": "{percent}% of this month's funds left",
+      "spent": "Spent in {month}",
+      "floor": "Alert below",
+      "autoTopUp": "Automatic top-up",
+      "on": "On",
+      "off": "Off",
+      "checkedLabel": "Last checked",
+      "belowFloorTitle": "The balance is low",
+      "belowFloor": "It is below {floor}. Top up the lab's OpenRouter credit before paid calls start to fail.",
+      "freeTitle": "Free-model calls today",
+      "freeUsed": "{used} of {limit} calls",
+      "freeUnlimited": "{used} calls, no daily limit",
+      "freeHint": "The daily limit is shared by the whole lab and resets at midnight (UTC)."
+    },
+    "health": {
+      "title": "System health",
+      "description": "Every service is checked every 15 seconds while this page is open.",
+      "checked": "Checked {time}. Every service is checked every 15 seconds while this page is open.",
+      "refresh": "Check now",
+      "latency": "{ms} ms",
+      "latencyLabel": "Response time",
+      "empty": "No services reported.",
+      "services": {
+        "postgres": "Database (Postgres)",
+        "valkey": "Cache and queues (Valkey)",
+        "temporal": "Workflow engine (Temporal)",
+        "gateway": "LLM gateway",
+        "worker": "Workers"
+      },
+      "status": {
+        "ok": "Healthy",
+        "degraded": "Degraded",
+        "down": "Down",
+        "unknown": "Unknown"
+      },
+      "details": {
+        "health": {
+          "timeout": "No answer within 2 seconds.",
+          "unreachable": "Could not connect.",
+          "bad_status": "It answered with an error.",
+          "slow": "It answered, but took longer than a second.",
+          "no_pollers": "No worker is listening for tasks, so runs cannot make progress.",
+          "partial_pollers": "Only some workers are listening: workflows or activities have no worker.",
+          "unconfigured": "The API is not configured to check it.",
+          "unsupported": "The workflow engine cannot report its workers."
+        },
+        "db": {
+          "unavailable": "The API has no database connection."
+        }
+      }
+    },
+    "audit": {
+      "title": "Audit log",
+      "description": "Changes people made through the API, newest first.",
+      "filter": "Action",
+      "allActions": "All actions",
+      "when": "When",
+      "actor": "Who",
+      "action": "What",
+      "target": "Target",
+      "details": "Details",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details",
+      "detailsFor": "Details: {action}, {time}",
+      "detailsOf": "Recorded details: {action}, {time}",
+      "unknownActor": "Unknown user",
+      "empty": "Nothing recorded yet.",
+      "emptyFiltered": "Nothing recorded for this action.",
+      "range": "{from}–{to} of {total}",
+      "page": "Page {page} of {pages}",
+      "previous": "Previous page",
+      "next": "Next page",
+      "pagination": "Audit log pages",
+      "actions": {
+        "project": {
+          "create": "Created a project",
+          "settings": "Changed project settings",
+          "member_set": "Added a member or changed their role",
+          "member_remove": "Removed a member"
+        },
+        "run": {
+          "cancel": "Cancelled a run",
+          "retry": "Retried a run"
+        },
+        "stage": {
+          "approve": "Approved a stage",
+          "request_changes": "Requested changes to a stage",
+          "reject": "Rejected a stage"
+        },
+        "budget": {
+          "set": "Set a monthly budget"
+        },
+        "settings": {
+          "paid_models": "Switched paid models on or off"
+        }
+      },
+      "targets": {
+        "project": "Project",
+        "run": "Run",
+        "stage_output": "Stage output",
+        "user": "User",
+        "setting": "Setting"
+      }
     }
   }
 }
