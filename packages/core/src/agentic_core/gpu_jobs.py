@@ -59,6 +59,10 @@ JOB_START_FAILED = "job.start_failed"  # Docker refused to create or start the c
 JOB_OOM_KILLED = "job.oom_killed"  # the container's memory limit killed the training
 JOB_NO_RESULT = "job.no_result"  # training ended without a results.json
 JOB_LOST = "job.lost"  # the container vanished, or stopped before its outputs were copied
+# Two of the harness's codes the executor sets itself: it checks the code once more before a
+# container starts, and a failed results.json without an error_code gets the harness's default.
+CODE_REFUSED = "code.refused"
+TRAIN_ERROR = "train.error"
 
 
 def job_dir(data_dir: Path, job_id: object) -> Path:

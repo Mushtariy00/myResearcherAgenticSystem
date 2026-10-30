@@ -1,5 +1,6 @@
 # Dev infrastructure for the Agentic Research Platform (Phase 0).
-# Run through the Makefile (`make up`), which creates .data/ and exports ARP_UID/ARP_GID.
+# Run through the Makefile (`make up`), which creates .data/ and exports ARP_UID/ARP_GID and the
+# Docker socket proxy's settings.
 # Every service has a memory limit: the dev box has 7.7 GiB for everything (see docs/PLAN.md).
 # Ports bind to 127.0.0.1 only. Image tags are pinned; Renovate pins digests later (Phase 4).
 name: arp
@@ -71,6 +72,48 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+
+  docker-proxy:
+    <<: *defaults
+    # The GPU executor's only way to Docker (docs/adr/0006-gpu-sandbox-hardened-docker.md): the
+    # calls of apps/executor/src/agentic_executor/docker.py and nothing else. It serves them on a
+    # Unix socket only the host user can open, not on a TCP port, which WSL would forward to
+    # Windows for any process there, a browser too. The proxy anchors each rule to the whole path
+    # (the query is not part of it) and answers 405 for a method, 403 for a path or a bind mount.
+    # `make docker-proxy-check` shows what gets through.
+    image: wollomatic/socket-proxy:1.13.1
+    user: "${ARP_UID:-1000}:${ARP_DOCKER_GID:-989}"  # the docker group opens Docker's socket
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges]
+    network_mode: none  # it listens on its socket only
+    command:
+      - -proxysocketendpoint=/run/docker-proxy/docker.sock
+      - -proxysocketendpointfilemode=0600
+      # Containers may bind-mount only the jobs folder and the NYU2 dataset, which the Makefile
+      # lists. Without it, nothing: an empty list would let any folder through.
+      - "-allowbindmountfrom=${ARP_DOCKER_BIND_ALLOWLIST:-/nonexistent}"
+      # A single container only by a job container's name (agentic_executor.template
+      # container_name). The executor addresses containers by name, so it can't reach any
+      # other, nor read one's environment (Postgres's password, say).
+      - '-allowGET=/v1\.[0-9]+/containers/(json|arp-job-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/(json|logs|archive))'
+      - '-allowPOST=/v1\.[0-9]+/containers/(create|arp-job-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/(start|stop|kill|wait))'
+      - '-allowDELETE=/v1\.[0-9]+/containers/arp-job-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+      - -allowhealthcheck
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - type: bind
+        source: ../../.data/docker-proxy  # created with mode 0700 by `make up`
+        target: /run/docker-proxy
+        bind:
+          create_host_path: false
+    mem_limit: 32m
+    healthcheck:
+      # The image's own probe: HEAD 127.0.0.1:55555/health inside the container (-allowhealthcheck).
+      test: ["CMD", "/healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
   mailpit:
     <<: *defaults

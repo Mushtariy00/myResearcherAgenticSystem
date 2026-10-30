@@ -80,22 +80,44 @@ registered by a migration and a setting (`ARP_DATASET_NYU2`).
 ### The executor (`apps/executor`, a new uv member)
 
 The only component that talks to Docker:
-- **Docker access:** through a socket proxy in compose (tecnativa docker-socket-proxy,
-  pinned) with only `CONTAINERS` and `POST` enabled; no exec, no networks, no volumes. It
-  creates containers from its own template alone (ADR 0006 flags): `--gpus device=0`,
-  `--network none`, read-only root, `--tmpfs /tmp`, user 10001, `--cap-drop ALL`,
-  no-new-privileges, `--pids-limit`, memory = memory-swap, `--cpus`, `--shm-size 2g`.
+- **Docker access:** through a socket proxy in compose (`docker-proxy`, wollomatic
+  socket-proxy, pinned).
+  - It serves a Unix socket only the host user can open (`.data/docker-proxy/docker.sock`,
+    mode 0600). A TCP proxy would not do: WSL forwards localhost ports to Windows, where any
+    process, a browser too, could reach it.
+  - It allows exactly the executor's calls (GET, POST and DELETE on `/containers/...`) and
+    refuses the rest: images, exec, volumes, networks, build, info.
+  - Containers may bind-mount only the jobs folder and the dataset folders
+    (`-allowbindmountfrom`, from the Makefile). A dataset added later with another folder must
+    be added there too.
+  - It doesn't check the rest of a create request (privileged mode, capabilities, devices), so
+    the executor's template stays the authority on what a container may do.
+  - `make docker-proxy-check` shows what gets through and what is refused.
+- **Template:** the executor creates containers from its own template alone (ADR 0006 flags,
+  `apps/executor/src/agentic_executor/template.py`, every key pinned by its test):
+  `--gpus device=0`, `--network none`, read-only root, `--tmpfs /tmp`, user 10001,
+  `--cap-drop ALL`, no-new-privileges, `--pids-limit`, memory = memory-swap, `--cpus`,
+  `--shm-size 2g`, `--init`.
 - **Mounts:**
-  - the dataset read-only;
-  - the job's code (`ARP_DATA_DIR/jobs/<id>/code`) read-only;
-  - a size-limited tmpfs for `/workspace/out`. It is a hard quota that WSL's ext4 can't give
-    a bind mount. Use
-    `--tmpfs /workspace/out:rw,nosuid,nodev,size=512m,uid=10001,gid=10001,mode=0700`. Docker's
-    `--mount type=tmpfs` ignores the owner of the image's directory, which leaves the sandbox
-    user unable to write its results (found by `make sandbox-limits`).
+  - the dataset read-only, at `/data/<name>`;
+  - the job's code (`ARP_DATA_DIR/jobs/<id>/code`) and config (`config.json`) read-only;
+  - `/workspace/out`: an anonymous volume of the local driver with tmpfs options (size 512m,
+    uid and gid 10001, mode 0700), created inline by the create call and removed with the
+    container (`DELETE ?v=1`).
+    - It is a hard quota, which WSL's ext4 can't give a bind mount.
+    - It must be a volume and not a plain tmpfs mount. Docker's archive API reads a running
+      container's volumes but not its tmpfs mounts: on Docker 29.9 it returned an empty folder.
+    - Its contents are gone once the container stops.
   - tmpfs contents count against the container's memory: a job that fills `/tmp` (1 GiB) and
     its output (512 MiB) has that much less of its `--memory`. Size the memory for the model
     plus both.
+- **The job wrapper:** jobs run through `harness.job`, which runs harness.train in a child
+  process and is the only writer of the container's output.
+  - Metric records reach it on a pipe of their own and go out as `ARP-METRIC` lines.
+  - The training's own lines that start with `ARP-` are indented, so generated code can't fake
+    a metric or the end of the job.
+  - `ARP-DONE {"exit_code": n}` marks the end. Then it waits (up to 15 minutes) until the
+    executor has copied the output and stops the container.
 - **Container lifecycle:** stop, kill and remove containers through the Docker API, never by
   killing a client process. A `timeout` around `docker run` stops the client, and the
   container keeps running.
@@ -104,9 +126,10 @@ The only component that talks to Docker:
 - **Live metrics:** the harness writes its metric records as JSON lines to stdout, and the
   executor follows the container's logs. Epoch lines become run events
   (`experiment.epoch {epoch, train, val}`) for live curves.
-- **At the end:** it copies `/workspace/out` out through the archive API (results.json,
-  metrics.jsonl, and best.pt if it is under 200 MB) into `ARP_DATA_DIR/jobs/<id>/out`,
-  records the result, and removes the container.
+- **At the end:** after `ARP-DONE`, while the container still runs, it copies `/workspace/out`
+  out through the archive API into `ARP_DATA_DIR/jobs/<id>/out`: results.json, metrics.jsonl,
+  and best.pt if it is under 200 MB, nothing else. Then it records the result and removes the
+  container. A container that stops before its output is copied has lost it (`job.lost`).
 - **Labels:** `arp.job=<id>`. At start-up it adopts the containers of running jobs and reaps
   unknown ones. A running job without a container is marked failed (`job.lost`); a starting
   one is requeued.
@@ -173,17 +196,33 @@ timeout is the job's limit plus the queue wait.
   - no secret-like variables;
   - uid 10001 with no capabilities, no_new_privs and seccomp.
   Each check was also run with its limit weakened, to show it can fail.
-- **Live:**
-  - a cancel during training ends within 5 s;
-  - killing the worker or the executor mid-job resumes without a second container;
+- **The socket proxy (`make docker-proxy-check`, 28 checks):**
+  - the executor's calls get through;
+  - images, info, pulls, volumes, networks, build, exec, update and unversioned paths are
+    refused, as is a PUT to archive;
+  - bind mounts of the Docker socket, `/etc`, `/` or a `..` path out of the jobs folder are
+    refused, and so are legacy `Binds` and bind-type volume options.
+  Against a proxy that allows everything, every refusal check fails, which shows the checks
+  can fail.
+- **Live, the executor (`make executor-check`, 17 checks in about 2 minutes):** it starts an
+  executor of its own and submits jobs for a throwaway project, which it removes at the end.
+  - A smoke job of the depth_unet example succeeds with real metrics, its provenance, its
+    outputs and one epoch event (17 s, 13 GPU seconds), and its container is removed.
+  - Refused code fails as code.refused, without a container.
+  - A cancel during training ends the job 1.0 s after the request.
+  - An executor killed mid-training leaves the container running. The next one adopts it:
+    the job succeeds with one container all along, and each epoch event is sent once.
+- **Live, with the worker's stages (step 3):**
+  - killing the worker mid-job resumes without a second job;
   - an NYU2 run from the UI to real metrics.
 
 ## Order of work
 
-1. **Harness:** generated modules, stdout metric lines, load-time checks (sandbox/pytorch),
-   and the shared AST checker (packages/core). Rebuild the image.
-2. **Executor:** the tables and their migration, the socket proxy in compose, the executor
-   service, the security tests and the Make targets.
+1. **Harness (done):** generated modules, stdout metric lines, load-time checks
+   (sandbox/pytorch), and the shared AST checker (packages/core). Rebuild the image.
+2. **Executor (done):** the tables and their migration, the socket proxy in compose, the
+   executor service, the security tests and the Make targets (`make executor`,
+   `make docker-proxy-check`, `make executor-check`).
 3. **Worker stages:** coding (LLM, checks, smoke loop) and experiment.
 4. **API and web:** the queue, datasets and artifacts become real; live curves.
 5. The exit checks, then delete `legacy/`.

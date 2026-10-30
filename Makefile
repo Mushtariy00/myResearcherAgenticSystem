@@ -7,12 +7,20 @@ export
 # Temporal's dev server writes its state as the host user (see infra/compose/compose.yaml).
 export ARP_UID := $(shell id -u)
 export ARP_GID := $(shell id -g)
+# The Docker socket proxy (docker-proxy in infra/compose/compose.yaml) runs in the docker group
+# and lets job containers bind-mount only the jobs folder and the NYU2 dataset, found as the
+# executor finds them: ARP_DATA_DIR (empty: ~/.local/share/arp) and ARP_DATASET_NYU2.
+comma := ,
+host_path = $(abspath $(patsubst ~/%,$(HOME)/%,$(strip $(1))))
+export ARP_DOCKER_GID := $(shell getent group docker | cut -d: -f3)
+export ARP_JOBS_DIR := $(call host_path,$(or $(strip $(ARP_DATA_DIR)),~/.local/share/arp))/jobs
+export ARP_DOCKER_BIND_ALLOWLIST := $(ARP_JOBS_DIR)$(patsubst %,$(comma)%,$(call host_path,$(ARP_DATASET_NYU2)))
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch sandbox-limits
+.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker executor fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch sandbox-limits docker-proxy-check executor-check
 
 help: ## List targets
-	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 doctor: ## Check that this machine has everything installed
 	@bash scripts/doctor.sh
@@ -51,8 +59,9 @@ client: ## Regenerate the TypeScript API client from FastAPI's OpenAPI
 migration: .env ## Create a migration from model changes: make migration m="add x"
 	$(ALEMBIC) revision --autogenerate -m "$(m)"
 
-up: infra/compose/.env ## Start dev infrastructure (Postgres, Valkey, Temporal, Mailpit, proxy)
-	mkdir -p .data/temporal
+up: infra/compose/.env ## Start dev infrastructure (Postgres, Valkey, Temporal, Mailpit, proxy, docker-proxy)
+	mkdir -p .data/temporal .data/docker-proxy
+	chmod 0700 .data/docker-proxy
 	$(COMPOSE) up -d --wait
 
 down: ## Stop dev infrastructure (data is kept)
@@ -86,6 +95,9 @@ fake-openrouter: ## Run a fake OpenRouter on 127.0.0.1:8199 (set ARP_OPENROUTER_
 
 worker: .env ## Run the Temporal worker (run workflows and stage activities)
 	uv run --package agentic-worker python -m agentic_worker
+
+executor: .env ## Run the GPU job executor (needs make up: it reaches Docker only through docker-proxy)
+	uv run --package agentic-executor python -m agentic_executor
 
 # The web app loads its own settings (src/lib/load-env.ts); the gateway's secrets, which the
 # bare `export` above passes to every recipe, stay out of the Next.js process.
@@ -121,3 +133,9 @@ sandbox-epoch: ## Phase 0 exit check: one full NYU2 epoch in the sandbox (slow)
 
 sandbox-limits: ## Phase 3: the training container's limits hold
 	bash scripts/sandbox-limits.sh
+
+docker-proxy-check: ## Phase 3: the Docker socket proxy passes the executor's calls and refuses the rest
+	bash scripts/docker-proxy-check.sh
+
+executor-check: .env ## Phase 3: the executor runs real GPU jobs (smoke, refused code, cancel, restart)
+	uv run --package agentic-executor python scripts/executor-check.py

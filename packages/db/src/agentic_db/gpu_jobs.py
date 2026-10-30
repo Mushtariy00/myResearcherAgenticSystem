@@ -94,6 +94,10 @@ async def request_cancel(session: AsyncSession, job_id: uuid.UUID) -> GpuJobStat
 
     Both updates are compare-and-set on the status, so a cancel that races the executor's claim
     either cancels the queued job or flags the claimed one, never neither.
+
+    Commit it before appending a run event: the executor locks the run and then the job when it
+    reports an epoch, so a transaction that holds the job's row and then locks the run can
+    deadlock with it.
     """
     cancelled = await session.scalar(
         update(GpuJob)

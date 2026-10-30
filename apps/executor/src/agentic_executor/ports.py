@@ -15,7 +15,8 @@ from typing import Any, Protocol
 
 
 class DockerError(Exception):
-    """A Docker API call failed. ``status`` is the HTTP status (0: Docker could not be reached)."""
+    """A Docker API call failed. ``status`` is the HTTP status, or 0 when Docker could not be
+    reached, the connection broke while an answer was arriving, or a log stream was unreadable."""
 
     def __init__(self, status: int, message: str) -> None:
         super().__init__(f"Docker API error {status}: {message}")
@@ -24,11 +25,11 @@ class DockerError(Exception):
 
 
 class NotFound(DockerError):
-    """404: no such container (or, on create, no such image)."""
+    """404: no such container, no such image (on create) or no such path (an archive)."""
 
 
 class Conflict(DockerError):
-    """409: on create, the container name is taken."""
+    """409: the container name is taken (on create), or the container is being removed."""
 
 
 @dataclass(frozen=True)
@@ -48,7 +49,7 @@ class ContainerState:
     id: str
     name: str  # without Docker's leading "/"
     image_id: str  # "sha256:…": the image the container was created from
-    labels: dict[str, str]
+    labels: dict[str, str]  # the container's own and the image's
     state: str  # as in ContainerSummary
     exit_code: int | None  # None until the container has stopped
     oom_killed: bool  # the memory limit killed a process in it
