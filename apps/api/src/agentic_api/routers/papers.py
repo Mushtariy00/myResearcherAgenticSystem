@@ -175,11 +175,12 @@ async def get_paper_file(paper_id: PaperId, user: User, db: Db) -> StreamingResp
     on the page the quote cites, so the viewer can find and highlight it there.
     """
     detail = await _paper_detail(db, paper_id, user)
+    # An attachment like every file: the viewer fetches the bytes itself (pdf.js), and a PDF
+    # opened directly would meet the API's deny-all CSP, which can blank the browser's viewer.
     return file_response(
         paper_pdf(detail.paper, detail.analyses),
         media_type="application/pdf",
         filename=f"{safe_filename(paper_id, 'paper')}.pdf",
-        disposition="inline",
     )
 
 

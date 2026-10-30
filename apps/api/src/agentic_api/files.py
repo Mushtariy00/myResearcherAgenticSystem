@@ -1,7 +1,7 @@
 """File downloads: bytes streamed with the headers docs/PLAN.md asks for (browser hardening).
 
 Every file response is ``nosniff`` and private. Attachments make the browser save rather than
-render what was generated from model output; inline is only for PDFs the viewer shows.
+render what was generated from model output. PDFs too: the viewer fetches them itself.
 """
 
 import re

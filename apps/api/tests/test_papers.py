@@ -357,7 +357,7 @@ async def test_paper_file_is_a_pdf_with_each_quote_on_its_page(
     assert body.startswith(b"%PDF-1.4\n") and body.endswith(b"%%EOF\n")
     assert response.headers["content-type"] == "application/pdf"
     assert response.headers["content-disposition"] == (
-        'inline; filename="doi-10.5555-cvpr.2024.91234.pdf"'
+        'attachment; filename="doi-10.5555-cvpr.2024.91234.pdf"'
     )
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["cache-control"] == "private"
@@ -397,7 +397,7 @@ async def test_a_paper_without_analyses_still_gets_a_preview(
     )
     response = await client.get(f"{URL}/arxiv:cs/0701234/file", headers=as_user("bob"))
     assert response.status_code == 200, response.text
-    assert response.headers["content-disposition"] == 'inline; filename="arxiv-cs-0701234.pdf"'
+    assert response.headers["content-disposition"] == 'attachment; filename="arxiv-cs-0701234.pdf"'
     assert assert_pdf_structure(response.content) == 4
     detail = await client.get(f"{URL}/arxiv:cs/0701234", headers=as_user("bob"))
     assert (detail.json()["analyses"], detail.json()["demo"]) == ([], False)
