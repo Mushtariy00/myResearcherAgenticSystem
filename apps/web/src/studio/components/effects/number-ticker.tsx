@@ -49,15 +49,28 @@ export function NumberTicker({
   const spring = useSpring(motionValue, { stiffness, damping });
   const display = useRef<HTMLSpanElement>(null);
   const inView = useInView(display, { once: true, margin: "0px 0px -8% 0px" });
+  // Counts move through whole numbers (never "7.998"); fractional targets keep their precision.
+  const fractionDigits =
+    format?.maximumFractionDigits ??
+    (Number.isInteger(value) ? 0 : Math.min(2, (String(value).split(".")[1] ?? "").length));
+  const target = useRef({ value, step: 10 ** fractionDigits });
+  target.current = { value, step: 10 ** fractionDigits };
 
   useEffect(() => {
     const write = (latest: number) => {
       if (display.current) {
-        display.current.textContent = formatter.format(latest);
+        const { step } = target.current;
+        display.current.textContent = formatter.format(Math.round(latest * step) / step);
       }
     };
     write(spring.get());
-    return spring.on("change", write);
+    const unsubscribeChange = spring.on("change", write);
+    // A spring settles within a tolerance of its target; show the exact value once it rests.
+    const unsubscribeComplete = spring.on("animationComplete", () => write(target.current.value));
+    return () => {
+      unsubscribeChange();
+      unsubscribeComplete();
+    };
   }, [spring, formatter]);
 
   useEffect(() => {

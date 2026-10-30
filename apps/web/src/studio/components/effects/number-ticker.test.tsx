@@ -61,4 +61,20 @@ describe("NumberTicker", () => {
     expect(screen.getByText("250", { selector: ".sr-only" })).toBeTruthy();
     await waitFor(() => expect(display?.textContent).toBe("250"), { timeout: 4000 });
   });
+
+  it("counts whole numbers without decimals and lands exactly on the value", async () => {
+    renderStudio(<NumberTicker value={1} />);
+    cleanup();
+
+    const { container } = renderStudio(<NumberTicker value={8} from={0} />);
+    const display = container.querySelector('[aria-hidden="true"]:not(.invisible)') as HTMLElement;
+    const seen = new Set<string>([display.textContent ?? ""]);
+    const observer = new MutationObserver(() => seen.add(display.textContent ?? ""));
+    observer.observe(display, { characterData: true, childList: true, subtree: true });
+    await waitFor(() => expect(display.textContent).toBe("8"), { timeout: 4000 });
+    observer.disconnect();
+    for (const text of seen) {
+      expect(text, text).toMatch(/^\d+$/);
+    }
+  });
 });
