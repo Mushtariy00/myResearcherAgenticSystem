@@ -21,12 +21,16 @@ import {
   listStagesOptions,
 } from "@/client/@tanstack/react-query.gen";
 import { type StreamState, useRunEvents } from "@/hooks/use-run-events";
+import { toApiError } from "@/lib/api-error";
 import {
   mergeEvents,
   type RunEvent,
   type RunSpend,
+  type StageWait,
   stageDetailChanges,
+  stageWaits,
   summarizeSpend,
+  withRunTotal,
 } from "@/lib/run-events";
 import { type StageOverview, stageOverviews } from "@/lib/stage-output";
 import { buildTimeline, isTerminalRunStatus, retryableStages, STAGE_ORDER } from "@/lib/timeline";
@@ -68,8 +72,13 @@ export type RunView = {
   finished: boolean;
   /** Stages a retry may restart from, in pipeline order; empty unless the user may steer. */
   retryableStages: readonly Stage[];
-  /** LLM spend so far, from the run's `llm.call` events. */
+  /**
+   * LLM spend so far: the total from the run detail (`spend_usd`, refetched after every call),
+   * the breakdown by stage and tier from the run's `llm.call` events.
+   */
   spend: RunSpend;
+  /** Stages whose attempt waits and then runs again by itself (`stage.waiting`), by stage id. */
+  waits: Readonly<Record<string, StageWait>>;
   /** Refetches the run and everything on screen that shows it. */
   refresh: () => void;
 };
@@ -97,9 +106,23 @@ export function useRunView(runId: string): RunView {
   const refreshDetail = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: getRunQueryKey({ path: { run_id: runId } }) });
   }, [queryClient, runId]);
-  const stream = useRunEvents(runId, refreshDetail);
+  // Before the stream opens again: is the session still valid and the run still there?
+  const canResume = useCallback(async () => {
+    try {
+      await queryClient.fetchQuery({
+        ...getRunOptions({ path: { run_id: runId } }),
+        staleTime: 0,
+        retry: false,
+      });
+      return true;
+    } catch (error) {
+      const status = toApiError(error).status;
+      return status !== 401 && status !== 403 && status !== 404;
+    }
+  }, [queryClient, runId]);
+  const stream = useRunEvents(runId, refreshDetail, canResume);
   useStageRefresh(runId, stream.events);
-  const spend = useRunSpend(runId, stream.events);
+  const loggedSpend = useRunSpend(runId, stream.events);
 
   const stageOrder = useMemo(
     () =>
@@ -120,6 +143,12 @@ export function useRunView(runId: string): RunView {
   const canSteer = run?.can_steer === true;
   const finished = isTerminalRunStatus(run?.status);
   const retryable = useMemo(() => (run && canSteer ? retryableStages(run) : []), [run, canSteer]);
+  const spendUsd = run?.spend_usd;
+  const spend = useMemo(() => withRunTotal(loggedSpend, spendUsd), [loggedSpend, spendUsd]);
+  const waits = useMemo(
+    () => (finished ? NO_WAITS : stageWaits(stream.events)),
+    [finished, stream.events],
+  );
   const refresh = useCallback(() => {
     void invalidateRunQueries(queryClient, runId);
   }, [queryClient, runId]);
@@ -139,9 +168,12 @@ export function useRunView(runId: string): RunView {
     finished,
     retryableStages: retryable,
     spend,
+    waits,
     refresh,
   };
 }
+
+const NO_WAITS: Readonly<Record<string, StageWait>> = {};
 
 /** A partial key matching every query of one generated operation (TanStack matches partially). */
 function everyQueryOf(key: readonly [{ _id: string }], path?: Record<string, string>): QueryKey {

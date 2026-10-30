@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PasswordCard } from "./password-card";
 import { PreferencesCard } from "./preferences-card";
 import { ProjectsCard } from "./projects-card";
+import { SessionsCard } from "./sessions-card";
 import { UsageCard } from "./usage-card";
 
 /** Who I am in the lab: name, email and lab role (from the session). */
@@ -37,8 +38,8 @@ function AccountCard() {
 }
 
 /**
- * The Classic profile page: my account, password, language and theme, my budget and LLM use,
- * and my projects with my role in each.
+ * The Classic profile page: my account, password and other devices, language and theme, my
+ * budget and LLM use, and my projects with my role in each.
  */
 export function ProfileView() {
   const t = useTranslations("profile");
@@ -50,6 +51,7 @@ export function ProfileView() {
           <AccountCard />
           <PreferencesCard />
           <PasswordCard />
+          <SessionsCard />
         </div>
         <div className="grid content-start gap-6">
           <UsageCard />

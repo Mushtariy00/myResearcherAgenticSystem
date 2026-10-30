@@ -1,13 +1,18 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon, HistoryIcon, PlusIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  HistoryIcon,
+  LoaderCircleIcon,
+  PlusIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useId, useMemo, useState } from "react";
-import { listRunsOptions } from "@/client/@tanstack/react-query.gen";
+import { useProjectRuns } from "@/hooks/use-project-runs";
 import { toAmount, USD } from "@/lib/format";
-import { isTerminalRunStatus } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
 import { RunStatusPill } from "@/studio/components/dashboard/run-status-pill";
 import { StudioSearchInput, StudioSelect } from "@/studio/components/dashboard/studio-fields";
@@ -39,8 +44,9 @@ const COLUMNS: readonly { key: RunSortKey; className?: string }[] = [
 
 /**
  * The project's runs as a sortable table with a topic search and a status filter (applied at
- * once, on what the project has). It refreshes every 15 s while a run is still in progress.
- * Narrow screens keep the topic and fold the status under it.
+ * once, on the runs loaded so far; older ones come a page at a time with "Load more"). It
+ * refreshes every 15 s while a run is still in progress. Narrow screens keep the topic and fold
+ * the status under it.
  */
 export function ProjectRunsTab({
   projectId,
@@ -59,15 +65,13 @@ export function ProjectRunsTab({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<RunFilter>("all");
   const [sort, setSort] = useState<RunSort>(DEFAULT_RUN_SORT);
-  const runs = useQuery({
-    ...listRunsOptions({ path: { project_id: projectId } }),
-    refetchInterval: (current) =>
-      current.state.data?.some((run) => !isTerminalRunStatus(run.status)) ? 15_000 : false,
-  });
+  const pages = useProjectRuns(projectId);
+  const runs = pages.query;
+  const loaded = pages.runs;
 
   const rows = useMemo(
-    () => sortRuns(filterRuns(runs.data ?? [], query, filter), sort, locale),
-    [runs.data, query, filter, sort, locale],
+    () => sortRuns(filterRuns(loaded ?? [], query, filter), sort, locale),
+    [loaded, query, filter, sort, locale],
   );
   const headers: Record<RunSortKey, string> = {
     topic: tRuns("topic"),
@@ -89,10 +93,11 @@ export function ProjectRunsTab({
       </div>
     );
   }
-  if (runs.isError) {
+  // No runs at all means the first page failed; a failed refresh keeps the loaded ones on screen.
+  if (!loaded) {
     return <StudioInlineError error={runs.error} onRetry={() => runs.refetch()} />;
   }
-  if (runs.data.length === 0) {
+  if (loaded.length === 0) {
     return (
       <StudioStatePanel
         variant="section"
@@ -149,7 +154,8 @@ export function ProjectRunsTab({
       </div>
 
       <p className="text-xs text-muted-foreground tabular-nums" role="status">
-        {t("showing", { shown: rows.length, total: runs.data.length })}
+        {t("showing", { shown: rows.length, total: loaded.length })}
+        {pages.hasMore && ` ${tRuns("partial")}`}
       </p>
 
       {rows.length === 0 ? (
@@ -254,6 +260,22 @@ export function ProjectRunsTab({
             </tbody>
           </table>
         </div>
+      )}
+      {runs.isFetchNextPageError && (
+        <StudioInlineError error={runs.error} onRetry={pages.loadMore} />
+      )}
+      {pages.hasMore && (
+        <button
+          type="button"
+          onClick={pages.loadMore}
+          disabled={pages.loadingMore}
+          className={cn(OUTLINE_BUTTON, "justify-self-center disabled:opacity-60")}
+        >
+          {pages.loadingMore && (
+            <LoaderCircleIcon aria-hidden className="animate-spin motion-reduce:animate-none" />
+          )}
+          {pages.loadingMore ? tRuns("loadingMore") : tRuns("loadMore")}
+        </button>
       )}
     </div>
   );

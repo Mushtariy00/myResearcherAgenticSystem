@@ -36,6 +36,13 @@ export function BudgetsCard() {
   const users = useLabUsers();
   const budgets = useQuery(listBudgetsOptions());
   const budgetByUser = new Map((budgets.data ?? []).map((budget) => [budget.user_id, budget]));
+  // Without the budgets nobody's budget or spend is known: no zeros that look like real data.
+  const unknown = (
+    <span className="text-muted-foreground">
+      <span aria-hidden>{budgets.isPending ? "…" : "—"}</span>
+      <span className="sr-only">{budgets.isPending ? t("loading") : t("unknown")}</span>
+    </span>
+  );
 
   return (
     <Card>
@@ -75,8 +82,8 @@ export function BudgetsCard() {
                       <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                     </TableCell>
                     <TableCell>
-                      {budgets.isPending ? (
-                        <span className="text-muted-foreground">…</span>
+                      {budgets.data === undefined ? (
+                        unknown
                       ) : (
                         <BudgetEditor
                           key={budget?.monthly_usd ?? "none"}
@@ -87,10 +94,10 @@ export function BudgetsCard() {
                       )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {format.number(use.spent, USD)}
+                      {budgets.data === undefined ? unknown : format.number(use.spent, USD)}
                     </TableCell>
                     <TableCell className="hidden w-40 sm:table-cell">
-                      {use.monthly > 0 && (
+                      {budgets.data !== undefined && use.monthly > 0 && (
                         <div className="flex items-center gap-2">
                           <div
                             role="progressbar"

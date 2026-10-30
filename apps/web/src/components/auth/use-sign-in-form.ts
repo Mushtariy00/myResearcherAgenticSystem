@@ -1,8 +1,10 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { type AuthErrorCode, authClient, authErrorKey } from "@/lib/auth-client";
+import { resetSignInRedirect } from "@/lib/auth-redirect";
 
 /**
  * Email + password sign-in, shared by the login forms of both interfaces (Classic and Studio).
@@ -11,6 +13,7 @@ import { type AuthErrorCode, authClient, authErrorKey } from "@/lib/auth-client"
  */
 export function useSignInForm(next: string) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AuthErrorCode | null>(null);
 
@@ -34,6 +37,10 @@ export function useSignInForm(next: string) {
       setPending(false);
       return;
     }
+    // The tab may still hold what the previous user saw (a session that ended without a sign
+    // out); nothing of it may reach the next one.
+    queryClient.clear();
+    resetSignInRedirect();
     router.replace(next);
     router.refresh();
   }

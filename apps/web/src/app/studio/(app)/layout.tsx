@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { CurrentUserProvider } from "@/components/app/current-user";
+import { SessionRefresh } from "@/components/app/session-refresh";
 import { getSession } from "@/lib/session";
 import { toSessionUser } from "@/lib/session-user";
 import { StudioLoginRedirect } from "@/studio/components/shell/studio-login-redirect";
@@ -17,6 +18,7 @@ export default async function StudioAppLayout({ children }: { children: ReactNod
   }
   return (
     <CurrentUserProvider user={toSessionUser(session.user)}>
+      <SessionRefresh />
       <StudioShell>{children}</StudioShell>
     </CurrentUserProvider>
   );

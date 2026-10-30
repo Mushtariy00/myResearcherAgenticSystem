@@ -6,6 +6,7 @@ import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { listProjectsOptions } from "@/client/@tanstack/react-query.gen";
 import { useCurrentUser } from "@/components/app/current-user";
+import { canCreateProjects } from "@/components/projects/permissions";
 import { useNotifications } from "@/hooks/use-notifications";
 import { RECENT_RUNS_LIMIT, useRecentRuns } from "@/hooks/use-recent-runs";
 import { USAGE_DAYS, useUsage } from "@/hooks/use-usage";
@@ -255,7 +256,7 @@ export function StudioDashboard() {
               </p>
             )}
           </div>
-          <CreateProjectDialog />
+          {canCreateProjects(user) && <CreateProjectDialog />}
         </div>
         {projects.isPending ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -273,7 +274,11 @@ export function StudioDashboard() {
             headingLevel={3}
             icon={<FolderOpenIcon aria-hidden />}
             title={tAll("dashboard.emptyTitle")}
-            description={tAll("dashboard.emptyDescription")}
+            description={
+              canCreateProjects(user)
+                ? tAll("dashboard.emptyDescription")
+                : tAll("dashboard.emptyDescriptionMember")
+            }
           />
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

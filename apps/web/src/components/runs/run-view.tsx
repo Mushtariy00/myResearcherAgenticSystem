@@ -1,11 +1,13 @@
 "use client";
 
-import { CircleAlertIcon, EyeIcon, PauseCircleIcon } from "lucide-react";
+import { CircleAlertIcon, EyeIcon, PauseCircleIcon, RotateCwIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { LoadingRows, QueryError } from "@/components/app/query-state";
+import { useWaitLabels } from "@/components/shared/wait-text";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useErrorMessage } from "@/hooks/use-error-message";
 import { useRunView } from "@/hooks/use-run-view";
 import { EventLog } from "./event-log";
 import { defaultStage, literatureOf } from "./run-data";
@@ -22,7 +24,10 @@ import { useStageParam } from "./use-stage-param";
  */
 export function RunView({ runId }: { runId: string }) {
   const t = useTranslations("run");
+  const tCommon = useTranslations("common");
   const labels = useLabels();
+  const waitLabels = useWaitLabels();
+  const errorMessage = useErrorMessage();
   const view = useRunView(runId);
   const [stageParam, setStage] = useStageParam();
   const literature = useMemo(() => literatureOf(view.run), [view.run]);
@@ -31,7 +36,9 @@ export function RunView({ runId }: { runId: string }) {
   if (run.isPending) {
     return <LoadingRows rows={5} />;
   }
-  if (run.isError) {
+  // Only a first load that failed replaces the page: after a failed refresh the run stays on
+  // screen, with the review in progress, and a note says it may be out of date.
+  if (run.isLoadingError) {
     return <QueryError error={run.error} onRetry={() => run.refetch()} />;
   }
 
@@ -41,6 +48,9 @@ export function RunView({ runId }: { runId: string }) {
       ? stageParam
       : defaultStage(view.timeline, detail.awaiting_stage);
   const awaitingStage = view.awaiting?.stage ?? null;
+  const balanceCheck = Object.values(view.waits).find(
+    (wait) => wait.reason === "lab_balance.exhausted",
+  )?.retryAt;
 
   function openReview(stage: string) {
     setStage(stage);
@@ -52,6 +62,19 @@ export function RunView({ runId }: { runId: string }) {
     <div className="grid gap-6">
       <RunHeader run={detail} view={view} />
 
+      {run.isRefetchError && (
+        <Alert role="status" className="border-amber-500/40">
+          <CircleAlertIcon aria-hidden />
+          <AlertTitle>{t("refreshFailed")}</AlertTitle>
+          <AlertDescription>{errorMessage(run.error)}</AlertDescription>
+          <AlertAction>
+            <Button size="sm" variant="outline" onClick={view.refresh}>
+              <RotateCwIcon aria-hidden />
+              {tCommon("retry")}
+            </Button>
+          </AlertAction>
+        </Alert>
+      )}
       {detail.error && (
         <Alert variant="destructive">
           <CircleAlertIcon aria-hidden />
@@ -65,7 +88,11 @@ export function RunView({ runId }: { runId: string }) {
         <Alert>
           <PauseCircleIcon aria-hidden />
           <AlertTitle>{t("pausedTitle")}</AlertTitle>
-          <AlertDescription>{t("pausedDescription")}</AlertDescription>
+          <AlertDescription>
+            {balanceCheck
+              ? `${t("pausedDescription")} ${t("pausedNextCheck", { time: waitLabels.time(balanceCheck) })}`
+              : t("pausedDescription")}
+          </AlertDescription>
         </Alert>
       )}
       {awaitingStage !== null && selected !== awaitingStage && (
@@ -85,10 +112,17 @@ export function RunView({ runId }: { runId: string }) {
         </Alert>
       )}
 
-      <StageTimeline entries={view.timeline} />
+      <StageTimeline entries={view.timeline} waits={view.waits} />
 
       <StageTabs timeline={view.timeline} selected={selected} onSelect={setStage}>
-        {(entry) => <StagePanel run={detail} entry={entry} literature={literature} />}
+        {(entry) => (
+          <StagePanel
+            run={detail}
+            entry={entry}
+            literature={literature}
+            wait={view.waits[entry.stage]}
+          />
+        )}
       </StageTabs>
 
       <EventLog events={view.events} state={view.streamState} onReconnect={view.reconnect} />

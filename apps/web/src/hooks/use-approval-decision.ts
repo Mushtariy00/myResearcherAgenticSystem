@@ -12,7 +12,18 @@ import { APPROVAL_CONFLICT_CODES, ApiError, toApiError } from "@/lib/api-error";
 export const MAX_COMMENT_LENGTH = 5000;
 
 /** What the hook reads from the run detail. */
-export type ApprovalRun = Pick<RunDetail, "id" | "awaiting" | "awaiting_stage" | "can_steer">;
+export type ApprovalRun = Pick<
+  RunDetail,
+  "id" | "awaiting" | "awaiting_stage" | "can_steer" | "stages" | "max_attempts" | "attempts_left"
+>;
+
+/** Which attempt the output under review is: "Attempt 2 of 3", or "Attempt 2" when unknown. */
+export type ReviewAttempt = {
+  /** Its place in this execution of the run (a retry starts a new one), or the stage's count. */
+  number: number;
+  /** Attempts the execution allows (`max_attempts`); null when the API does not say. */
+  of: number | null;
+};
 
 /** Where an approve-with-edits failed the stage's schema (422 `decision.invalid_edit`). */
 export type InvalidEdit = {
@@ -31,7 +42,12 @@ export type DecisionOutcome =
   | "sent"
   /** Request changes needs a comment; `commentMissing` is now true (focus the field). */
   | "comment_required"
-  /** A decision is being sent, or a new version arrived and was not acknowledged yet. */
+  /** No change requests are left on this output: only approve (with or without edits) or reject. */
+  | "no_attempts_left"
+  /**
+   * A decision is being sent or was just accepted, or a new version arrived and was not
+   * acknowledged yet.
+   */
   | "locked"
   /** The user may not decide on this run (`can_steer` is false). */
   | "not_allowed"
@@ -66,11 +82,23 @@ export type ApprovalDecision = {
   updatedWhileOpen: boolean;
   /** The reviewer has read the new version: unlock the decisions (and clear `conflict`). */
   acknowledge: () => void;
-  /** Decisions are refused: one is being sent, or `updatedWhileOpen`. */
+  /** Decisions are refused: one is on its way or accepted (`sentDecision`), or `updatedWhileOpen`. */
   locked: boolean;
   /** A decision is being sent (until the run detail has been refetched). */
   pending: boolean;
   pendingDecision: Decision | null;
+  /**
+   * The decision the API accepted for the output on screen. The run detail can lag behind it
+   * (the workflow records the decision a moment later), so the decisions stay locked until
+   * another output, or none, waits for review.
+   */
+  sentDecision: Decision | null;
+  /** The attempt the output under review belongs to; null until the run detail says. */
+  attempt: ReviewAttempt | null;
+  /** Change requests still possible (`attempts_left`): 0 leaves approve or reject; null if unknown. */
+  changesLeft: number | null;
+  /** Request changes may be sent: false once no change requests are left. */
+  canRequestChanges: boolean;
   /** The last approve-with-edits was refused by the stage's schema. */
   invalidEdit: InvalidEdit | null;
   /** The last failure other than a conflict. */
@@ -169,6 +197,8 @@ type Review = {
   conflict: boolean;
   invalidEdit: InvalidEdit | null;
   error: ApiError | null;
+  /** The output a decision was accepted for, and the decision. */
+  sent: { outputId: string; decision: Decision } | null;
 };
 
 function freshReview(key: string | null, output: StageOutputOut | null): Review {
@@ -180,12 +210,34 @@ function freshReview(key: string | null, output: StageOutputOut | null): Review 
     conflict: false,
     invalidEdit: null,
     error: null,
+    sent: null,
   };
 }
 
 /** One review per run and waiting stage; a new version of the same stage keeps the review. */
 function reviewKeyOf(run: ApprovalRun | null | undefined): string | null {
   return run?.awaiting ? `${run.id}/${run.awaiting_stage ?? ""}` : null;
+}
+
+function nonNegative(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+/**
+ * The attempt of the output under review. With `attempts_left` it is counted within this
+ * execution of the run ("2 of 3"; a retry starts a new execution while the stage's attempt
+ * numbers keep counting); without, it is the stage's own count.
+ */
+function reviewAttemptOf(run: ApprovalRun, output: StageOutputOut): ReviewAttempt | null {
+  const left = nonNegative(run.attempts_left);
+  const max = nonNegative(run.max_attempts);
+  if (left !== null && max !== null && left < max) {
+    return { number: max - left, of: max };
+  }
+  const stageRun =
+    run.stages.find((candidate) => candidate.outputs?.some((item) => item.id === output.id)) ??
+    run.stages.filter((candidate) => candidate.stage === run.awaiting_stage).at(-1);
+  return stageRun ? { number: stageRun.attempt, of: null } : null;
 }
 
 /**
@@ -195,8 +247,11 @@ function reviewKeyOf(run: ApprovalRun | null | undefined): string | null {
  *
  * - Request changes needs a comment; approve and reject take an optional one. Comments are sent
  *   trimmed, and cleared after a decision is accepted.
+ * - Request changes is refused once no change requests are left (`attempts_left` is 0; a 409
+ *   `decision.no_attempts_left` refetches the run).
  * - When a new version of the waiting output arrives while the reviewer reads, decisions lock
- *   until `acknowledge()`.
+ *   until `acknowledge()`. After a decision is accepted they stay locked (`sentDecision`) until
+ *   the run detail shows another output, or none, waiting.
  * - A 409 sets `conflict` and refetches the run; a 422 `decision.invalid_edit` sets
  *   `invalidEdit` with the schema error's `loc`.
  * - The review starts over (comment, conflict, lock) when another stage's output waits or none
@@ -230,7 +285,11 @@ export function useApprovalDecision(
     mutationFn: sendDecision,
     onSuccess: async (_data, variables) => {
       callbacks.onDecided?.(variables.decision, { edited: variables.editedData !== undefined });
-      update(variables.reviewKey, { comment: "", conflict: false });
+      update(variables.reviewKey, {
+        comment: "",
+        conflict: false,
+        sent: { outputId: variables.outputId, decision: variables.decision },
+      });
       await invalidateRunQueries(queryClient, variables.runId);
     },
     onError: async (error, variables) => {
@@ -244,15 +303,29 @@ export function useApprovalDecision(
       update(variables.reviewKey, {
         error: apiError,
         invalidEdit: apiError instanceof InvalidEditError ? apiError.edit : null,
+        ...(apiError.code === "decision.comment_required" ? { commentMissing: true } : {}),
       });
       callbacks.onError?.(apiError);
+      if (apiError.code === "decision.no_attempts_left") {
+        // The run detail counted on an attempt that is gone: refetch, so that only approve
+        // and reject are offered.
+        await invalidateRunQueries(queryClient, variables.runId);
+      }
     },
   });
 
   // A decision sent for another review (before this output arrived) does not lock this one.
   const pending = mutation.isPending && mutation.variables?.reviewKey === reviewKey;
   const updatedWhileOpen = output !== null && review.seenHash !== output.sha256;
-  const locked = pending || updatedWhileOpen;
+  const sentDecision =
+    output !== null && review.sent?.outputId === output.id ? review.sent.decision : null;
+  const locked = pending || updatedWhileOpen || sentDecision !== null;
+  const attempt = useMemo(
+    () => (run && output ? reviewAttemptOf(run, output) : null),
+    [run, output],
+  );
+  const changesLeft = output !== null ? nonNegative(run?.attempts_left) : null;
+  const canRequestChanges = changesLeft !== 0;
   const { mutate } = mutation;
 
   const decide = useCallback(
@@ -265,6 +338,9 @@ export function useApprovalDecision(
       }
       if (locked) {
         return "locked";
+      }
+      if (decision === "request_changes" && !canRequestChanges) {
+        return "no_attempts_left";
       }
       const comment = review.comment.trim();
       if (decision === "request_changes" && comment.length === 0) {
@@ -283,7 +359,7 @@ export function useApprovalDecision(
       });
       return "sent";
     },
-    [run, output, reviewKey, locked, review.comment, update, mutate],
+    [run, output, reviewKey, locked, canRequestChanges, review.comment, update, mutate],
   );
 
   const setComment = useCallback(
@@ -333,6 +409,10 @@ export function useApprovalDecision(
     locked,
     pending,
     pendingDecision: pending ? (mutation.variables?.decision ?? null) : null,
+    sentDecision,
+    attempt,
+    changesLeft,
+    canRequestChanges,
     invalidEdit: review.invalidEdit,
     error: review.error,
     ...actions,

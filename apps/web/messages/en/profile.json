@@ -13,13 +13,11 @@
     },
     "password": {
       "title": "Password",
-      "description": "Change the password you sign in with.",
+      "description": "Change the password you sign in with. Your other devices are signed out when you do.",
       "current": "Current password",
-      "signOutOthers": "Sign me out on my other devices",
       "submit": "Change password",
       "submitting": "Changing…",
       "failed": "Password not changed",
-      "done": "Password changed.",
       "doneSignedOut": "Password changed. Your other devices are signed out.",
       "problems": {
         "currentRequired": "Enter your current password.",
@@ -29,6 +27,14 @@
         "mismatch": "The two new passwords do not match.",
         "INVALID_PASSWORD": "The current password is not right."
       }
+    },
+    "sessions": {
+      "title": "Other devices",
+      "description": "Signed in on a computer you no longer use, or lost a device? End every session except this one.",
+      "signOutOthers": "Sign out everywhere else",
+      "working": "Signing out…",
+      "done": "You are signed out everywhere except here.",
+      "failed": "Could not sign out your other devices"
     },
     "preferences": {
       "title": "Language and theme",

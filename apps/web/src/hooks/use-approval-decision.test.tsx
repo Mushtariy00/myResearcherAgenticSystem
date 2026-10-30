@@ -275,4 +275,99 @@ describe("useApprovalDecision", () => {
     expect(result.current).toMatchObject({ output: null, stage: null, canDecide: false });
     expect(result.current.reject()).toBe("no_output");
   });
+
+  it("stays locked after an accepted decision while the run detail still shows that output", async () => {
+    const { result, update } = renderDecision(run);
+    act(() => {
+      result.current.approve();
+    });
+    await waitFor(() => expect(result.current.sentDecision).toBe("approve"));
+    expect(result.current).toMatchObject({ pending: false, locked: true });
+    let again: string | undefined;
+    act(() => {
+      again = result.current.approve();
+    });
+    expect(again).toBe("locked");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // The workflow recorded it: the next stage's output waits, and that review is open.
+    const coding = stageOutputOut({ summary: "x" }, { version: 1 });
+    update({ ...run, awaiting: coding, awaiting_stage: "coding" });
+    expect(result.current).toMatchObject({ sentDecision: null, locked: false });
+  });
+
+  it("names the attempt within this execution, and how many change requests are left", () => {
+    const { result, update } = renderDecision({ ...run, max_attempts: 3, attempts_left: 1 });
+    expect(result.current).toMatchObject({
+      attempt: { number: 2, of: 3 },
+      changesLeft: 1,
+      canRequestChanges: true,
+    });
+
+    // Without the counts (an attempt recorded before them), the stage's own attempt number.
+    update({
+      ...run,
+      stages: [stageRunOut("method", "output_ready", { attempt: 4, outputs: [output] })],
+      attempts_left: null,
+    });
+    expect(result.current).toMatchObject({
+      attempt: { number: 4, of: null },
+      changesLeft: null,
+      canRequestChanges: true,
+    });
+  });
+
+  it("offers only approve or reject on the last attempt", async () => {
+    const { result } = renderDecision({ ...run, max_attempts: 3, attempts_left: 0 });
+    expect(result.current).toMatchObject({
+      attempt: { number: 3, of: 3 },
+      canRequestChanges: false,
+    });
+    act(() => result.current.setComment("Once more, please"));
+    let outcome: string | undefined;
+    act(() => {
+      outcome = result.current.requestChanges();
+    });
+    expect(outcome).toBe("no_attempts_left");
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    act(() => {
+      outcome = result.current.approve();
+    });
+    expect(outcome).toBe("sent");
+    expect(await sentBody()).toMatchObject({ decision: "approve" });
+  });
+
+  it("refetches the run when the API says no change requests are left (409)", async () => {
+    answer = () => json(409, { detail: "decision.no_attempts_left" });
+    const onError = vi.fn<(error: ApiError) => void>();
+    const onConflict = vi.fn();
+    const { result, invalidate } = renderDecision(run, { onError, onConflict });
+    act(() => result.current.setComment("Another try"));
+    act(() => {
+      result.current.requestChanges();
+    });
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+    expect(onError.mock.calls[0]?.[0].code).toBe("decision.no_attempts_left");
+    expect(onConflict).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({
+        queryKey: getRunQueryKey({ path: { run_id: run.id } }),
+      }),
+    );
+    expect(result.current).toMatchObject({ locked: false, comment: "Another try" });
+  });
+
+  it("points at the comment when the API wants one (422 decision.comment_required)", async () => {
+    answer = () => json(422, { detail: "decision.comment_required" });
+    const onError = vi.fn<(error: ApiError) => void>();
+    const { result } = renderDecision(run, { onError });
+    act(() => result.current.setComment("​"));
+    act(() => {
+      result.current.requestChanges();
+    });
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+    expect(onError.mock.calls[0]?.[0].code).toBe("decision.comment_required");
+    expect(result.current.commentMissing).toBe(true);
+  });
 });

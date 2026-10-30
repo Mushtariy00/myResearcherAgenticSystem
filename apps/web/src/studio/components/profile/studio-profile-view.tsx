@@ -7,6 +7,7 @@ import { useCurrentUser } from "@/components/app/current-user";
 import { QueryError } from "@/components/app/query-state";
 import { useMyProjects } from "@/components/profile/use-my-projects";
 import { PROFILE_USAGE_DAYS } from "@/components/profile/use-my-usage";
+import { canCreateProjects } from "@/components/projects/permissions";
 import { LoadingStatus, ShimmerSkeleton } from "@/studio/components/effects/shimmer-skeleton";
 import { StudioAvatar } from "@/studio/components/shell/user-card";
 import { StudioStatePanel } from "@/studio/components/studio-state-panel";
@@ -14,12 +15,14 @@ import { studioProjectPath } from "@/studio/lib/nav";
 import { StudioPasswordForm } from "./studio-password-form";
 import { StudioPreferences } from "./studio-preferences";
 import { StudioSection, TonePill } from "./studio-section";
+import { StudioSessions } from "./studio-sessions";
 import { StudioUsage } from "./studio-usage";
 
 const ROLE_TONES = { owner: "info", researcher: "success", viewer: "neutral" } as const;
 
 function StudioProjects() {
   const t = useTranslations();
+  const user = useCurrentUser();
   const { query, projects, otherCount } = useMyProjects();
 
   if (query.isPending) {
@@ -44,7 +47,11 @@ function StudioProjects() {
           headingLevel={3}
           icon={<FolderOpenIcon aria-hidden />}
           title={t("profile.projects.empty")}
-          description={t("dashboard.emptyDescription")}
+          description={
+            canCreateProjects(user)
+              ? t("dashboard.emptyDescription")
+              : t("dashboard.emptyDescriptionMember")
+          }
         />
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2">
@@ -87,8 +94,9 @@ function StudioProjects() {
 }
 
 /**
- * The Studio profile page: who I am, language and theme, my password, my budget and LLM use,
- * and my projects with my role in each; the same data and actions as the Classic page.
+ * The Studio profile page: who I am, language and theme, my password and other devices, my
+ * budget and LLM use, and my projects with my role in each; the same data and actions as the
+ * Classic page.
  */
 export function StudioProfileView() {
   const t = useTranslations();
@@ -145,6 +153,13 @@ export function StudioProfileView() {
             description={t("profile.password.description")}
           >
             <StudioPasswordForm />
+          </StudioSection>
+          <StudioSection
+            id="studio-profile-sessions"
+            title={t("profile.sessions.title")}
+            description={t("profile.sessions.description")}
+          >
+            <StudioSessions />
           </StudioSection>
         </div>
       </div>

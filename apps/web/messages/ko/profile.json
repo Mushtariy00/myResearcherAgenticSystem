@@ -13,13 +13,11 @@
     },
     "password": {
       "title": "비밀번호",
-      "description": "로그인할 때 쓰는 비밀번호를 바꿉니다.",
+      "description": "로그인할 때 쓰는 비밀번호를 바꿉니다. 바꾸면 다른 기기에서는 로그아웃됩니다.",
       "current": "현재 비밀번호",
-      "signOutOthers": "내 다른 기기에서 로그아웃",
       "submit": "비밀번호 변경",
       "submitting": "변경하는 중…",
       "failed": "비밀번호를 바꾸지 못했습니다",
-      "done": "비밀번호를 바꿨습니다.",
       "doneSignedOut": "비밀번호를 바꿨습니다. 다른 기기에서는 로그아웃되었습니다.",
       "problems": {
         "currentRequired": "현재 비밀번호를 입력하세요.",
@@ -29,6 +27,14 @@
         "mismatch": "두 새 비밀번호가 일치하지 않습니다.",
         "INVALID_PASSWORD": "현재 비밀번호가 올바르지 않습니다."
       }
+    },
+    "sessions": {
+      "title": "다른 기기",
+      "description": "더 이상 쓰지 않는 컴퓨터에 로그인되어 있거나 기기를 잃어버렸나요? 이 기기를 뺀 모든 세션을 끝냅니다.",
+      "signOutOthers": "다른 모든 기기에서 로그아웃",
+      "working": "로그아웃하는 중…",
+      "done": "이 기기를 뺀 모든 곳에서 로그아웃되었습니다.",
+      "failed": "다른 기기에서 로그아웃하지 못했습니다"
     },
     "preferences": {
       "title": "언어와 테마",

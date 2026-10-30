@@ -143,6 +143,26 @@ describe("useMembers", () => {
     });
   });
 
+  it("names the member when the email belongs to one already (409), so roles change in the list", async () => {
+    respond = (call) => (call.method === "POST" ? json(409, { detail: "member.exists" }) : null);
+    const { result } = setup();
+    await waitFor(() => expect(result.current.members).toHaveLength(2));
+    await act(async () => {
+      await result.current.add({ email: "ADA@lab.example", role: "owner" });
+    });
+    await waitFor(() =>
+      expect(result.current.lastError).toMatchObject({
+        action: "add",
+        userId: ADA.user_id,
+        error: { code: "member.exists" },
+        exists: true,
+      }),
+    );
+    // Nobody's role changed; the list is refreshed in case they joined after it loaded.
+    expect(calls.filter((call) => call.method === "PATCH")).toEqual([]);
+    await waitFor(() => expect(listFetches()).toHaveLength(2));
+  });
+
   it("changes a role, marking the member busy until the API answers", async () => {
     let release: (response: Response) => void = () => {};
     respond = (call) =>

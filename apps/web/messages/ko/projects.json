@@ -54,7 +54,10 @@
       "statusOption": "{status} ({count})",
       "clearFilters": "필터 지우기",
       "shown": "전체 {total}개 중 {shown}개",
-      "noMatches": "조건에 맞는 실행이 없습니다."
+      "noMatches": "조건에 맞는 실행이 없습니다.",
+      "partial": "검색과 필터는 지금까지 불러온 실행에만 적용됩니다.",
+      "loadMore": "이전 실행 더 보기",
+      "loadingMore": "이전 실행을 불러오는 중…"
     },
     "members": {
       "title": "구성원",
@@ -65,6 +68,7 @@
       "readOnly": "프로젝트 소유자와 연구실 관리자만 구성원을 바꿀 수 있습니다.",
       "you": "나",
       "addTitle": "구성원 추가",
+      "changeRoleInstead": "역할 바꾸기",
       "addDescription": "먼저 계정이 있어야 합니다. 연구실 관리자가 사람을 연구실에 초대합니다.",
       "email": "이메일",
       "emailPlaceholder": "name@lab.example",

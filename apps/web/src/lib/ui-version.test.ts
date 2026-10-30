@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isPublicPath, loginPathFor, toClassicPath, toStudioPath, uiVersionOf } from "./ui-version";
+import {
+  isPublicPath,
+  loginPathFor,
+  signInHref,
+  toClassicPath,
+  toStudioPath,
+  uiVersionOf,
+} from "./ui-version";
 
 describe("ui versions", () => {
   it("tells the versions apart without matching look-alike paths", () => {
@@ -61,5 +68,16 @@ describe("ui versions", () => {
   it("sends visitors to the sign-in page of their version", () => {
     expect(loginPathFor("/runs/1")).toBe("/login");
     expect(loginPathFor("/studio/runs/1")).toBe("/studio/login");
+  });
+
+  it("brings visitors back to the page they opened after signing in", () => {
+    expect(signInHref("/runs/1", "?stage=method")).toBe("/login?next=%2Fruns%2F1%3Fstage%3Dmethod");
+    expect(signInHref("/projects/p1", "tab=members")).toBe(
+      "/login?next=%2Fprojects%2Fp1%3Ftab%3Dmembers",
+    );
+    expect(signInHref("/studio/papers")).toBe("/studio/login?next=%2Fstudio%2Fpapers");
+    // Sign-in lands on the dashboards anyway.
+    expect(signInHref("/")).toBe("/login");
+    expect(signInHref("/studio/dashboard", "?x=1")).toBe("/studio/login");
   });
 });

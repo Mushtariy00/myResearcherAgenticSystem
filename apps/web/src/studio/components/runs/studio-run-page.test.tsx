@@ -484,6 +484,69 @@ describe("StudioRunPage live log", () => {
   });
 });
 
+describe("StudioRunPage waiting and refreshing", () => {
+  it("shows a stage that waits, why, and when it tries again by itself", async () => {
+    api.run = runDetailOut({ status: "running", stages: [stageRunOut("literature", "running")] });
+    renderRunPage();
+    await waitForRun();
+    send(
+      runEvent("stage.waiting", {
+        stage: "literature",
+        attempt: 1,
+        reason: "free_quota.unavailable",
+        retry_at: "2099-01-01T03:00:00Z",
+      }),
+    );
+    const callout = (await screen.findByText("Literature is waiting")).closest(
+      "[data-tone]",
+    ) as HTMLElement;
+    expect(callout.textContent).toContain("No free model is available right now.");
+    expect(callout.textContent).toMatch(/It tries again by itself at Jan 1, 12:00\sPM\./);
+    expect(screen.getByRole("tab", { name: /^Literature, Running, Waiting/ })).toBeTruthy();
+
+    send(runEvent("log", { stage: "literature", message: "Searching again" }));
+    await waitFor(() => expect(screen.queryByText("Literature is waiting")).toBeNull());
+    expect(screen.getByRole("tab", { name: /^Literature, Running$/ })).toBeTruthy();
+  });
+
+  it("says a run paused for the lab balance continues by itself, and when it checks again", async () => {
+    api.run = runDetailOut({
+      status: "paused_budget",
+      stages: [stageRunOut("literature", "running")],
+    });
+    renderRunPage();
+    await waitForRun();
+    const notice = (await screen.findByText("Paused: the lab's LLM balance is used up")).closest(
+      "[data-tone]",
+    ) as HTMLElement;
+    expect(notice.textContent).toContain(
+      "The run continues by itself once the balance is topped up",
+    );
+    send(
+      runEvent("stage.waiting", {
+        stage: "literature",
+        attempt: 1,
+        reason: "lab_balance.exhausted",
+        retry_at: "2099-01-01T03:15:00Z",
+      }),
+    );
+    await waitFor(() =>
+      expect(notice.textContent).toMatch(/The balance is checked again at Jan 1, 12:15\sPM\./),
+    );
+  });
+
+  it("shows the spend total from the run detail, failed attempts included", async () => {
+    api.run = runDetailOut({
+      status: "running",
+      stages: [stageRunOut("literature", "running")],
+      spend_usd: "0.75",
+    });
+    renderRunPage();
+    await waitForRun();
+    await waitFor(() => expect(screen.getAllByText("$0.75").length).toBeGreaterThan(0));
+  });
+});
+
 describe("StudioRunPage celebration", () => {
   it("bursts confetti once when the run completes on the page", async () => {
     api.run = runDetailOut({

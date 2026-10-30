@@ -5,13 +5,18 @@ import { MEMBER, renderAs } from "@/components/admin/test-utils";
 import { authClient } from "@/lib/auth-client";
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 import { StudioPasswordForm } from "@/studio/components/profile/studio-password-form";
+import { StudioSessions } from "@/studio/components/profile/studio-sessions";
 import { installDomFakes } from "@/studio/test/dom";
 import { PasswordCard } from "./password-card";
+import { SessionsCard } from "./sessions-card";
 import { validatePasswordChange } from "./use-change-password-form";
 
 vi.mock("@/lib/auth-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/auth-client")>()),
-  authClient: { changePassword: vi.fn(async () => ({ data: { token: null }, error: null })) },
+  authClient: {
+    changePassword: vi.fn(async () => ({ data: { token: null }, error: null })),
+    revokeOtherSessions: vi.fn(async () => ({ data: { status: true }, error: null })),
+  },
 }));
 
 const CURRENT = "old correct horse battery";
@@ -101,8 +106,10 @@ describe.each([
     expect(authClient.changePassword).not.toHaveBeenCalled();
   });
 
-  it("changes the password and signs out the other devices by default", async () => {
+  it("changes the password and always signs out the other devices", async () => {
     renderAs(form(), { user: MEMBER });
+    // No way to keep a device that may hold the old password signed in.
+    expect(screen.queryByRole("checkbox")).toBeNull();
     fill();
     await waitFor(() =>
       expect(authClient.changePassword).toHaveBeenCalledWith({
@@ -117,18 +124,6 @@ describe.each([
     expect((screen.getByLabelText("New password") as HTMLInputElement).value).toBe("");
   });
 
-  it("can keep the other devices signed in", async () => {
-    renderAs(form(), { user: MEMBER });
-    fireEvent.click(screen.getByLabelText("Sign me out on my other devices"));
-    fill();
-    await waitFor(() =>
-      expect(authClient.changePassword).toHaveBeenCalledWith(
-        expect.objectContaining({ revokeOtherSessions: false }),
-      ),
-    );
-    expect(await screen.findByText("Password changed.")).toBeTruthy();
-  });
-
   it("explains a wrong current password", async () => {
     vi.mocked(authClient.changePassword).mockResolvedValueOnce({
       data: null,
@@ -138,5 +133,28 @@ describe.each([
     fill();
     expect(await screen.findByText("The current password is not right.")).toBeTruthy();
     expect(screen.getByLabelText("Current password").getAttribute("aria-invalid")).toBe("true");
+  });
+});
+
+describe.each([
+  ["Classic", () => <SessionsCard />],
+  ["Studio", () => <StudioSessions />],
+])("signing out everywhere else in %s", (_name, card) => {
+  it("ends every other session and says so", async () => {
+    renderAs(card(), { user: MEMBER });
+    fireEvent.click(screen.getByRole("button", { name: "Sign out everywhere else" }));
+    expect(await screen.findByText("You are signed out everywhere except here.")).toBeTruthy();
+    expect(authClient.revokeOtherSessions).toHaveBeenCalledTimes(1);
+  });
+
+  it("explains a refusal", async () => {
+    vi.mocked(authClient.revokeOtherSessions).mockResolvedValueOnce({
+      data: null,
+      error: { status: 429, statusText: "Too Many Requests" },
+    } as never);
+    renderAs(card(), { user: MEMBER });
+    fireEvent.click(screen.getByRole("button", { name: "Sign out everywhere else" }));
+    expect(await screen.findByText("Could not sign out your other devices")).toBeTruthy();
+    expect(screen.getByText("Too many attempts. Wait a moment and try again.")).toBeTruthy();
   });
 });

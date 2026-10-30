@@ -3,7 +3,9 @@
 import {
   ChevronUpIcon,
   CircleAlertIcon,
+  CircleCheckIcon,
   EyeIcon,
+  FlagIcon,
   GitCompareArrowsIcon,
   LoaderCircleIcon,
   MessageSquareIcon,
@@ -61,10 +63,12 @@ function draftState(draft: Draft | null, output: StageOutputOut): DraftState {
 /**
  * The review dock for the output waiting for a decision (useApprovalDecision), sticky at the
  * bottom of the stage column and docked to the bottom of the screen on phones. It names the
- * version (and the Demo badge), opens the changes since the previous version or an editor to
- * approve with edits, takes a comment, and approves, requests changes (a comment is required)
- * or rejects (after a confirmation). As in Classic, a decision binds to the version on screen:
- * a 409 says the output changed, and a new version locks the buttons until it has been read.
+ * attempt ("2 of 3") and the version (and the Demo badge), opens the changes since the previous
+ * version or an editor to approve with edits, takes a comment, and approves, requests changes
+ * (a comment is required, and none is possible on the last attempt) or rejects (after a
+ * confirmation). As in Classic, a decision binds to the version on screen: a 409 says the output
+ * changed, a new version locks the buttons until it has been read, and so does a decision the
+ * API accepted until the run moves on.
  */
 export function ApprovalDock() {
   const { runId, run, activeStage, showStage } = useRunPage();
@@ -92,14 +96,22 @@ export function ApprovalDock() {
       if (error.code === "decision.invalid_edit") {
         setPanel("edit");
         setExpanded(true);
-      } else {
-        toast.error(errorMessage(error));
+        return;
+      }
+      toast.error(errorMessage(error));
+      if (error.code === "decision.comment_required") {
+        flushSync(() => setExpanded(true));
+        commentRef.current?.focus();
       }
     },
   });
   const output = approval.output;
   const stage = approval.stage ?? "";
   const review = useStage(runId, stage, { outputId: output?.id ?? null });
+  if (confirmReject && approval.updatedWhileOpen) {
+    // A new version arrived behind the confirmation: it must be read before anything is decided.
+    setConfirmReject(false);
+  }
 
   if (!output || !approval.canDecide) {
     return null;
@@ -108,7 +120,8 @@ export function ApprovalDock() {
   const draft = storedDraft?.outputId === output.id ? storedDraft : null;
   const edits = draftState(draft, output);
   const stageName = labels.stage(stage);
-  const { locked, pending, pendingDecision, commentMissing } = approval;
+  const { locked, pending, pendingDecision, commentMissing, attempt, changesLeft } = approval;
+  const lastAttempt = !approval.canRequestChanges;
   const commentId = `${ids}-comment`;
   const hintId = `${ids}-hint`;
   const panelId = `${ids}-panel`;
@@ -184,9 +197,21 @@ export function ApprovalDock() {
           <h2 id={titleId} className="min-w-0 text-sm font-semibold break-words text-foreground">
             {tApproval("title", { stage: stageName })}
           </h2>
+          {attempt && (
+            <span className="text-xs font-medium text-foreground tabular-nums">
+              {attempt.of === null
+                ? tApproval("attempt", { attempt: attempt.number })
+                : tApproval("attemptOf", { attempt: attempt.number, max: attempt.of })}
+            </span>
+          )}
           <span className="text-xs text-muted-foreground tabular-nums">
             {t("version", { version: output.version })}
           </span>
+          {changesLeft !== null && changesLeft > 0 && (
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {tApproval("changesLeft", { count: changesLeft })}
+            </span>
+          )}
           <DemoBadge demo={isDemoOutput(output)} degradedReason={output.degraded_reason} />
           {output.degraded && !isDemoOutput(output) && (
             <Chip tone="warning">{tApproval("degradedTitle")}</Chip>
@@ -210,6 +235,21 @@ export function ApprovalDock() {
           </button>
         </div>
 
+        {approval.sentDecision && (
+          <Callout
+            tone="success"
+            icon={CircleCheckIcon}
+            role="status"
+            title={tApproval("decisionSentTitle")}
+          >
+            {tApproval("decisionSentDescription")}
+          </Callout>
+        )}
+        {lastAttempt && !approval.sentDecision && (
+          <Callout tone="info" icon={FlagIcon} title={tApproval("lastAttemptTitle")}>
+            {tApproval("lastAttemptDescription")}
+          </Callout>
+        )}
         {approval.conflict && !approval.updatedWhileOpen && (
           <Callout
             tone="warning"
@@ -324,7 +364,7 @@ export function ApprovalDock() {
               OUTLINE_BUTTON,
               "flex-1 disabled:pointer-events-none disabled:opacity-60 sm:flex-none",
             )}
-            disabled={locked}
+            disabled={locked || lastAttempt}
             onClick={requestChanges}
           >
             {sending("request_changes") ? (
@@ -360,6 +400,7 @@ export function ApprovalDock() {
         description={tApproval("rejectConfirmDescription")}
         confirmLabel={tApproval("rejectConfirm")}
         cancelLabel={tApproval("keepReviewing")}
+        confirmDisabled={locked}
         onConfirm={() => {
           setConfirmReject(false);
           approval.reject();

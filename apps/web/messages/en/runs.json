@@ -5,7 +5,27 @@
     "backToNamedProject": "Back to {project}",
     "errorTitle": "The run reported an error",
     "pausedTitle": "Paused: the lab's LLM balance is used up",
-    "pausedDescription": "Admins have been alerted. The run resumes when the balance is topped up.",
+    "pausedDescription": "Admins have been alerted. The run continues by itself once the balance is topped up; there is nothing you need to do.",
+    "pausedNextCheck": "The balance is checked again at {time}.",
+    "refreshFailed": "Could not refresh the run, so what you see may be out of date.",
+    "waiting": {
+      "title": "{stage} is waiting",
+      "reasons": {
+        "free_quota": {
+          "exhausted": "The lab's free-model quota or rate limit is used up for now.",
+          "unavailable": "No free model is available right now."
+        },
+        "call": {
+          "in_progress": "A model call from an earlier try is still in progress."
+        },
+        "lab_balance": {
+          "exhausted": "The lab's OpenRouter balance is used up. The run continues after a top-up."
+        }
+      },
+      "unknownReason": "It waits a moment before it tries again.",
+      "retryAt": "It tries again by itself at {time}.",
+      "retryNow": "It is trying again now."
+    },
     "meta": {
       "created": "Started {date}",
       "policy": "Models: {policy}",
@@ -15,7 +35,7 @@
       "spendCalls": "({calls, plural, one {# LLM call} other {# LLM calls}}: {paid} paid, {free} free)",
       "spendNoCalls": "(no LLM calls yet)",
       "spendSwitched": "Switched to free models",
-      "spendHint": "A live total of this run's LLM calls. The usage page has the final figures."
+      "spendHint": "What this run's LLM calls have cost so far, failed and cancelled attempts included. The usage page has the final figures."
     },
     "review": {
       "callout": "The {stage} output is waiting for your review.",
@@ -232,6 +252,7 @@
       "stageOutputReady": "{stage} output is ready for review",
       "stageDecided": "{stage}: {decision}",
       "stageFailed": "{stage} failed",
+      "stageWaiting": "{stage} is waiting: {reason}",
       "llmCall": "LLM call · {model} ({tier})",
       "attempt": "attempt {attempt}",
       "degraded": "placeholder (degraded)",
@@ -253,7 +274,8 @@
           "output_ready": "Output ready",
           "decided": "Decision",
           "failed": "Stage failed",
-          "invalidated": "Outdated"
+          "invalidated": "Outdated",
+          "waiting": "Waiting"
         },
         "llm": {
           "call": "LLM call"
@@ -289,6 +311,13 @@
       "titleReadOnly": "{stage} output waiting for review",
       "description": "Approve to continue, request changes to get a new attempt, or reject to stop the run.",
       "readOnly": "The run owner or a project owner decides on this output.",
+      "attempt": "Attempt {attempt}",
+      "attemptOf": "Attempt {attempt} of {max}",
+      "changesLeft": "{count, plural, one {# change request left} other {# change requests left}}",
+      "lastAttemptTitle": "This is the last attempt",
+      "lastAttemptDescription": "No more change requests are possible for this stage. Approve the output (you can edit it first) or reject it.",
+      "decisionSentTitle": "Decision sent",
+      "decisionSentDescription": "The run has your decision. This view updates in a moment.",
       "version": "Version",
       "model": "Model",
       "unknownModel": "unknown",

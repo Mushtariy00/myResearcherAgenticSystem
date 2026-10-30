@@ -104,6 +104,33 @@ describe("useEventDescriber", () => {
     expect(toLine(progress("method", "demo.future", {}, "Thinking")).text).toBe("Thinking");
   });
 
+  it("says why a stage waits and when it tries again, in the app's time zone", () => {
+    const waiting = runEvent("stage.waiting", {
+      stage: "literature",
+      attempt: 1,
+      reason: "call.in_progress",
+      retry_at: "2026-10-30T05:30:00Z",
+    });
+    const line = describer()(waiting);
+    expect(line).toMatchObject({
+      kind: "waiting",
+      tone: "warning",
+      stage: "literature",
+      text: "Literature is waiting: A model call from an earlier try is still in progress.",
+    });
+    expect(line.detail).toMatch(/^It tries again by itself at Oct 30, 2:30\sPM\.$/);
+    expect(describer("ko")(waiting)).toMatchObject({
+      text: "문헌 조사 단계 대기 중: 이전 시도의 모델 호출이 아직 끝나지 않았습니다.",
+      detail: "10월 30일 오후 2:30에 자동으로 다시 시도합니다.",
+    });
+    expect(
+      describer()(runEvent("stage.waiting", { stage: "method", reason: "quota.new_kind" })),
+    ).toMatchObject({
+      text: "Method is waiting: It waits a moment before it tries again.",
+      detail: null,
+    });
+  });
+
   it("explains retries, outdated stages and decisions", () => {
     const toLine = describer();
     expect(

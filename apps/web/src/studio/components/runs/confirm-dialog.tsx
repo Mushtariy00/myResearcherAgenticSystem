@@ -22,6 +22,7 @@ export function StudioConfirmDialog({
   confirmLabel,
   cancelLabel,
   onConfirm,
+  confirmDisabled = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -30,6 +31,8 @@ export function StudioConfirmDialog({
   confirmLabel: string;
   cancelLabel: string;
   onConfirm: () => void;
+  /** The action cannot run right now (say, while another one is on its way). */
+  confirmDisabled?: boolean;
 }) {
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
@@ -60,7 +63,12 @@ export function StudioConfirmDialog({
           </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <AlertDialog.Close className={OUTLINE_BUTTON}>{cancelLabel}</AlertDialog.Close>
-            <button type="button" className={DANGER_BUTTON} onClick={onConfirm}>
+            <button
+              type="button"
+              className={DANGER_BUTTON}
+              disabled={confirmDisabled}
+              onClick={onConfirm}
+            >
               {confirmLabel}
             </button>
           </div>

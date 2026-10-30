@@ -187,7 +187,7 @@ describe("ApprovalPanel", () => {
   it("shows that the decision is on its way and keeps the buttons locked", async () => {
     let release: (response: Response) => void = () => {};
     decide = () => new Promise<Response>((resolve) => (release = resolve));
-    renderPanel(run);
+    const view = renderPanel(run);
     fireEvent.click(button("Approve"));
 
     const sending = await screen.findByRole("button", { name: "Sending…" });
@@ -195,9 +195,63 @@ describe("ApprovalPanel", () => {
     expect(button("Reject").disabled).toBe(true);
     expect(button("Request changes").disabled).toBe(true);
 
+    // Accepted, but the refetched run still shows the output (the workflow records it a
+    // moment later): the decisions stay locked instead of inviting a second, conflicting one.
     release(json(202, { status: "accepted" }));
-    expect(await screen.findByRole("button", { name: "Approve" })).toBeTruthy();
+    expect(await screen.findByText("Decision sent")).toBeTruthy();
+    expect(button("Approve").disabled).toBe(true);
+    expect(button("Reject").disabled).toBe(true);
+    expect(screen.queryByText("The output changed")).toBeNull();
+
+    // A later attempt of the stage is a new review.
+    const next = { ...output, id: "33333333-3333-4333-8333-333333333333", sha256: "c".repeat(64) };
+    view.update({ ...run, awaiting: next });
+    fireEvent.click(button("I have read it"));
+    expect(screen.queryByText("Decision sent")).toBeNull();
     expect(button("Approve").disabled).toBe(false);
+  });
+
+  it("closes the reject confirmation when a version the reviewer has not read arrives", async () => {
+    const view = renderPanel(run);
+    fireEvent.click(button("Reject"));
+    expect(await screen.findByRole("button", { name: "Reject and stop" })).toBeTruthy();
+
+    view.update({ ...run, awaiting: { ...output, version: 3, sha256: "b".repeat(64) } });
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Reject and stop" })).toBeNull(),
+    );
+    expect(screen.getByText("A new version arrived")).toBeTruthy();
+    expect(button("Reject").disabled).toBe(true);
+    expect(requestsOf(fetchMock).filter((request) => request.startsWith("POST"))).toEqual([]);
+  });
+
+  it("names the attempt and how many change requests are left", () => {
+    renderPanel({ ...run, max_attempts: 3, attempts_left: 1 });
+    expect(screen.getByText("Attempt 2 of 3")).toBeTruthy();
+    expect(screen.getByText(/1 change request left/)).toBeTruthy();
+    expect(button("Request changes").disabled).toBe(false);
+  });
+
+  it("offers only approve or reject on the last attempt", () => {
+    renderPanel({ ...run, max_attempts: 3, attempts_left: 0 });
+    expect(screen.getByText("Attempt 3 of 3")).toBeTruthy();
+    expect(screen.getByText("This is the last attempt")).toBeTruthy();
+    expect(button("Request changes").disabled).toBe(true);
+    expect(button("Approve").disabled).toBe(false);
+    expect(button("Reject").disabled).toBe(false);
+  });
+
+  it("explains a refused change request when no attempts are left (409)", async () => {
+    decide = () => json(409, { detail: "decision.no_attempts_left" });
+    renderPanel(run);
+    fireEvent.change(screen.getByLabelText("Comment"), { target: { value: "One more try" } });
+    fireEvent.click(button("Request changes"));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "No change requests are left for this output. Approve it (with or without edits) or reject it.",
+      ),
+    );
+    expect(screen.queryByText("The output changed")).toBeNull();
   });
 
   it("moves focus to the comment when changes are requested without one", () => {

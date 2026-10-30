@@ -6,8 +6,10 @@ import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { useId } from "react";
 import { listProjectsOptions } from "@/client/@tanstack/react-query.gen";
+import { useCurrentUser } from "@/components/app/current-user";
 import { EmptyState, LoadingRows, QueryError } from "@/components/app/query-state";
 import { RoleBadge } from "@/components/app/status-badge";
+import { canCreateProjects } from "@/components/projects/permissions";
 import { projectHref } from "@/components/projects/project-tabs";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -16,6 +18,7 @@ export function ProjectList() {
   const t = useTranslations("dashboard");
   const format = useFormatter();
   const headingId = useId();
+  const user = useCurrentUser();
   const projects = useQuery(listProjectsOptions());
 
   return (
@@ -31,7 +34,9 @@ export function ProjectList() {
         <EmptyState
           icon={<FolderIcon aria-hidden />}
           title={t("emptyTitle")}
-          description={t("emptyDescription")}
+          description={
+            canCreateProjects(user) ? t("emptyDescription") : t("emptyDescriptionMember")
+          }
         />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">

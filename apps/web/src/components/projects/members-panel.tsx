@@ -9,7 +9,7 @@ import type { MemberOut, ProjectRole } from "@/client";
 import { useCurrentUser } from "@/components/app/current-user";
 import { LoadingRows, QueryError } from "@/components/app/query-state";
 import { RoleBadge } from "@/components/app/status-badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,13 +48,21 @@ function useRoleItems(): Record<ProjectRole, string> {
   return { owner: tr("owner"), researcher: tr("researcher"), viewer: tr("viewer") };
 }
 
-function AddMemberForm({ members }: { members: ProjectMembers }) {
+function AddMemberForm({
+  members,
+  onShowRole,
+}: {
+  members: ProjectMembers;
+  /** Moves to a member's role control (someone added who is a member already). */
+  onShowRole: (userId: string) => void;
+}) {
   const t = useTranslations("project.members");
   const errorMessage = useErrorMessage();
   const ids = useId();
   const roleItems = useRoleItems();
   const [role, setRole] = useState<ProjectRole>("researcher");
   const error = members.lastError?.action === "add" ? members.lastError : null;
+  const existingId = error?.exists ? error.userId : null;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,6 +81,18 @@ function AddMemberForm({ members }: { members: ProjectMembers }) {
         <Alert variant="destructive">
           <AlertCircleIcon aria-hidden />
           <AlertDescription>{errorMessage(error.error)}</AlertDescription>
+          {existingId && (
+            <AlertAction>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onShowRole(existingId)}
+              >
+                {t("changeRoleInstead")}
+              </Button>
+            </AlertAction>
+          )}
         </Alert>
       )}
       <div className="grid gap-2">
@@ -141,6 +161,8 @@ export function MembersPanel({ projectId, canManage }: { projectId: string; canM
   const router = useRouter();
   const members = useMembers(projectId);
   const roleItems = useRoleItems();
+  const listId = useId();
+  const roleControlId = (userId: string) => `${listId}-role-${userId}`;
   // The dialogs keep what they ask about while they close, so their text does not change.
   const [removal, setRemoval] = useState<PendingRemoval | null>(null);
   const [removalOpen, setRemovalOpen] = useState(false);
@@ -257,6 +279,7 @@ export function MembersPanel({ projectId, canManage }: { projectId: string; canM
                           }}
                         >
                           <SelectTrigger
+                            id={roleControlId(member.user_id)}
                             size="sm"
                             className="w-36"
                             aria-label={t("roleOf", { name })}
@@ -307,7 +330,10 @@ export function MembersPanel({ projectId, canManage }: { projectId: string; canM
             <CardDescription>{t("addDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <AddMemberForm members={members} />
+            <AddMemberForm
+              members={members}
+              onShowRole={(userId) => document.getElementById(roleControlId(userId))?.focus()}
+            />
           </CardContent>
         </Card>
       ) : (

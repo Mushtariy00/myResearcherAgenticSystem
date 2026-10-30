@@ -19,8 +19,9 @@ export const SPEND_FORMAT = {
 } as const;
 
 /**
- * The run's live LLM spend (from its `llm.call` events): a spring-counted total, the share of
- * each stage in stage colours, paid and free calls, and the run's cost cap when it has one.
+ * The run's live LLM spend: a spring-counted total (the run detail's, failed and cancelled
+ * attempts included), the share of each stage in stage colours and the paid and free calls (from
+ * its `llm.call` events), and the run's cost cap when it has one.
  */
 export function SpendTile({ className }: { className?: string }) {
   const { run, view } = useRunPage();

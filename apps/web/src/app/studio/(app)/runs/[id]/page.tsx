@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { isUuid } from "@/lib/ids";
 import { StudioRunPage } from "@/studio/components/runs/studio-run-page";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -9,6 +11,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function StudioRunRoute({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) {
+    notFound();
+  }
   // Keyed so moving to another run starts with a fresh event stream, log and review.
   return <StudioRunPage key={id} runId={id} />;
 }

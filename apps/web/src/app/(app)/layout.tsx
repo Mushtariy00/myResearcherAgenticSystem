@@ -1,20 +1,26 @@
-import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { AppHeader } from "@/components/app/app-header";
 import { CurrentUserProvider } from "@/components/app/current-user";
+import { LoginRedirect } from "@/components/app/login-redirect";
+import { SessionRefresh } from "@/components/app/session-refresh";
 import { getSession } from "@/lib/session";
 import { toSessionUser } from "@/lib/session-user";
 
-/** Every page in this group needs a valid Better Auth session (the proxy only checks a cookie). */
+/**
+ * Every page in this group needs a valid Better Auth session (the proxy only checks a cookie).
+ * Without one the visitor goes to sign in and comes back to this page afterwards: layouts cannot
+ * read the URL, so a small client component adds `?next=`.
+ */
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await getSession();
   if (!session) {
-    redirect("/login");
+    return <LoginRedirect />;
   }
   const t = await getTranslations("nav");
   return (
     <CurrentUserProvider user={toSessionUser(session.user)}>
+      <SessionRefresh />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:ring-3 focus:ring-ring/50"

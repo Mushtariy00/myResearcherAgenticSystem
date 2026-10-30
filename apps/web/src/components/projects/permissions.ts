@@ -23,6 +23,11 @@ export function projectPermissions(
   };
 }
 
+/** Only lab admins create projects (the API answers 403 `permission.denied` to anyone else). */
+export function canCreateProjects(user: Pick<SessionUser, "role">): boolean {
+  return user.role === "admin";
+}
+
 /**
  * Whether the user may approve, request changes, reject, cancel or retry a run: lab admins, the
  * project's owners, and researchers on their own runs (the API's `can_steer`).

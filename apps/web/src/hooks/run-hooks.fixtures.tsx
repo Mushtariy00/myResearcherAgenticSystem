@@ -117,6 +117,15 @@ export class FakeEventSource {
       listener();
     }
   }
+
+  /**
+   * A failed connection: CLOSED when the browser gives up (it does on any answer other than
+   * 200), CONNECTING while it retries by itself (a dropped connection).
+   */
+  fail(readyState: number = FakeEventSource.CLOSED): void {
+    this.readyState = readyState;
+    this.onerror?.();
+  }
 }
 
 /** Replaces the browser's EventSource for one test file (call it in beforeEach). */

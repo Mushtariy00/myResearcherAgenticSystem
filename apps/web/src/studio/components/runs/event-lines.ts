@@ -3,6 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback } from "react";
 import type { PaperRef } from "@/client";
+import { useWaitLabels } from "@/components/shared/wait-text";
 import { USD } from "@/lib/format";
 import { isRunStatus } from "@/lib/labels";
 import { type RunEvent, summarizeEvent } from "@/lib/run-events";
@@ -18,6 +19,7 @@ export type EventKind =
   | "ready"
   | "decided"
   | "failed"
+  | "waiting"
   | "invalidated"
   | "retried"
   | "llm"
@@ -73,7 +75,8 @@ function count(value: unknown): number | null {
  * events with a `code` and `params` (apps/worker/src/agentic_worker/outputs.py), translated
  * here; a code this interface does not know, or params of the wrong type, fall back to the
  * event's English `message`. `llm.call` lines name the model, its tier and the cost of paid
- * calls; `stage.invalidated` and `run.retried` explain a retry.
+ * calls; `stage.invalidated` and `run.retried` explain a retry; `stage.waiting` says why a
+ * stage waits and when it tries again.
  */
 export function useEventDescriber(): (event: RunEvent) => EventLine {
   const t = useTranslations("studioRun.log");
@@ -81,6 +84,7 @@ export function useEventDescriber(): (event: RunEvent) => EventLine {
   const tSources = useTranslations("shared.papers.sources");
   const format = useFormatter();
   const labels = useRunLabels();
+  const waitLabels = useWaitLabels();
 
   return useCallback(
     (event: RunEvent): EventLine => {
@@ -308,6 +312,16 @@ export function useEventDescriber(): (event: RunEvent) => EventLine {
             tEvents("stageFailed", { stage: labels.stage(summary.stage) }),
             summary.error ? labels.errorText(summary.error) : null,
           );
+        case "stageWaiting":
+          return line(
+            "waiting",
+            "warning",
+            tEvents("stageWaiting", {
+              stage: labels.stage(summary.stage),
+              reason: waitLabels.reason(summary.reason),
+            }),
+            summary.retryAt ? waitLabels.retryAt(summary.retryAt) : null,
+          );
         case "llmCall": {
           const detail = [
             summary.costUsd !== null
@@ -336,6 +350,6 @@ export function useEventDescriber(): (event: RunEvent) => EventLine {
           );
       }
     },
-    [t, tEvents, tSources, format, labels],
+    [t, tEvents, tSources, format, labels, waitLabels],
   );
 }

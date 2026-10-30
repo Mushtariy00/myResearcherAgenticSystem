@@ -5,7 +5,27 @@
     "backToNamedProject": "{project}(으)로 돌아가기",
     "errorTitle": "실행 중 오류가 발생했습니다",
     "pausedTitle": "일시 중지: 랩의 LLM 잔액이 모두 소진되었습니다",
-    "pausedDescription": "관리자에게 알림이 전송되었습니다. 잔액이 충전되면 실행이 다시 진행됩니다.",
+    "pausedDescription": "관리자에게 알림이 전송되었습니다. 잔액이 충전되면 실행이 자동으로 이어지므로 따로 할 일은 없습니다.",
+    "pausedNextCheck": "{time}에 잔액을 다시 확인합니다.",
+    "refreshFailed": "실행 정보를 새로 고치지 못해 화면의 내용이 최신이 아닐 수 있습니다.",
+    "waiting": {
+      "title": "{stage} 단계가 대기 중입니다",
+      "reasons": {
+        "free_quota": {
+          "exhausted": "랩의 무료 모델 할당량이나 호출 한도를 지금은 모두 사용했습니다.",
+          "unavailable": "지금은 사용할 수 있는 무료 모델이 없습니다."
+        },
+        "call": {
+          "in_progress": "이전 시도의 모델 호출이 아직 끝나지 않았습니다."
+        },
+        "lab_balance": {
+          "exhausted": "랩의 OpenRouter 잔액이 소진되었습니다. 잔액이 충전되면 실행이 이어집니다."
+        }
+      },
+      "unknownReason": "잠시 기다렸다가 다시 시도합니다.",
+      "retryAt": "{time}에 자동으로 다시 시도합니다.",
+      "retryNow": "지금 다시 시도하고 있습니다."
+    },
     "meta": {
       "created": "{date} 시작",
       "policy": "모델: {policy}",
@@ -15,7 +35,7 @@
       "spendCalls": "(LLM 호출 {calls, plural, other {#회}}: 유료 {paid}회, 무료 {free}회)",
       "spendNoCalls": "(아직 LLM 호출 없음)",
       "spendSwitched": "무료 모델로 전환됨",
-      "spendHint": "이 실행의 LLM 호출을 실시간으로 합산한 금액입니다. 최종 금액은 사용량 페이지에서 확인하세요."
+      "spendHint": "이 실행의 LLM 호출에 지금까지 든 비용으로, 실패하거나 취소된 시도도 포함합니다. 최종 금액은 사용량 페이지에서 확인하세요."
     },
     "review": {
       "callout": "{stage} 결과가 검토를 기다리고 있습니다.",
@@ -232,6 +252,7 @@
       "stageOutputReady": "{stage} 결과가 검토를 기다립니다",
       "stageDecided": "{stage}: {decision}",
       "stageFailed": "{stage} 단계 실패",
+      "stageWaiting": "{stage} 단계 대기 중: {reason}",
       "llmCall": "LLM 호출 · {model} ({tier})",
       "attempt": "{attempt}번째 시도",
       "degraded": "임시 결과(품질 저하)",
@@ -253,7 +274,8 @@
           "output_ready": "결과 준비",
           "decided": "결정",
           "failed": "단계 실패",
-          "invalidated": "무효화"
+          "invalidated": "무효화",
+          "waiting": "대기"
         },
         "llm": {
           "call": "LLM 호출"
@@ -289,6 +311,13 @@
       "titleReadOnly": "검토를 기다리는 {stage} 결과",
       "description": "승인하면 다음 단계로 넘어가고, 수정을 요청하면 다시 시도하며, 반려하면 실행이 중단됩니다.",
       "readOnly": "이 결과는 실행 소유자나 프로젝트 소유자가 결정합니다.",
+      "attempt": "{attempt}번째 시도",
+      "attemptOf": "{max}번 중 {attempt}번째 시도",
+      "changesLeft": "{count, plural, other {수정 요청 #회 남음}}",
+      "lastAttemptTitle": "마지막 시도입니다",
+      "lastAttemptDescription": "이 단계에는 더 이상 수정을 요청할 수 없습니다. 결과를 승인(먼저 수정해도 됩니다)하거나 반려하세요.",
+      "decisionSentTitle": "결정을 보냈습니다",
+      "decisionSentDescription": "실행이 결정을 받았습니다. 잠시 뒤 화면이 갱신됩니다.",
       "version": "버전",
       "model": "모델",
       "unknownModel": "알 수 없음",

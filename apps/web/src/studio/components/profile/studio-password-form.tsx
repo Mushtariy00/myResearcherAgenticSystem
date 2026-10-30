@@ -48,7 +48,7 @@ export function StudioPasswordForm() {
           className="flex items-center gap-2 rounded-[10px] border border-(--tone)/30 bg-(--tone)/10 px-3 py-2 text-sm text-(--tone-fg)"
         >
           <CircleCheckIcon aria-hidden className="size-4 shrink-0" />
-          {done.signedOutOthers ? t("profile.password.doneSignedOut") : t("profile.password.done")}
+          {t("profile.password.doneSignedOut")}
         </p>
       )}
       <input
@@ -90,15 +90,6 @@ export function StudioPasswordForm() {
           required
         />
       </div>
-      <label className="flex items-center gap-2.5 text-sm text-foreground">
-        <input
-          type="checkbox"
-          name="signOutOthers"
-          defaultChecked
-          className="size-4 rounded accent-(--studio-cta-from) focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-        />
-        {t("profile.password.signOutOthers")}
-      </label>
       <ShimmerButton type="submit" disabled={pending} className="w-full sm:w-fit">
         {pending && <LoaderCircleIcon aria-hidden className="motion-safe:animate-spin" />}
         {pending ? t("profile.password.submitting") : t("profile.password.submit")}

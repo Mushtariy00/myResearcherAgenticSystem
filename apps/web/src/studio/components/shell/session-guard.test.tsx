@@ -4,6 +4,7 @@ import { isValidElement, type ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import StudioAppLayout from "@/app/studio/(app)/layout";
 import { CurrentUserProvider } from "@/components/app/current-user";
+import { SessionRefresh } from "@/components/app/session-refresh";
 import { getSession } from "@/lib/session";
 import { StudioLoginRedirect } from "./studio-login-redirect";
 
@@ -22,6 +23,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));
+
+// It talks to Better Auth from the browser (src/components/app/app-layout.test.tsx covers it).
+vi.mock("@/components/app/session-refresh", () => ({ SessionRefresh: () => null }));
 
 vi.mock("@/studio/components/shell/studio-shell", () => ({
   StudioShell: ({ children }: { children: React.ReactNode }) => (
@@ -69,6 +73,12 @@ describe("Studio session guard", () => {
     const element = await StudioAppLayout({ children: <p>Dashboard content</p> });
 
     expect(element.type).toBe(CurrentUserProvider);
+    const children = ([] as React.ReactNode[]).concat(
+      (element.props as { children: React.ReactNode }).children,
+    );
+    expect(children.some((child) => isValidElement(child) && child.type === SessionRefresh)).toBe(
+      true,
+    );
     expect((element.props as { user: unknown }).user).toEqual({
       id: "u1",
       name: "Ada",

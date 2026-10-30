@@ -31,7 +31,7 @@
     },
     "spend": {
       "title": "LLM spend",
-      "hint": "Live, from this run's model calls.",
+      "hint": "Live, failed and cancelled attempts included.",
       "calls": "{count, plural, one {# call} other {# calls}}",
       "split": "{paid} paid · {free} free",
       "byStage": "Spend by stage",

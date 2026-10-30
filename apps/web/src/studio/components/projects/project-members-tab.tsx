@@ -151,6 +151,8 @@ export function ProjectMembersTab({
   const user = useCurrentUser();
   const members = useMembers(projectId);
   const [removing, setRemoving] = useState<MemberOut | null>(null);
+  const listId = useId();
+  const roleControlId = (userId: string) => `${listId}-role-${userId}`;
   const failed = members.lastError;
   const failedMember = failed?.userId
     ? members.members.find((member) => member.user_id === failed.userId)
@@ -207,6 +209,17 @@ export function ProjectMembersTab({
                 </p>
               )}
             </div>
+            {failed.exists && failedMember && canManage && (
+              <button
+                type="button"
+                onClick={() =>
+                  document.getElementById(roleControlId(failedMember.user_id))?.focus()
+                }
+                className={cn(GHOST_BUTTON, "h-8 px-2.5 text-xs")}
+              >
+                {tMembers("changeRoleInstead")}
+              </button>
+            )}
             <button
               type="button"
               onClick={members.clearError}
@@ -267,6 +280,7 @@ export function ProjectMembersTab({
                     {pending && <PulseDot tone="info" live label={t("saving")} />}
                     {canManage ? (
                       <StudioSelect
+                        id={roleControlId(member.user_id)}
                         aria-label={t("roleOf", { name })}
                         value={member.role}
                         disabled={pending}

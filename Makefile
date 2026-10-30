@@ -76,8 +76,10 @@ fake-openrouter: ## Run a fake OpenRouter on 127.0.0.1:8199 (set ARP_OPENROUTER_
 worker: .env ## Run the Temporal worker (run workflows and stage activities)
 	uv run --package agentic-worker python -m agentic_worker
 
+# The web app loads its own settings (src/lib/load-env.ts); the gateway's secrets, which the
+# bare `export` above passes to every recipe, stay out of the Next.js process.
 web: ## Run the Next.js dev server on 127.0.0.1:3000 (browse via http://localhost:8080)
-	pnpm --filter @agentic/web dev
+	env -u ARP_OPENROUTER_API_KEY -u ARP_GATEWAY_TOKEN pnpm --filter @agentic/web dev
 
 lint: ## Lint Python and web code
 	uv run ruff check .
@@ -93,8 +95,9 @@ typecheck: ## Type-check Python and web code
 	uv run pyright
 	pnpm --filter @agentic/web typecheck
 
-test: ## Run Python tests
+test: ## Run Python and web unit tests
 	uv run pytest
+	pnpm --filter @agentic/web test
 
 sandbox-build: ## Build the GPU sandbox image
 	docker build -t arp-sandbox-pytorch:dev sandbox/pytorch

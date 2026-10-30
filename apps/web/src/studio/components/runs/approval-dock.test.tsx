@@ -259,6 +259,60 @@ describe("ApprovalDock", () => {
     expect(within(dock).getByText("Version 2")).toBeTruthy();
   });
 
+  it("closes the reject confirmation when a version the reviewer has not read arrives", async () => {
+    const dock = await openDock();
+    fireEvent.click(within(dock).getByRole("button", { name: "Reject" }));
+    expect(await screen.findByRole("alertdialog", { name: "Reject this output?" })).toBeTruthy();
+
+    const newer = outputPair(
+      { ...REVISED, implementation_focus: "A smaller student." },
+      { version: 2 },
+    );
+    api.run = { ...api.run, awaiting: newer.output };
+    act(() => {
+      FakeEventSource.latest().open();
+      FakeEventSource.latest().send(
+        runEvent("stage.output_ready", { stage: "method", attempt: 2, degraded: true }),
+      );
+    });
+    expect(await within(dock).findByText("A new version arrived")).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(await sentDecisions()).toEqual([]);
+  });
+
+  it("stays locked after an accepted decision until the run moves on", async () => {
+    const dock = await openDock();
+    fireEvent.click(within(dock).getByRole("button", { name: "Approve" }));
+    // The refetch still shows the same output waiting (the workflow records it a moment later).
+    expect(await within(dock).findByText("Decision sent")).toBeTruthy();
+    const approve = within(dock).getByRole("button", { name: "Approve" }) as HTMLButtonElement;
+    expect(approve.disabled).toBe(true);
+    fireEvent.click(approve);
+    expect(await sentDecisions()).toHaveLength(1);
+  });
+
+  it("names the attempt, and offers only approve or reject on the last one", async () => {
+    seedAwaitingMethod({ max_attempts: 3, attempts_left: 0 });
+    const dock = await openDock();
+    expect(within(dock).getByText("Attempt 3 of 3")).toBeTruthy();
+    expect(within(dock).getByText("Version 1")).toBeTruthy();
+    expect(within(dock).getByText("This is the last attempt")).toBeTruthy();
+    const requestChanges = within(dock).getByRole("button", {
+      name: "Request changes",
+    }) as HTMLButtonElement;
+    expect(requestChanges.disabled).toBe(true);
+    expect(
+      (within(dock).getByRole("button", { name: "Approve" }) as HTMLButtonElement).disabled,
+    ).toBe(false);
+  });
+
+  it("says how many change requests are left before the last attempt", async () => {
+    seedAwaitingMethod({ max_attempts: 3, attempts_left: 1 });
+    const dock = await openDock();
+    expect(within(dock).getByText("Attempt 2 of 3")).toBeTruthy();
+    expect(within(dock).getByText("1 change request left")).toBeTruthy();
+  });
+
   it("is not offered to people who may only follow the run", async () => {
     seedAwaitingMethod({ can_steer: false });
     renderRunPage();

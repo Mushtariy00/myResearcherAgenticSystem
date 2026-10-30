@@ -54,7 +54,10 @@
       "statusOption": "{status} ({count})",
       "clearFilters": "Clear filters",
       "shown": "{shown} of {total, plural, one {# run} other {# runs}}",
-      "noMatches": "No runs match these filters."
+      "noMatches": "No runs match these filters.",
+      "partial": "Search and filters cover the runs loaded so far.",
+      "loadMore": "Load older runs",
+      "loadingMore": "Loading older runs…"
     },
     "members": {
       "title": "Members",
@@ -65,6 +68,7 @@
       "readOnly": "Only project owners and lab admins can change who is in this project.",
       "you": "you",
       "addTitle": "Add a member",
+      "changeRoleInstead": "Change their role",
       "addDescription": "They need an account first: a lab admin invites people to the lab.",
       "email": "Email",
       "emailPlaceholder": "name@lab.example",

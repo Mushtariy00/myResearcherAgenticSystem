@@ -15,6 +15,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useRecentRuns } from "@/hooks/use-recent-runs";
 import { useUsage } from "@/hooks/use-usage";
 import { RUN_CONFIG_DEFAULTS } from "@/lib/new-run-schema";
+import type { SessionUser } from "@/lib/session-user";
 import { installDomFakes } from "@/studio/test/dom";
 import { makeQueryClient, renderStudio, TEST_USER } from "@/studio/test/render";
 import { StudioDashboard } from "./studio-dashboard";
@@ -246,13 +247,15 @@ afterEach(() => {
 function renderDashboard({
   locale = "en",
   projects = PROJECTS,
+  user = TEST_USER,
 }: {
   locale?: "en" | "ko";
   projects?: ProjectOut[];
+  user?: SessionUser;
 } = {}) {
   const queryClient = makeQueryClient();
   queryClient.setQueryData(listProjectsQueryKey(), projects);
-  return renderStudio(<StudioDashboard />, { user: TEST_USER, queryClient, locale });
+  return renderStudio(<StudioDashboard />, { user, queryClient, locale });
 }
 
 const tile = (name: string) => screen.getByRole("group", { name });
@@ -385,7 +388,23 @@ describe("StudioDashboard sections", () => {
     const card = within(projects).getByRole("link", { name: /Monocular depth/ });
     expect(card.getAttribute("href")).toBe("/studio/projects/p-depth");
     expect(card.textContent).toContain("3 active runs");
+    // Only lab admins create projects (the API refuses everyone else).
+    expect(within(projects).queryByRole("button", { name: /New project/ })).toBeNull();
+  });
+
+  it("offers a new project to lab admins only", () => {
+    renderDashboard({ user: { ...TEST_USER, role: "admin" } });
+    const projects = screen.getByRole("region", { name: "Projects" });
     expect(within(projects).getByRole("button", { name: /New project/ })).toBeTruthy();
+    cleanup();
+
+    renderDashboard({ projects: [] });
+    expect(
+      screen.getByText(
+        "Ask a project owner to add you to their project, or a lab admin to create one.",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /New project/ })).toBeNull();
   });
 
   it("speaks Korean", () => {

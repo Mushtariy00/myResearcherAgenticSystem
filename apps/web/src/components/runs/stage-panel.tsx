@@ -18,8 +18,10 @@ import { StageIcon } from "@/components/shared/stage-icon";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { type StageView, useStage } from "@/hooks/use-stage";
+import type { StageWait } from "@/lib/run-events";
 import type { StageOverview } from "@/lib/stage-output";
 import { ApprovalPanel, AwaitingPreview } from "./approval-panel";
+import { StageWaitAlert } from "./stage-wait";
 import { useLabels } from "./use-labels";
 import { VersionDetails, VersionSwitcher } from "./versions";
 import type { CodingBase } from "./views/coding-view";
@@ -222,11 +224,14 @@ export function StagePanel({
   run,
   entry,
   literature,
+  wait,
 }: {
   run: RunDetail;
   entry: StageOverview;
   /** The run's latest literature output, for method proposals and draft citations. */
   literature: LiteratureOutput | null;
+  /** The stage's attempt waits before it tries again (`stage.waiting`). */
+  wait?: StageWait;
 }) {
   const labels = useLabels();
   const headingId = useId();
@@ -249,6 +254,7 @@ export function StagePanel({
           <VersionSwitcher view={view} underReviewId={awaiting?.id ?? null} />
         )}
       </div>
+      {entry.status === "running" && <StageWaitAlert wait={wait} />}
       {reviewing ? (
         run.can_steer ? (
           <ApprovalPanel run={run} literature={literature} />

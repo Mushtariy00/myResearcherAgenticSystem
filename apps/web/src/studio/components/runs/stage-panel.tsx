@@ -40,6 +40,7 @@ import {
   StageLoadError,
   StagePanelSkeleton,
   StageRunning,
+  StageWaitCallout,
 } from "./stage-states";
 import { useRunLabels } from "./use-run-labels";
 import { VersionSwitcher } from "./version-switcher";
@@ -82,6 +83,7 @@ export function StagePanel({ entry }: { entry: StageOverview }) {
   return (
     <div data-stage={stageAttr(stage)} className="grid min-w-0 gap-4">
       <StageHeader entry={entry} detail={detail} shown={shown} reviewId={reviewId} onPick={pick} />
+      {entry.status === "running" && <StageWaitCallout stage={stage} />}
       <StageBody
         entry={entry}
         detail={detail}

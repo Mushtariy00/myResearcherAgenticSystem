@@ -4,6 +4,7 @@ import { RotateCwIcon } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import type { PaperRef } from "@/client";
+import { useWaitLabels } from "@/components/shared/wait-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { StreamState } from "@/hooks/use-run-events";
@@ -30,6 +31,7 @@ const EVENT_TYPES = [
   "stage.decided",
   "stage.failed",
   "stage.invalidated",
+  "stage.waiting",
   "llm.call",
   "log",
 ] as const;
@@ -186,6 +188,7 @@ function useSummary() {
   const format = useFormatter();
   const labels = useLabels();
   const logLine = useLogLine();
+  const waitLabels = useWaitLabels();
   /** Prefixes a line with its stage, when the event names one. */
   const inStage = (stage: unknown, line: string) => {
     const name = text(stage);
@@ -260,6 +263,13 @@ function useSummary() {
       case "stageFailed": {
         const line = t("stageFailed", { stage: labels.stage(summary.stage) });
         return summary.error ? `${line}: ${labels.errorText(summary.error)}` : line;
+      }
+      case "stageWaiting": {
+        const line = t("stageWaiting", {
+          stage: labels.stage(summary.stage),
+          reason: waitLabels.reason(summary.reason),
+        });
+        return summary.retryAt ? `${line} ${waitLabels.retryAt(summary.retryAt)}` : line;
       }
       case "llmCall": {
         const parts = [t("llmCall", { model: summary.model, tier: labels.tier(summary.tier) })];

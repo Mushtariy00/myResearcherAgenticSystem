@@ -54,4 +54,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm --filter @agentic/web typecheck
+      # Unit tests: en/ko message parity, error-code coverage, the inert-XSS check, the run flow.
+      - run: pnpm --filter @agentic/web test
       - run: pnpm --filter @agentic/web build

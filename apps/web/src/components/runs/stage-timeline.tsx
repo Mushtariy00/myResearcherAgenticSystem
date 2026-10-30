@@ -15,8 +15,10 @@ import {
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { StageStatusBadge } from "@/components/app/status-badge";
+import type { StageWait } from "@/lib/run-events";
 import type { TimelineEntry, TimelineStatus } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
+import { TimelineWait } from "./stage-wait";
 import { useLabels } from "./use-labels";
 
 const ICONS: Record<TimelineStatus, ReactNode> = {
@@ -32,7 +34,14 @@ const ICONS: Record<TimelineStatus, ReactNode> = {
   skipped: <CircleMinusIcon className="text-muted-foreground" />,
 };
 
-export function StageTimeline({ entries }: { entries: TimelineEntry[] }) {
+export function StageTimeline({
+  entries,
+  waits = {},
+}: {
+  entries: TimelineEntry[];
+  /** Running stages that wait before they try again (`stage.waiting`), by stage id. */
+  waits?: Readonly<Record<string, StageWait>>;
+}) {
   const t = useTranslations("run.timeline");
   const labels = useLabels();
 
@@ -70,6 +79,7 @@ export function StageTimeline({ entries }: { entries: TimelineEntry[] }) {
                 {labels.errorText(entry.latest.error)}
               </p>
             )}
+            {entry.status === "running" && <TimelineWait wait={waits[entry.stage]} />}
           </li>
         ))}
       </ol>

@@ -3,6 +3,8 @@
 import { Tabs } from "@base-ui/react/tabs";
 import {
   CircleAlertIcon,
+  CircleCheckIcon,
+  FlagIcon,
   MessageSquareIcon,
   PencilIcon,
   RefreshCwIcon,
@@ -28,9 +30,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -324,7 +328,12 @@ function ReviewCard({
       }
     },
     onConflict: () => toast.warning(t("conflictToast")),
-    onError: (error) => toast.error(errorMessage(error)),
+    onError: (error) => {
+      toast.error(errorMessage(error));
+      if (error.code === "decision.comment_required") {
+        document.getElementById(`${ids}-comment`)?.focus();
+      }
+    },
   });
   const { output, stage, comment, commentMissing, conflict, updatedWhileOpen, locked } = approval;
   const view = useStage(run.id, stage, { outputId: output?.id ?? null });
@@ -333,6 +342,10 @@ function ReviewCard({
     [literature, run],
   );
   const edit = useMemo(() => (output ? editState(output, draft) : null), [output, draft]);
+  if (confirmReject && updatedWhileOpen) {
+    // A new version arrived behind the confirmation: it must be read before anything is decided.
+    setConfirmReject(false);
+  }
 
   if (!output || stage === null || !edit) {
     return null;
@@ -353,6 +366,9 @@ function ReviewCard({
   const sendingLabel = (decision: "approve" | "request_changes" | "reject", label: string) =>
     approval.pendingDecision === decision ? t("sending") : label;
 
+  const attempt = approval.attempt;
+  const lastAttempt = decide && !approval.canRequestChanges;
+
   return (
     <Card data-slot="review-card" className={cn(decide && "border-amber-500/40 ring-amber-500/30")}>
       <CardHeader>
@@ -361,9 +377,37 @@ function ReviewCard({
             {decide ? t("title", { stage: stageName }) : t("titleReadOnly", { stage: stageName })}
           </h3>
         </CardTitle>
-        <CardDescription>{decide ? t("description") : t("readOnly")}</CardDescription>
+        <CardDescription>
+          {decide ? t("description") : t("readOnly")}
+          {decide && approval.changesLeft !== null && approval.changesLeft > 0 && (
+            <> {t("changesLeft", { count: approval.changesLeft })}</>
+          )}
+        </CardDescription>
+        {attempt && (
+          <CardAction>
+            <Badge variant="outline" className="tabular-nums">
+              {attempt.of === null
+                ? t("attempt", { attempt: attempt.number })
+                : t("attemptOf", { attempt: attempt.number, max: attempt.of })}
+            </Badge>
+          </CardAction>
+        )}
       </CardHeader>
       <CardContent className="grid gap-4">
+        {approval.sentDecision && (
+          <Alert role="status">
+            <CircleCheckIcon aria-hidden />
+            <AlertTitle>{t("decisionSentTitle")}</AlertTitle>
+            <AlertDescription>{t("decisionSentDescription")}</AlertDescription>
+          </Alert>
+        )}
+        {lastAttempt && !approval.sentDecision && (
+          <Alert role="note">
+            <FlagIcon aria-hidden />
+            <AlertTitle>{t("lastAttemptTitle")}</AlertTitle>
+            <AlertDescription>{t("lastAttemptDescription")}</AlertDescription>
+          </Alert>
+        )}
         {conflict && !updatedWhileOpen && (
           <Alert>
             <CircleAlertIcon aria-hidden />
@@ -385,7 +429,11 @@ function ReviewCard({
             </AlertAction>
           </Alert>
         )}
-        <OutputMeta output={output} attempt={view.selected?.attempt.attempt} />
+        {/* The header names the attempt, counted within this execution of the run. */}
+        <OutputMeta
+          output={output}
+          attempt={attempt ? undefined : view.selected?.attempt.attempt}
+        />
         <DemoNotice output={output} />
         <DegradedWarning output={output} />
         {view.selected?.attempt.feedback && (
@@ -475,7 +523,7 @@ function ReviewCard({
             <ThumbsDownIcon aria-hidden />
             {sendingLabel("reject", t("reject"))}
           </Button>
-          <Button variant="outline" disabled={locked} onClick={requestChanges}>
+          <Button variant="outline" disabled={locked || lastAttempt} onClick={requestChanges}>
             <MessageSquareIcon aria-hidden />
             {sendingLabel("request_changes", t("requestChanges"))}
           </Button>
@@ -496,6 +544,7 @@ function ReviewCard({
             <AlertDialogCancel>{t("keepReviewing")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
+              disabled={locked}
               onClick={() => {
                 setConfirmReject(false);
                 approval.reject();
@@ -514,8 +563,10 @@ function ReviewCard({
  * Approve / request changes / reject the output waiting for review (useApprovalDecision), or
  * approve a corrected copy of it. The decision carries the output id and sha256 the reviewer
  * saw; if the output changed meanwhile, the API answers 409, and if a new version arrives while
- * the panel is open, the buttons stay locked until the reviewer acknowledges it. An edit that
- * fails the stage's schema (422) says which field.
+ * the panel is open, the buttons stay locked until the reviewer acknowledges it (an open reject
+ * confirmation closes). A decision the API accepted keeps them locked until the run moves on.
+ * The header names the attempt; on the last one, request changes is off. An edit that fails the
+ * stage's schema (422) says which field.
  */
 export function ApprovalPanel({
   run,

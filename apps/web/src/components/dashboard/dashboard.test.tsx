@@ -12,6 +12,7 @@ import type {
 } from "@/client";
 import {
   installBrowserStubs,
+  LAB_ADMIN,
   makeQueryClient,
   RESEARCHER,
   renderPage,
@@ -268,5 +269,15 @@ describe("Dashboard", () => {
     expect(
       within(spend).getByText(/Over 30 days you spent \$1\.50 on paid models, at most \$1\.25/),
     ).toBeTruthy();
+  });
+
+  it("offers a new project to lab admins only", async () => {
+    renderDashboard();
+    await screen.findByRole("region", { name: /Needs your review/ });
+    expect(screen.queryByRole("button", { name: "New project" })).toBeNull();
+    cleanup();
+
+    renderPage(<Dashboard />, { user: LAB_ADMIN, queryClient: makeQueryClient() });
+    expect(await screen.findByRole("button", { name: "New project" })).toBeTruthy();
   });
 });

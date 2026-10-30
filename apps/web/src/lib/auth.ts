@@ -19,6 +19,7 @@ import {
   SET_PASSWORD_LINK_HOURS,
 } from "./password-policy.ts";
 import { currentSetPasswordCapture } from "./reset-link.ts";
+import { revokeSetPasswordLinks } from "./set-password-links.ts";
 
 if (!process.env.AUTH_DATABASE_URL) {
   // CLI and scripts run from apps/web; Next.js already loaded these in next.config.ts.
@@ -54,6 +55,10 @@ export const auth = betterAuth({
     password: { hash: hashPassword, verify: verifyPassword },
     resetPasswordTokenExpiresIn: SET_PASSWORD_LINK_HOURS * 60 * 60,
     revokeSessionsOnPasswordReset: true,
+    // The link just used is consumed; any other one the user still had stops working too.
+    onPasswordReset: async ({ user }): Promise<void> => {
+      await revokeSetPasswordLinks((await auth.$context).adapter, user.id);
+    },
     // Invites and resets use the same single-use link; admins issue both (see lib/invites.ts).
     sendResetPassword: async ({ user, url }) => {
       const capture = currentSetPasswordCapture();
@@ -76,6 +81,10 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
+    // Sliding sessions need the renewed cookie to reach the browser. Reads (FastAPI's
+    // get-session, server components) cannot set it, so only the browser's POST to
+    // /api/auth/get-session renews a session (SessionRefresh in the (app) layouts).
+    deferSessionRefresh: true,
   },
   rateLimit: {
     enabled: true,

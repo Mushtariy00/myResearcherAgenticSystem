@@ -6,22 +6,23 @@ import { type ReactNode, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { configureApiClient } from "@/lib/api-client";
 import { toApiError } from "@/lib/api-error";
-import { loginPathFor } from "@/lib/ui-version";
+import { signInRedirectFor } from "@/lib/auth-redirect";
 
 configureApiClient();
 
 /**
  * An expired or revoked session makes the API answer 401: go back to the sign-in page of the
- * interface (Classic or Studio) the user is in.
+ * interface (Classic or Studio) the user is in, and from there to this page. Not again right
+ * after coming back from it (see auth-redirect.ts): then the page shows the errors instead.
  */
 function redirectOnUnauthorized(error: unknown): void {
-  if (typeof window === "undefined" || toApiError(error).status !== 401) {
+  if (typeof window === "undefined") {
     return;
   }
-  const { pathname, search } = window.location;
-  window.location.assign(
-    `${loginPathFor(pathname)}?next=${encodeURIComponent(`${pathname}${search}`)}`,
-  );
+  const target = signInRedirectFor(error, window.location);
+  if (target) {
+    window.location.assign(target);
+  }
 }
 
 function makeQueryClient(): QueryClient {

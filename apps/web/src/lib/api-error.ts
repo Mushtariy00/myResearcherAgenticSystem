@@ -24,9 +24,12 @@ export const KNOWN_ERROR_CODES = [
   "decision.edit_requires_approve",
   "decision.invalid_edit",
   "decision.edit_too_large",
+  "decision.no_attempts_left",
+  "decision.comment_required",
   "papers.invalid_year_range",
   "member.last_owner",
   "member.not_found",
+  "member.exists",
   "paper.not_found",
   "artifact.not_found",
   "orchestrator.unavailable",
@@ -39,6 +42,8 @@ export const KNOWN_ERROR_CODES = [
   "lab_balance.exhausted",
   "free_models.disabled",
   "free_quota.exhausted",
+  "gateway.error",
+  "db.error",
   "validation.failed",
   "network.error",
   "server.error",
@@ -104,16 +109,19 @@ export function isKnownErrorCode(value: string | null | undefined): value is Err
 }
 
 /**
- * The message key for an error code stored on a run or stage, or null to show the text as is.
- * The worker reports schema failures per stage (`method.invalid_output`); they share one message.
+ * The message key for an error stored on a run or stage (null when there is none). The worker
+ * reports schema failures per stage (`method.invalid_output`), which share one message, and
+ * anything else this UI does not know, such as a newer code or an exception's raw text, reads as
+ * the generic `stage.error`: raw text is untranslated and may name internal hosts.
  */
 export function runErrorKey(value: string | null | undefined): ErrorCode | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null;
+  }
   if (isKnownErrorCode(value)) {
     return value;
   }
-  return typeof value === "string" && /^[a-z_]+\.invalid_output$/.test(value)
-    ? "stage.invalid_output"
-    : null;
+  return /^[a-z_]+\.invalid_output$/.test(value) ? "stage.invalid_output" : "stage.error";
 }
 
 /** Why a stage output is flagged `degraded` (translated under `degradedReasons.*`). */

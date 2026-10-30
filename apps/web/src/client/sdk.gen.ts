@@ -35,6 +35,8 @@ export const listProjects = <ThrowOnError extends boolean = false>(options?: Opt
 
 /**
  * Create Project
+ *
+ * Create a project (lab admins only); its creator becomes its first owner.
  */
 export const createProject = <ThrowOnError extends boolean = false>(options: Options<CreateProjectData, ThrowOnError>): RequestResult<CreateProjectResponses, CreateProjectErrors, ThrowOnError> => (options.client ?? client).post<CreateProjectResponses, CreateProjectErrors, ThrowOnError>({
     url: '/api/v1/projects',
@@ -74,6 +76,9 @@ export const listMembers = <ThrowOnError extends boolean = false>(options: Optio
 
 /**
  * Add Member
+ *
+ * Add a lab account to the project. Someone who is a member already is a 409
+ * ``member.exists``: roles change through updateMember, which guards the last owner.
  */
 export const addMember = <ThrowOnError extends boolean = false>(options: Options<AddMemberData, ThrowOnError>): RequestResult<AddMemberResponses, AddMemberErrors, ThrowOnError> => (options.client ?? client).post<AddMemberResponses, AddMemberErrors, ThrowOnError>({
     url: '/api/v1/projects/{project_id}/members',
@@ -153,6 +158,8 @@ export const getStage = <ThrowOnError extends boolean = false>(options: Options<
  *
  * Approve with edits sends ``edited_data``: it must pass the stage's output schema (422
  * ``decision.invalid_edit`` with ``loc`` and ``type`` of the first error otherwise).
+ * Request changes needs a comment (422 ``decision.comment_required``) and an attempt left
+ * (409 ``decision.no_attempts_left``; RunDetail.attempts_left says how many remain).
  */
 export const decideStage = <ThrowOnError extends boolean = false>(options: Options<DecideStageData, ThrowOnError>): RequestResult<DecideStageResponses, DecideStageErrors, ThrowOnError> => (options.client ?? client).post<DecideStageResponses, DecideStageErrors, ThrowOnError>({
     url: '/api/v1/runs/{run_id}/approvals',
@@ -195,6 +202,9 @@ export const listBudgets = <ThrowOnError extends boolean = false>(options?: Opti
 
 /**
  * Set Budget
+ *
+ * Set a lab account's monthly paid-model budget (404 ``user.not_found`` for an id that
+ * names no account: a budget nobody can spend would hide the mistake).
  */
 export const setBudget = <ThrowOnError extends boolean = false>(options: Options<SetBudgetData, ThrowOnError>): RequestResult<SetBudgetResponses, SetBudgetErrors, ThrowOnError> => (options.client ?? client).put<SetBudgetResponses, SetBudgetErrors, ThrowOnError>({
     url: '/api/v1/admin/budgets/{user_id}',

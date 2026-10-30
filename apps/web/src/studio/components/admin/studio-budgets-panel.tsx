@@ -55,6 +55,7 @@ export function StudioBudgetsPanel() {
   const users = useLabUsers();
   const budgets = useQuery(listBudgetsOptions());
   const budgetByUser = new Map((budgets.data ?? []).map((budget) => [budget.user_id, budget]));
+  const known = budgets.data !== undefined;
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
@@ -102,7 +103,7 @@ export function StudioBudgetsPanel() {
                 >
                   <div className="grid min-w-0 gap-1.5">
                     <p className="truncate text-sm font-medium text-foreground">{name}</p>
-                    {use.monthly > 0 ? (
+                    {known && use.monthly > 0 ? (
                       <div
                         role="progressbar"
                         aria-label={t("budgets.usedFor", { name })}
@@ -123,6 +124,14 @@ export function StudioBudgetsPanel() {
                   </div>
                   {budgets.isPending ? (
                     <ShimmerSkeleton className="h-9 w-36" />
+                  ) : !known ? (
+                    // Without the budgets nobody's budget is known: no editor starting at $0.
+                    <p className="w-[10.5rem] text-sm text-muted-foreground">
+                      <span aria-hidden>—</span>
+                      <span className="sr-only">
+                        {t("budgets.budget")}: {t("budgets.unknown")}
+                      </span>
+                    </p>
                   ) : (
                     <BudgetEditor
                       key={budget?.monthly_usd ?? "none"}
@@ -135,9 +144,18 @@ export function StudioBudgetsPanel() {
                   )}
                   <p className="text-sm text-muted-foreground tabular-nums sm:text-right">
                     <span className="sr-only">{t("budgets.spent")}: </span>
-                    <span className="font-medium text-foreground">
-                      {format.number(use.spent, USD)}
-                    </span>
+                    {known ? (
+                      <span className="font-medium text-foreground">
+                        {format.number(use.spent, USD)}
+                      </span>
+                    ) : (
+                      <>
+                        <span aria-hidden>{budgets.isPending ? "…" : "—"}</span>
+                        <span className="sr-only">
+                          {budgets.isPending ? t("budgets.loading") : t("budgets.unknown")}
+                        </span>
+                      </>
+                    )}
                   </p>
                 </li>
               );

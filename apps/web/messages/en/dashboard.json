@@ -5,6 +5,7 @@
     "projects": "My projects",
     "emptyTitle": "No projects yet",
     "emptyDescription": "Create a project, or ask a project owner to add you to theirs.",
+    "emptyDescriptionMember": "Ask a project owner to add you to their project, or a lab admin to create one.",
     "confidential": "Confidential",
     "noDescription": "No description",
     "createdAt": "Created {date}",

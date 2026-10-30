@@ -1,5 +1,6 @@
 "use client";
 
+import { HourglassIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { StageIcon } from "@/components/shared/stage-icon";
 import type { TimelineStatus } from "@/lib/timeline";
@@ -17,12 +18,26 @@ import { useRunLabels } from "./use-run-labels";
 
 export const STAGE_SECTION_ID = "run-stages";
 
-/** A small mark after the stage name: pulsing while running, a dot while a person is needed. */
-function TabStatus({ status }: { status: TimelineStatus }) {
+/**
+ * A small mark after the stage name: pulsing while running, an hourglass while the running
+ * stage waits to try again (the panel says why), a dot while a person is needed.
+ */
+function TabStatus({ status, waiting }: { status: TimelineStatus; waiting: boolean }) {
   const t = useTranslations("stageStatus");
+  const tEvents = useTranslations("run.events.types.stage");
   const meta = statusMeta(status);
   const shown =
     meta.live || meta.attention || meta.done || status === "failed" || status === "rejected";
+  if (waiting) {
+    return (
+      <>
+        <HourglassIcon aria-hidden data-tone="warning" className="size-3 text-(--tone-fg)" />
+        <span className="sr-only">
+          , {t(status)}, {tEvents("waiting")}
+        </span>
+      </>
+    );
+  }
   return (
     <>
       {shown &&
@@ -68,7 +83,10 @@ export function StageTabs() {
             >
               <StageIcon stage={entry.stage} />
               <span>{labels.stage(entry.stage)}</span>
-              <TabStatus status={entry.status} />
+              <TabStatus
+                status={entry.status}
+                waiting={entry.status === "running" && entry.stage in view.waits}
+              />
             </AnimatedTabsTab>
           ))}
         </AnimatedTabsList>

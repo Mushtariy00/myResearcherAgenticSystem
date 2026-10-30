@@ -75,9 +75,70 @@ export function lastSeq(events: readonly RunEvent[]): number {
   return events.length === 0 ? 0 : (events[events.length - 1]?.seq ?? 0);
 }
 
-/** Events after which the run detail (timeline, awaiting output) must be fetched again. */
+/**
+ * Events after which the run detail must be fetched again: stage and status events change the
+ * timeline and the output waiting for review, and every model call changes the run's spend.
+ */
 export function affectsRunDetail(type: string): boolean {
-  return type === "run.status" || type.startsWith("stage.");
+  return type === "run.status" || type === "llm.call" || type.startsWith("stage.");
+}
+
+/** Why a stage attempt waits before it runs again by itself (`stage.waiting`). */
+export const KNOWN_WAIT_REASONS = [
+  "free_quota.exhausted",
+  "free_quota.unavailable",
+  "call.in_progress",
+  "lab_balance.exhausted",
+] as const;
+
+export type WaitReason = (typeof KNOWN_WAIT_REASONS)[number];
+
+export function isKnownWaitReason(value: string): value is WaitReason {
+  return (KNOWN_WAIT_REASONS as readonly string[]).includes(value);
+}
+
+/** A stage attempt that waits, then runs again by itself (a `stage.waiting` event). */
+export type StageWait = {
+  stage: string;
+  attempt: number;
+  /** An error code, such as `free_quota.exhausted` (see KNOWN_WAIT_REASONS). */
+  reason: string;
+  /** When it runs again; null when the event did not say. */
+  retryAt: Date | null;
+  seq: number;
+};
+
+/**
+ * The stages waiting right now, read from the events in seq order. A `stage.waiting` event
+ * starts a wait; any later event of the same stage (a model call, progress, an output, a
+ * failure) means it runs again. A run that resumes (`running`) or finishes ends every wait.
+ */
+export function stageWaits(events: readonly RunEvent[]): Readonly<Record<string, StageWait>> {
+  const waits = new Map<string, StageWait>();
+  for (const event of events) {
+    if (event.type === "run.status") {
+      const status = text(event.payload.status);
+      if (status === "running" || (status !== null && isTerminalStatus(status))) {
+        waits.clear();
+      }
+      continue;
+    }
+    const summary = event.type === "stage.waiting" ? summarizeEvent(event) : null;
+    if (summary?.kind === "stageWaiting") {
+      const { stage, attempt, reason, retryAt } = summary;
+      waits.set(stage, { stage, attempt, reason, retryAt, seq: event.seq });
+      continue;
+    }
+    const stage = text(event.payload.stage);
+    if (stage) {
+      waits.delete(stage);
+    }
+  }
+  return Object.fromEntries(waits);
+}
+
+function isTerminalStatus(status: string): boolean {
+  return isRunStatus(status) && isTerminalRunStatus(status);
 }
 
 export type StageDetailChanges = {
@@ -111,7 +172,7 @@ export function stageDetailChanges(
       stages.add(stage);
     } else if (event.type === "run.status") {
       const status = text(event.payload.status);
-      all ||= status !== null && isRunStatus(status) && isTerminalRunStatus(status);
+      all ||= status !== null && isTerminalStatus(status);
     }
   }
   return { stages: [...stages], all, lastSeq };
@@ -190,6 +251,17 @@ export function summarizeSpend(events: readonly RunEvent[]): RunSpend {
   };
 }
 
+/**
+ * The spend with the run detail's total (`spend_usd`): it also counts the calls of failed and
+ * cancelled attempts, which never reach the log, while the breakdown stays that of the logged
+ * calls. Logged calls are part of that total, so the larger of the two figures is the right one
+ * while a refetch of the detail is still on its way.
+ */
+export function withRunTotal(spend: RunSpend, spendUsd: string | null | undefined): RunSpend {
+  const total = typeof spendUsd === "string" ? Number.parseFloat(spendUsd) : Number.NaN;
+  return Number.isFinite(total) && total > spend.totalUsd ? { ...spend, totalUsd: total } : spend;
+}
+
 export type EventSummary =
   | { kind: "runCreated"; topic: string }
   | { kind: "runStatus"; status: string; error: string | null }
@@ -197,6 +269,7 @@ export type EventSummary =
   | { kind: "stageOutputReady"; stage: string; degraded: boolean }
   | { kind: "stageDecided"; stage: string; decision: string }
   | { kind: "stageFailed"; stage: string; error: string | null }
+  | { kind: "stageWaiting"; stage: string; attempt: number; reason: string; retryAt: Date | null }
   | {
       kind: "llmCall";
       model: string;
@@ -224,6 +297,11 @@ function text(value: unknown): string | null {
 function positiveNumber(value: unknown): number | null {
   const amount = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
   return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
+function dateOf(value: unknown): Date | null {
+  const time = typeof value === "string" ? Date.parse(value) : Number.NaN;
+  return Number.isFinite(time) ? new Date(time) : null;
 }
 
 /** Picks the fields the log shows for known event types; anything else is shown as JSON text. */
@@ -264,6 +342,17 @@ export function summarizeEvent(event: RunEvent): EventSummary {
     case "stage.failed":
       if (text(p.stage)) {
         return { kind: "stageFailed", stage: text(p.stage) ?? "", error: text(p.error) };
+      }
+      break;
+    case "stage.waiting":
+      if (text(p.stage)) {
+        return {
+          kind: "stageWaiting",
+          stage: text(p.stage) ?? "",
+          attempt: typeof p.attempt === "number" && p.attempt > 0 ? p.attempt : 1,
+          reason: text(p.reason) ?? "",
+          retryAt: dateOf(p.retry_at),
+        };
       }
       break;
     case "llm.call":

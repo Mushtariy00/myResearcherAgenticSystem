@@ -16,7 +16,7 @@ import {
   useChangePasswordForm,
 } from "./use-change-password-form";
 
-/** Change your password: the current one, the new one twice, and optionally sign out elsewhere. */
+/** Change your password: the current one and the new one twice; other devices get signed out. */
 export function PasswordCard() {
   const t = useTranslations();
   const user = useCurrentUser();
@@ -56,11 +56,7 @@ export function PasswordCard() {
           {done && (
             <Alert role="status">
               <CircleCheckIcon aria-hidden />
-              <AlertDescription>
-                {done.signedOutOthers
-                  ? t("profile.password.doneSignedOut")
-                  : t("profile.password.done")}
-              </AlertDescription>
+              <AlertDescription>{t("profile.password.doneSignedOut")}</AlertDescription>
             </Alert>
           )}
           {/* Lets password managers file the new password under the right account. */}
@@ -106,15 +102,6 @@ export function PasswordCard() {
               required
             />
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="signOutOthers"
-              defaultChecked
-              className="size-4 rounded accent-primary focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-            />
-            {t("profile.password.signOutOthers")}
-          </label>
           <Button type="submit" disabled={pending} className="w-fit">
             {pending ? t("profile.password.submitting") : t("profile.password.submit")}
           </Button>

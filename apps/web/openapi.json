@@ -80,6 +80,7 @@
           "projects"
         ],
         "summary": "Create Project",
+        "description": "Create a project (lab admins only); its creator becomes its first owner.",
         "operationId": "createProject",
         "requestBody": {
           "content": {
@@ -303,6 +304,7 @@
           "projects"
         ],
         "summary": "Add Member",
+        "description": "Add a lab account to the project. Someone who is a member already is a 409\n``member.exists``: roles change through updateMember, which guards the last owner.",
         "operationId": "addMember",
         "parameters": [
           {
@@ -757,7 +759,7 @@
           "runs"
         ],
         "summary": "Decide Stage",
-        "description": "Approve, request changes or reject the output waiting for a decision.\n\nApprove with edits sends ``edited_data``: it must pass the stage's output schema (422\n``decision.invalid_edit`` with ``loc`` and ``type`` of the first error otherwise).",
+        "description": "Approve, request changes or reject the output waiting for a decision.\n\nApprove with edits sends ``edited_data``: it must pass the stage's output schema (422\n``decision.invalid_edit`` with ``loc`` and ``type`` of the first error otherwise).\nRequest changes needs a comment (422 ``decision.comment_required``) and an attempt left\n(409 ``decision.no_attempts_left``; RunDetail.attempts_left says how many remain).",
         "operationId": "decideStage",
         "parameters": [
           {
@@ -1018,6 +1020,7 @@
           "admin"
         ],
         "summary": "Set Budget",
+        "description": "Set a lab account's monthly paid-model budget (404 ``user.not_found`` for an id that\nnames no account: a budget nobody can spend would hide the mistake).",
         "operationId": "setBudget",
         "parameters": [
           {
@@ -1026,6 +1029,8 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
               "title": "User Id"
             }
           }
@@ -2122,7 +2127,7 @@
               },
               {
                 "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,6}|(?=[\\d.]{1,13}0*$)\\d{0,6}\\.\\d{0,6}0*$)"
               }
             ],
             "title": "Monthly Usd"
@@ -4297,7 +4302,7 @@
               },
               {
                 "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,6}|(?=[\\d.]{1,13}0*$)\\d{0,6}\\.\\d{0,6}0*$)"
               },
               {
                 "type": "null"

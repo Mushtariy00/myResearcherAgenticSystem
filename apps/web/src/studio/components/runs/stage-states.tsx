@@ -5,12 +5,14 @@ import {
   CircleDashedIcon,
   CircleMinusIcon,
   FileQuestionIcon,
+  HourglassIcon,
   RotateCcwIcon,
   RotateCwIcon,
   TriangleAlertIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { useStageWaitText } from "@/components/shared/wait-text";
 import { useErrorMessage } from "@/hooks/use-error-message";
 import { cn } from "@/lib/utils";
 import { GlassCard } from "@/studio/components/effects/glass-card";
@@ -21,6 +23,7 @@ import { stageAttr } from "@/studio/lib/stages";
 import { OUTLINE_BUTTON } from "@/studio/lib/ui";
 import { useEventDescriber } from "./event-lines";
 import { useRunPage } from "./run-context";
+import { Callout } from "./run-ui";
 import { useRunLabels } from "./use-run-labels";
 
 /** Placeholder cards the size of a stage view while its detail loads. */
@@ -144,6 +147,28 @@ export function StageRunning({ stage }: { stage: string }) {
         <ShimmerSkeleton className="h-3.5 w-2/3" />
       </div>
     </GlassCard>
+  );
+}
+
+/** The stage's attempt waits, then runs again by itself: why, and when (`stage.waiting`). */
+export function StageWaitCallout({ stage }: { stage: string }) {
+  const t = useTranslations("run.waiting");
+  const { view } = useRunPage();
+  const labels = useRunLabels();
+  const wait = view.waits[stage];
+  const text = useStageWaitText(wait);
+  if (!wait || !text) {
+    return null;
+  }
+  return (
+    <Callout
+      tone="warning"
+      icon={HourglassIcon}
+      role="status"
+      title={t("title", { stage: labels.stage(stage) })}
+    >
+      {text.retry ? `${text.reason} ${text.retry}` : text.reason}
+    </Callout>
   );
 }
 

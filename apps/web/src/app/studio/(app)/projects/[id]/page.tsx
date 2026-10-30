@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { isUuid } from "@/lib/ids";
 import { StudioProjectView } from "@/studio/components/projects/studio-project-view";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,6 +28,9 @@ export default async function StudioProjectPage({
 }) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const projectId = decodeParam(id);
+  if (!isUuid(projectId)) {
+    notFound();
+  }
   return (
     <StudioProjectView
       key={projectId}

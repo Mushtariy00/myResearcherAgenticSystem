@@ -167,7 +167,11 @@
       "unavailable": "The workflow engine is unavailable, so the run could not start. Try again later."
     },
     "db": {
-      "unavailable": "The database is unavailable. Try again shortly."
+      "unavailable": "The database is unavailable. Try again shortly.",
+      "error": "A database error stopped the stage. Retry the run once the database is back."
+    },
+    "gateway": {
+      "error": "The LLM gateway kept failing, so the stage stopped. Retry the run later."
     },
     "stage": {
       "error": "A stage failed. The event log may say more.",
@@ -199,11 +203,14 @@
       "invalid": "That decision isn't possible for this output.",
       "edit_requires_approve": "Edits can only be saved together with an approval.",
       "invalid_edit": "The edited output doesn't match this stage's format. Check the fields and try again.",
-      "edit_too_large": "The edited output is too large to save. Shorten it and try again."
+      "edit_too_large": "The edited output is too large to save. Shorten it and try again.",
+      "no_attempts_left": "No change requests are left for this output. Approve it (with or without edits) or reject it.",
+      "comment_required": "Say what should change before requesting changes."
     },
     "member": {
       "last_owner": "A project needs at least one owner.",
-      "not_found": "That person is not a member of this project."
+      "not_found": "That person is not a member of this project.",
+      "exists": "This person is already a member. Change their role in the member list instead."
     },
     "paper": {
       "not_found": "Paper not found."

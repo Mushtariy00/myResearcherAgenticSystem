@@ -5,6 +5,7 @@
     "projects": "내 프로젝트",
     "emptyTitle": "아직 프로젝트가 없습니다",
     "emptyDescription": "프로젝트를 새로 만들거나, 프로젝트 소유자에게 구성원으로 추가해 달라고 요청하세요.",
+    "emptyDescriptionMember": "프로젝트 소유자에게 구성원으로 추가해 달라고 하거나, 랩 관리자에게 프로젝트를 만들어 달라고 요청하세요.",
     "confidential": "기밀",
     "noDescription": "설명 없음",
     "createdAt": "{date} 생성",

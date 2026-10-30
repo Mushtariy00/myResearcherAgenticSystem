@@ -64,10 +64,38 @@ describe("runErrorKey", () => {
     expect(runErrorKey("literature.invalid_output")).toBe("stage.invalid_output");
   });
 
-  it("leaves anything else to be shown as plain text", () => {
-    expect(runErrorKey("crewai.kickoff_returned_coroutine")).toBeNull();
-    expect(runErrorKey("<script>.invalid_output")).toBeNull();
+  it("translates the codes added for the gateway and the database", () => {
+    expect(runErrorKey("gateway.error")).toBe("gateway.error");
+    expect(runErrorKey("db.error")).toBe("db.error");
+  });
+
+  it("shows the generic stage error for codes it does not know and for raw exception text", () => {
+    expect(runErrorKey("crewai.kickoff_returned_coroutine")).toBe("stage.error");
+    expect(runErrorKey("<script>.invalid_output")).toBe("stage.error");
+    expect(
+      runErrorKey("Server error '502 Bad Gateway' for url 'http://127.0.0.1:8100/v1/complete'"),
+    ).toBe("stage.error");
+  });
+
+  it("has nothing to show without an error", () => {
     expect(runErrorKey(undefined)).toBeNull();
+    expect(runErrorKey(null)).toBeNull();
+    expect(runErrorKey("  ")).toBeNull();
+  });
+});
+
+describe("new API error codes", () => {
+  it("are translated rather than shown as a generic failure", () => {
+    for (const code of [
+      "decision.no_attempts_left",
+      "decision.comment_required",
+      "member.exists",
+      "gateway.error",
+      "db.error",
+    ]) {
+      expect(isKnownErrorCode(code), code).toBe(true);
+      expect(errorMessageKey(new ApiError(code, 409)), code).toBe(code);
+    }
   });
 });
 

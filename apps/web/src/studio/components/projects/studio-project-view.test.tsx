@@ -11,6 +11,7 @@ import type {
   RunOut,
 } from "@/client";
 import { client } from "@/client/client.gen";
+import { RUNS_PAGE_SIZE } from "@/hooks/use-project-runs";
 import { configureApiClient } from "@/lib/api-client";
 import { RUN_CONFIG_DEFAULTS } from "@/lib/new-run-schema";
 import { installDomFakes } from "@/studio/test/dom";
@@ -125,6 +126,8 @@ type Call = { method: string; path: string; search: string; body: unknown };
 const fetchMock = vi.fn<typeof fetch>();
 let calls: Call[] = [];
 let role: ProjectRole | null = "owner";
+/** The runs page the API answers for `?before=` (null: the newest page). */
+let runPage: ((before: string | null) => unknown) | null = null;
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -140,6 +143,7 @@ beforeAll(() => {
 beforeEach(() => {
   calls = [];
   role = "owner";
+  runPage = null;
   window.history.replaceState(null, "", "/studio/projects/p1");
   configureApiClient();
   client.setConfig({ baseUrl: "http://localhost:8080", fetch: fetchMock });
@@ -153,11 +157,13 @@ beforeEach(() => {
       case `GET /api/v1/projects/${PROJECT_ID}`:
         return json(200, project(role));
       case `GET /api/v1/projects/${PROJECT_ID}/runs`:
-        return json(200, RUNS);
+        return json(200, runPage ? runPage(url.searchParams.get("before")) : RUNS);
       case `GET /api/v1/projects/${PROJECT_ID}/members`:
         return json(200, MEMBERS);
       case `PATCH /api/v1/projects/${PROJECT_ID}/members/${TEST_USER.id}`:
         return json(409, { detail: "member.last_owner" });
+      case `POST /api/v1/projects/${PROJECT_ID}/members`:
+        return json(409, { detail: "member.exists" });
       case `GET /api/v1/projects/${PROJECT_ID}/settings`:
         return json(200, SETTINGS);
       case `PUT /api/v1/projects/${PROJECT_ID}/settings`:
@@ -254,6 +260,34 @@ describe("StudioProjectView tabs", () => {
     expect(topics()).toHaveLength(2);
   });
 
+  it("loads older runs a page at a time", async () => {
+    const [newest, older] = RUNS;
+    const first = Array.from({ length: RUNS_PAGE_SIZE }, (_, index) => ({
+      ...newest,
+      id: `new-${index}`,
+      topic: `Topic ${index}`,
+    }));
+    runPage = (before) => (before === null ? first : [older]);
+    renderProject();
+    const button = await screen.findByRole("button", { name: "Load older runs" });
+    expect(screen.getByText(/Search and filters cover the runs loaded so far/)).toBeTruthy();
+    fireEvent.click(button);
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("table", { name: "Runs of this project" })).getAllByRole("link"),
+      ).toHaveLength(RUNS_PAGE_SIZE + 1),
+    );
+    expect(
+      calls
+        .filter((call) => call.path === `/api/v1/projects/${PROJECT_ID}/runs`)
+        .map((call) => call.search),
+    ).toEqual([
+      `?limit=${RUNS_PAGE_SIZE}`,
+      `?before=new-${RUNS_PAGE_SIZE - 1}&limit=${RUNS_PAGE_SIZE}`,
+    ]);
+    expect(screen.queryByRole("button", { name: "Load older runs" })).toBeNull();
+  });
+
   it("keeps the open tab in the address and searches the project's papers", async () => {
     renderProject();
     fireEvent.click(await tab("Papers"));
@@ -306,6 +340,23 @@ describe("StudioProjectView members", () => {
     expect(alert.textContent).toContain("Ada Lovelace is the last owner.");
     expect((select as HTMLSelectElement).value).toBe("owner");
     expect(calls.at(-1)).toMatchObject({ method: "PATCH", body: { role: "researcher" } });
+  });
+
+  it("points to the role control when the person added is a member already", async () => {
+    renderProject("members");
+    await screen.findByRole("combobox", { name: "Role of Grace Hopper" });
+    fireEvent.change(screen.getByRole("textbox", { name: "Email" }), {
+      target: { value: "grace@lab.example" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add member" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain(
+      "This person is already a member. Change their role in the member list instead.",
+    );
+    fireEvent.click(within(alert).getByRole("button", { name: "Change their role" }));
+    expect(document.activeElement).toBe(
+      screen.getByRole("combobox", { name: "Role of Grace Hopper" }),
+    );
   });
 
   it("shows a viewer the members without controls", async () => {

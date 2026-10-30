@@ -96,6 +96,28 @@ describe("EventLog", () => {
     ]);
   });
 
+  it("says why a stage waits and when it tries again", () => {
+    renderWithIntl(
+      <EventLog
+        state="live"
+        onReconnect={vi.fn()}
+        events={[
+          event("stage.waiting", {
+            stage: "coding",
+            attempt: 2,
+            reason: "lab_balance.exhausted",
+            retry_at: "2026-10-30T01:15:00Z",
+          }),
+        ]}
+      />,
+    );
+    const [line] = lines();
+    expect(line?.[0]).toBe("Waiting");
+    expect(line?.[1]).toMatch(
+      /^Coding is waiting: The lab's OpenRouter balance is used up\. The run continues after a top-up\. It tries again by itself at Oct 30, 10:15\sAM\.$/,
+    );
+  });
+
   it("speaks Korean too", () => {
     renderWithIntl(
       <EventLog

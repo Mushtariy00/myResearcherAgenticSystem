@@ -11,6 +11,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 import type { RunDetail } from "@/client";
+import { useWaitLabels } from "@/components/shared/wait-text";
 import { useErrorMessage } from "@/hooks/use-error-message";
 import { type RunView, useRunView } from "@/hooks/use-run-view";
 import { ApiError } from "@/lib/api-error";
@@ -129,9 +130,13 @@ function RunNotices({ refreshError }: { refreshError: unknown }) {
   const tRun = useTranslations("run");
   const tCommon = useTranslations("common");
   const labels = useRunLabels();
+  const waitLabels = useWaitLabels();
   const errorMessage = useErrorMessage();
   const { run, view, showStage } = useRunPage();
   const writing = view.timeline.some((entry) => entry.stage === "writing");
+  const balanceCheck = Object.values(view.waits).find(
+    (wait) => wait.reason === "lab_balance.exhausted",
+  )?.retryAt;
   return (
     <>
       {refreshError !== null && (
@@ -157,7 +162,9 @@ function RunNotices({ refreshError }: { refreshError: unknown }) {
       )}
       {run.status === "paused_budget" && (
         <Callout tone="warning" icon={PauseCircleIcon} title={tRun("pausedTitle")}>
-          {tRun("pausedDescription")}
+          {balanceCheck
+            ? `${tRun("pausedDescription")} ${tRun("pausedNextCheck", { time: waitLabels.time(balanceCheck) })}`
+            : tRun("pausedDescription")}
         </Callout>
       )}
       {run.status === "completed" && (

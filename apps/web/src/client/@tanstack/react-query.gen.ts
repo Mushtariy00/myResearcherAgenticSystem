@@ -95,6 +95,8 @@ export const listProjectsOptions = (options?: Options<ListProjectsData>) => quer
 
 /**
  * Create Project
+ *
+ * Create a project (lab admins only); its creator becomes its first owner.
  */
 export const createProjectMutation = (options?: Partial<Options<CreateProjectData>>): UseMutationOptions<CreateProjectResponse, CreateProjectError, Options<CreateProjectData>> => {
     const mutationOptions: UseMutationOptions<CreateProjectResponse, CreateProjectError, Options<CreateProjectData>> = {
@@ -183,6 +185,9 @@ export const listMembersOptions = (options: Options<ListMembersData>) => queryOp
 
 /**
  * Add Member
+ *
+ * Add a lab account to the project. Someone who is a member already is a 409
+ * ``member.exists``: roles change through updateMember, which guards the last owner.
  */
 export const addMemberMutation = (options?: Partial<Options<AddMemberData>>): UseMutationOptions<AddMemberResponse, AddMemberError, Options<AddMemberData>> => {
     const mutationOptions: UseMutationOptions<AddMemberResponse, AddMemberError, Options<AddMemberData>> = {
@@ -405,6 +410,8 @@ export const getStageOptions = (options: Options<GetStageData>) => queryOptions<
  *
  * Approve with edits sends ``edited_data``: it must pass the stage's output schema (422
  * ``decision.invalid_edit`` with ``loc`` and ``type`` of the first error otherwise).
+ * Request changes needs a comment (422 ``decision.comment_required``) and an attempt left
+ * (409 ``decision.no_attempts_left``; RunDetail.attempts_left says how many remain).
  */
 export const decideStageMutation = (options?: Partial<Options<DecideStageData>>): UseMutationOptions<DecideStageResponse, DecideStageError, Options<DecideStageData>> => {
     const mutationOptions: UseMutationOptions<DecideStageResponse, DecideStageError, Options<DecideStageData>> = {
@@ -545,6 +552,9 @@ export const listBudgetsOptions = (options?: Options<ListBudgetsData>) => queryO
 
 /**
  * Set Budget
+ *
+ * Set a lab account's monthly paid-model budget (404 ``user.not_found`` for an id that
+ * names no account: a budget nobody can spend would hide the mistake).
  */
 export const setBudgetMutation = (options?: Partial<Options<SetBudgetData>>): UseMutationOptions<SetBudgetResponse, SetBudgetError, Options<SetBudgetData>> => {
     const mutationOptions: UseMutationOptions<SetBudgetResponse, SetBudgetError, Options<SetBudgetData>> = {

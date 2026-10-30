@@ -96,14 +96,15 @@ function focusField(form: HTMLFormElement, field: PasswordField | null) {
 
 /**
  * Changing your password (Better Auth `changePassword`), shared by both interfaces: the
- * current password, the new one twice, and whether to sign out the other devices (a
- * `signOutOthers` checkbox). Problems name the field to fix, which gets the focus.
+ * current password and the new one twice. It always signs out the other devices: whoever
+ * prompted the change (a shared or lost device, a leaked password) must not stay signed in.
+ * Problems name the field to fix, which gets the focus.
  */
 export function useChangePasswordForm() {
   const t = useTranslations();
   const [pending, setPending] = useState(false);
   const [problem, setProblem] = useState<PasswordProblem | null>(null);
-  const [done, setDone] = useState<{ signedOutOthers: boolean } | null>(null);
+  const [done, setDone] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -112,8 +113,7 @@ export function useChangePasswordForm() {
     const current = String(data.get(PASSWORD_FIELDS.current) ?? "");
     const next = String(data.get(PASSWORD_FIELDS.new) ?? "");
     const confirm = String(data.get(PASSWORD_FIELDS.confirm) ?? "");
-    const signOutOthers = data.get("signOutOthers") === "on";
-    setDone(null);
+    setDone(false);
     const invalid = validatePasswordChange({ current, next, confirm });
     if (invalid) {
       setProblem(invalid);
@@ -126,7 +126,7 @@ export function useChangePasswordForm() {
       const result = await authClient.changePassword({
         currentPassword: current,
         newPassword: next,
-        revokeOtherSessions: signOutOthers,
+        revokeOtherSessions: true,
       });
       if (result.error) {
         const refused = refusal(result.error);
@@ -135,7 +135,7 @@ export function useChangePasswordForm() {
         return;
       }
       form.reset();
-      setDone({ signedOutOthers: signOutOthers });
+      setDone(true);
     } catch {
       setProblem({ code: "UNKNOWN", field: null });
     } finally {

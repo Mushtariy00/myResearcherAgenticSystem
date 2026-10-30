@@ -16,7 +16,7 @@ import { CancelRunButton } from "./cancel-run-button";
 import { DownloadsMenu } from "./downloads-menu";
 import { RetryRunDialog } from "./retry-run-dialog";
 
-/** The run's LLM spend so far, live from its `llm.call` events. */
+/** The run's LLM spend so far (see RunView `spend`), with its calls from the live events. */
 function SpendSummary({ spend }: { spend: RunSpend }) {
   const t = useTranslations("run.meta");
   const format = useFormatter();

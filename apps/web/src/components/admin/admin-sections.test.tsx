@@ -201,6 +201,24 @@ describe.each(views)("the %s admin sections", (_name, view) => {
     expect(await screen.findByText("Paid models off: free models only")).toBeTruthy();
   });
 
+  it("shows no budgets or spend rather than zeros when the budgets fail to load", async () => {
+    mockApi((_request, path) =>
+      path === "/api/v1/admin/budgets"
+        ? json(503, { detail: "db.unavailable" })
+        : path in RESPONSES
+          ? json(200, RESPONSES[path])
+          : json(404, { detail: "unknown" }),
+    );
+    open("budgets");
+    expect(await screen.findByText("The database is unavailable. Try again shortly.")).toBeTruthy();
+    expect((await screen.findAllByText("Grace Hopper")).length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText("Monthly budget for Grace Hopper, in USD")).toBeNull();
+    expect(screen.queryByText("$0.00")).toBeNull();
+    expect(
+      screen.getAllByText("Unknown, because the budgets did not load", { exact: false }).length,
+    ).toBeGreaterThan(0);
+  });
+
   it("shows each role's model chains with prices, and that paid models are off", async () => {
     open("routing");
     expect(await screen.findByText("Screener")).toBeTruthy();

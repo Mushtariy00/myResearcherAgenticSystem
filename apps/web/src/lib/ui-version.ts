@@ -42,3 +42,16 @@ export function isPublicPath(pathname: string): boolean {
 export function loginPathFor(pathname: string): string {
   return uiVersionOf(pathname) === "studio" ? `${STUDIO_PREFIX}/login` : "/login";
 }
+
+/**
+ * The sign-in page that brings the visitor back to the page (`?next=`, which the sign-in page
+ * checks with safeNextPath). The dashboards need no `next`: sign-in lands there anyway.
+ */
+export function signInHref(pathname: string, search = ""): string {
+  const login = loginPathFor(pathname);
+  if (pathname === "/" || pathname === STUDIO_PREFIX || pathname === `${STUDIO_PREFIX}/dashboard`) {
+    return login;
+  }
+  const query = search && !search.startsWith("?") ? `?${search}` : search;
+  return `${login}?next=${encodeURIComponent(`${pathname}${query}`)}`;
+}

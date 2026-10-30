@@ -6,8 +6,10 @@ import {
   parseRunEvent,
   type RunEvent,
   stageDetailChanges,
+  stageWaits,
   summarizeEvent,
   summarizeSpend,
+  withRunTotal,
 } from "./run-events";
 
 function event(seq: number, type = "log", payload: Record<string, unknown> = {}): RunEvent {
@@ -92,19 +94,81 @@ describe("lastSeq", () => {
 });
 
 describe("affectsRunDetail", () => {
-  it("refetches the run after stage and status events only", () => {
+  it("refetches the run after stage, status and call events (calls change its spend)", () => {
     for (const type of [
       "run.status",
       "stage.started",
       "stage.output_ready",
       "stage.decided",
       "stage.failed",
+      "stage.waiting",
+      "llm.call",
     ]) {
-      expect(affectsRunDetail(type)).toBe(true);
+      expect(affectsRunDetail(type), type).toBe(true);
     }
-    for (const type of ["run.created", "llm.call", "log"]) {
-      expect(affectsRunDetail(type)).toBe(false);
+    for (const type of ["run.created", "log"]) {
+      expect(affectsRunDetail(type), type).toBe(false);
     }
+  });
+});
+
+describe("stageWaits", () => {
+  const waiting = (seq: number, stage: string, reason: string, retryAt = "2026-10-30T02:00:00Z") =>
+    event(seq, "stage.waiting", { stage, attempt: 2, reason, retry_at: retryAt });
+
+  it("names the stage that waits, why and until when", () => {
+    expect(
+      stageWaits([
+        event(1, "stage.started", { stage: "literature" }),
+        waiting(2, "literature", "free_quota.exhausted"),
+      ]),
+    ).toEqual({
+      literature: {
+        stage: "literature",
+        attempt: 2,
+        reason: "free_quota.exhausted",
+        retryAt: new Date("2026-10-30T02:00:00Z"),
+        seq: 2,
+      },
+    });
+  });
+
+  it("ends a wait at the stage's next event, or when the run resumes or finishes", () => {
+    const wait = waiting(1, "method", "call.in_progress");
+    expect(stageWaits([wait, event(2, "llm.call", { stage: "method", tier: "free" })])).toEqual({});
+    expect(stageWaits([wait, event(2, "log", { stage: "literature" })])).toHaveProperty("method");
+    expect(stageWaits([wait, event(2, "run.status", { status: "paused_budget" })])).toHaveProperty(
+      "method",
+    );
+    expect(stageWaits([wait, event(2, "run.status", { status: "running" })])).toEqual({});
+    expect(stageWaits([wait, event(2, "run.status", { status: "cancelled" })])).toEqual({});
+  });
+
+  it("keeps the latest wait of a stage, and a wait without a valid time", () => {
+    const waits = stageWaits([
+      waiting(1, "coding", "free_quota.exhausted"),
+      waiting(2, "coding", "lab_balance.exhausted", "not a date"),
+    ]);
+    expect(waits.coding).toMatchObject({ reason: "lab_balance.exhausted", retryAt: null, seq: 2 });
+  });
+});
+
+describe("withRunTotal", () => {
+  const logged = summarizeSpend([
+    event(1, "llm.call", { stage: "literature", tier: "paid", cost_usd: "0.25" }),
+  ]);
+
+  it("takes the run detail's total, which counts failed and cancelled attempts too", () => {
+    const spend = withRunTotal(logged, "1.75");
+    expect(spend.totalUsd).toBe(1.75);
+    expect(spend.byStage).toEqual({ literature: 0.25 });
+    expect(spend.calls).toBe(1);
+  });
+
+  it("keeps the logged total while the detail lags behind a new call, or says nothing", () => {
+    expect(withRunTotal(logged, "0.1").totalUsd).toBe(0.25);
+    expect(withRunTotal(logged, undefined).totalUsd).toBe(0.25);
+    expect(withRunTotal(logged, "n/a").totalUsd).toBe(0.25);
   });
 });
 

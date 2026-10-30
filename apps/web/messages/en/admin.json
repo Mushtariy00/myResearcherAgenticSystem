@@ -92,7 +92,9 @@
       "saved": "Budget saved.",
       "save": "Save budget",
       "saveFor": "Save the budget for {name}",
-      "empty": "No accounts yet."
+      "empty": "No accounts yet.",
+      "loading": "Loading",
+      "unknown": "Unknown, because the budgets did not load"
     },
     "routing": {
       "title": "Model routing",

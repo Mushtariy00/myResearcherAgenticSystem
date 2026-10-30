@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   type ColumnFiltersState,
   columnFilteringFeature,
@@ -30,7 +29,6 @@ import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { useId, useMemo, useState } from "react";
 import type { RunOut, RunStatus } from "@/client";
-import { listRunsOptions } from "@/client/@tanstack/react-query.gen";
 import { EmptyState, LoadingRows, QueryError } from "@/components/app/query-state";
 import { RunStatusBadge } from "@/components/app/status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -52,9 +50,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useProjectRuns } from "@/hooks/use-project-runs";
 import { toAmount, USD } from "@/lib/format";
 import { isRunStatus } from "@/lib/labels";
-import { isTerminalRunStatus } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
 
 /** Statuses in the order "sort by status" uses: what needs someone first, finished runs last. */
@@ -75,9 +73,6 @@ const STATUS_RANK = new Map<string, number>(
 
 /** The status filter's value for "every status". */
 const ALL = "all";
-
-/** While a run is still going, its status is refreshed this often. */
-const ACTIVE_REFRESH_MS = 15_000;
 
 /** Per-column classes: narrow screens hide the secondary columns. */
 type ColumnMeta = { className?: string };
@@ -115,8 +110,9 @@ export type RunsTableProps = {
 };
 
 /**
- * A project's runs (newest first): search by topic, filter by status, sort by status or date.
- * Statuses refresh while a run is still in progress.
+ * A project's runs (newest first, a page at a time with "Load more"): search by topic, filter by
+ * status, sort by status or date, all over the runs loaded so far. Statuses refresh while a run
+ * is still in progress.
  */
 export function RunsTable({ projectId, canStartRuns, newRunHref }: RunsTableProps) {
   const t = useTranslations("project.runs");
@@ -124,11 +120,9 @@ export function RunsTable({ projectId, canStartRuns, newRunHref }: RunsTableProp
   const tPolicy = useTranslations("project.newRun.policies");
   const format = useFormatter();
   const ids = useId();
-  const runs = useQuery({
-    ...listRunsOptions({ path: { project_id: projectId } }),
-    refetchInterval: (query) =>
-      query.state.data?.some((run) => !isTerminalRunStatus(run.status)) ? ACTIVE_REFRESH_MS : false,
-  });
+  const pages = useProjectRuns(projectId);
+  const runs = pages.query;
+  const loaded = pages.runs;
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
   const [status, setStatus] = useState<RunStatus | null>(null);
   const [search, setSearch] = useState("");
@@ -181,7 +175,7 @@ export function RunsTable({ projectId, canStartRuns, newRunHref }: RunsTableProp
     [t],
   );
 
-  const data = useMemo(() => runs.data ?? [], [runs.data]);
+  const data = useMemo(() => loaded ?? [], [loaded]);
   const columnFilters = useMemo<ColumnFiltersState>(
     () => (status ? [{ id: "status", value: status }] : []),
     [status],
@@ -200,10 +194,10 @@ export function RunsTable({ projectId, canStartRuns, newRunHref }: RunsTableProp
   if (runs.isPending) {
     return <LoadingRows rows={4} />;
   }
-  if (runs.isError) {
+  if (runs.isLoadingError) {
     return <QueryError error={runs.error} onRetry={() => runs.refetch()} />;
   }
-  if (runs.data.length === 0) {
+  if (data.length === 0) {
     return (
       <EmptyState
         icon={<HistoryIcon aria-hidden />}
@@ -222,11 +216,11 @@ export function RunsTable({ projectId, canStartRuns, newRunHref }: RunsTableProp
   }
 
   const counts = new Map<string, number>();
-  for (const run of runs.data) {
+  for (const run of data) {
     counts.set(run.status, (counts.get(run.status) ?? 0) + 1);
   }
   const statusItems: Record<string, string> = {
-    [ALL]: t("allStatuses", { count: runs.data.length }),
+    [ALL]: t("allStatuses", { count: data.length }),
     ...Object.fromEntries(
       RUN_STATUS_ORDER.map((value) => [
         value,
@@ -292,7 +286,8 @@ export function RunsTable({ projectId, canStartRuns, newRunHref }: RunsTableProp
         )}
       </div>
       <p className="text-sm text-muted-foreground tabular-nums" aria-live="polite">
-        {t("shown", { shown: rows.length, total: runs.data.length })}
+        {t("shown", { shown: rows.length, total: data.length })}
+        {pages.hasMore && ` ${t("partial")}`}
       </p>
       <Table>
         <TableCaption className="sr-only">{t("caption")}</TableCaption>
@@ -405,6 +400,18 @@ export function RunsTable({ projectId, canStartRuns, newRunHref }: RunsTableProp
           )}
         </TableBody>
       </Table>
+      {runs.isFetchNextPageError && <QueryError error={runs.error} onRetry={pages.loadMore} />}
+      {pages.hasMore && (
+        <Button
+          type="button"
+          variant="outline"
+          className="justify-self-center"
+          disabled={pages.loadingMore}
+          onClick={pages.loadMore}
+        >
+          {pages.loadingMore ? t("loadingMore") : t("loadMore")}
+        </Button>
+      )}
     </div>
   );
 }

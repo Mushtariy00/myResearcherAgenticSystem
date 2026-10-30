@@ -177,7 +177,7 @@ describe("useRunView", () => {
     const artifacts = `GET /api/v1/runs/${RUN_ID}/artifacts`;
     expect([count(run), count(method), count(coding), count(artifacts)]).toEqual([1, 1, 1, 1]);
 
-    // Log lines and calls change no stage detail.
+    // Log lines and calls change no stage detail; a call changes the run's spend.
     act(() => {
       FakeEventSource.latest().send(
         runEvent("log", { stage: "method", message: "Reading papers" }),
@@ -185,8 +185,9 @@ describe("useRunView", () => {
       );
     });
     await waitFor(() => expect(result.current.view.events).toHaveLength(2));
+    await waitFor(() => expect(count(run)).toBe(2));
     await new Promise((resolve) => setTimeout(resolve, 400));
-    expect([count(run), count(method), count(coding), count(artifacts)]).toEqual([1, 1, 1, 1]);
+    expect([count(run), count(method), count(coding), count(artifacts)]).toEqual([2, 1, 1, 1]);
 
     act(() => {
       FakeEventSource.latest().send(
@@ -195,7 +196,7 @@ describe("useRunView", () => {
       );
     });
     await waitFor(() => expect(count(method)).toBe(2));
-    await waitFor(() => expect(count(run)).toBe(2));
+    await waitFor(() => expect(count(run)).toBe(3));
     await waitFor(() => expect(count(artifacts)).toBe(2));
     expect(count(coding)).toBe(1);
 
@@ -205,6 +206,62 @@ describe("useRunView", () => {
     });
     await waitFor(() => expect(count(coding)).toBe(2));
     expect(count(method)).toBe(3);
+  });
+
+  it("shows the run detail's spend, which counts failed and cancelled attempts too", async () => {
+    currentRun = { ...awaitingRun, spend_usd: "0.0125" };
+    const { result } = renderWithQuery(() => useRunView(RUN_ID));
+    await waitFor(() => expect(result.current.spend.totalUsd).toBe(0.0125));
+    expect(result.current.spend.calls).toBe(0);
+
+    // A new call: the detail is refetched, and its total (with the failed attempt) is shown.
+    currentRun = { ...awaitingRun, spend_usd: "0.0525" };
+    act(() => {
+      FakeEventSource.latest().send(
+        runEvent("llm.call", { stage: "literature", tier: "paid", cost_usd: "0.04" }),
+      );
+    });
+    await waitFor(() => expect(result.current.spend.totalUsd).toBe(0.0525));
+    expect(result.current.spend).toMatchObject({ calls: 1, paidCalls: 1 });
+  });
+
+  it("lists the stages that wait, and forgets a wait once the stage moves on", async () => {
+    const { result } = renderWithQuery(() => useRunView(RUN_ID));
+    await waitFor(() => expect(result.current.run).toBeDefined());
+    act(() => {
+      FakeEventSource.latest().send(
+        runEvent("stage.waiting", {
+          stage: "literature",
+          attempt: 1,
+          reason: "free_quota.exhausted",
+          retry_at: "2026-10-30T03:00:00Z",
+        }),
+      );
+    });
+    await waitFor(() =>
+      expect(result.current.waits.literature?.reason).toBe("free_quota.exhausted"),
+    );
+    expect(result.current.waits.literature?.retryAt).toEqual(new Date("2026-10-30T03:00:00Z"));
+
+    act(() => {
+      FakeEventSource.latest().send(
+        runEvent("llm.call", { stage: "literature", tier: "free", cost_usd: "0" }),
+      );
+    });
+    await waitFor(() => expect(result.current.waits).toEqual({}));
+  });
+
+  it("does not open the stream again once the run is gone", async () => {
+    const { result } = renderWithQuery(() => useRunView(RUN_ID));
+    await waitFor(() => expect(result.current.run).toBeDefined());
+    fetchMock.mockImplementation(async () => json(404, { detail: "run.not_found" }));
+    act(() => FakeEventSource.latest().fail());
+    expect(result.current.streamState).toBe("reconnecting");
+    await waitFor(() => expect(result.current.streamState).toBe("error"), { timeout: 3000 });
+    expect(FakeEventSource.instances).toHaveLength(1);
+    // The run that was on screen stays, with the failed refresh noted on the query.
+    expect(result.current.run).toBeDefined();
+    expect(result.current.query.isRefetchError).toBe(true);
   });
 
   it("refreshes everything that shows the run on demand", async () => {

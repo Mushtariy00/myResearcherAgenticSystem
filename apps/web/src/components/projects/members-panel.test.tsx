@@ -63,6 +63,9 @@ beforeEach(() => {
       members = members.filter((member) => member.user_id !== GRACE.user_id);
       return new Response(null, { status: 204 });
     }
+    if (request.method === "POST" && path === MEMBERS_PATH) {
+      return json(409, { detail: "member.exists" });
+    }
     return json(404, { detail: "member.not_found" });
   });
 });
@@ -125,6 +128,23 @@ describe("MembersPanel", () => {
         .textContent,
     ).toContain("Owner");
     expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it("points to the role control when the person added is a member already", async () => {
+    renderPanel();
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: GRACE.email } });
+    fireEvent.click(screen.getByRole("button", { name: "Add member" }));
+
+    expect(
+      await screen.findByText(
+        "This person is already a member. Change their role in the member list instead.",
+      ),
+    ).toBeTruthy();
+    expect(toast.success).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Change their role" }));
+    expect(document.activeElement).toBe(
+      screen.getByRole("combobox", { name: "Role of Grace Hopper" }),
+    );
   });
 
   it("removes a member only after confirmation", async () => {

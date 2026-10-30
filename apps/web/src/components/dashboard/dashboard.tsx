@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useCurrentUser } from "@/components/app/current-user";
 import { PageHeader } from "@/components/app/query-state";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
+import { canCreateProjects } from "@/components/projects/permissions";
 import { GpuWidget } from "./gpu-widget";
 import { ProjectList } from "./project-list";
 import { RecentRuns } from "./recent-runs";
@@ -23,7 +24,7 @@ export function Dashboard() {
       <PageHeader
         title={t("title")}
         description={t("welcome", { name: user.name || user.email })}
-        actions={<CreateProjectDialog />}
+        actions={canCreateProjects(user) ? <CreateProjectDialog /> : undefined}
       />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="grid min-w-0 content-start gap-8">

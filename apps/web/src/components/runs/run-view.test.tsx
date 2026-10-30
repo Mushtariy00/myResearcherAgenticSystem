@@ -151,6 +151,8 @@ function artifact(
 
 let currentRun: RunDetail = awaitingRun;
 let currentArtifacts: ArtifactOut[] = [];
+/** Set to make GET /runs/<id> fail (a proxy error while the API restarts, say). */
+let runFailure: (() => Response) | null = null;
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
@@ -159,11 +161,12 @@ beforeAll(() => {
 beforeEach(() => {
   currentRun = awaitingRun;
   currentArtifacts = [];
+  runFailure = null;
   window.history.replaceState(null, "", `/runs/${RUN_ID}`);
   installEventSource();
   mockApi((_request, path) => {
     if (path === `/api/v1/runs/${RUN_ID}`) {
-      return json(200, currentRun);
+      return runFailure ? runFailure() : json(200, currentRun);
     }
     if (path === "/api/v1/stages") {
       return json(200, STAGES);
@@ -376,5 +379,110 @@ describe("RunView", () => {
     renderRun();
     expect(await screen.findByText("The run reported an error")).toBeTruthy();
     await waitFor(() => expect(screen.queryByRole("button", { name: "Retry…" })).toBeNull());
+  });
+
+  it("keeps the run and the review in progress on screen when a refresh fails", async () => {
+    renderRun();
+    expect(await screen.findByRole("heading", { name: "Review the Method output" })).toBeTruthy();
+    const comment = screen.getByLabelText("Comment") as HTMLTextAreaElement;
+    fireEvent.change(comment, { target: { value: "Half-written thoughts" } });
+
+    runFailure = () => new Response("Bad Gateway", { status: 502 });
+    act(() => {
+      FakeEventSource.latest().send(runEvent("stage.started", { stage: "method", attempt: 2 }));
+    });
+    expect(
+      await screen.findByText("Could not refresh the run, so what you see may be out of date."),
+    ).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Review the Method output" })).toBeTruthy();
+    expect((screen.getByLabelText("Comment") as HTMLTextAreaElement).value).toBe(
+      "Half-written thoughts",
+    );
+    expect(screen.queryByText("Could not load this")).toBeNull();
+
+    runFailure = null;
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Could not refresh the run, so what you see may be out of date."),
+      ).toBeNull(),
+    );
+  });
+
+  it("shows the whole-page error only when the run never loaded", async () => {
+    runFailure = () => json(403, { detail: "permission.denied" });
+    renderRun();
+    expect(await screen.findByText("You do not have permission to do that.")).toBeTruthy();
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+  });
+
+  it("shows a stage that waits, why, and when it tries again by itself", async () => {
+    currentRun = runDetailOut({
+      id: RUN_ID,
+      project_id: PROJECT.id,
+      status: "running",
+      stages: [
+        stageRunOut("literature", "approved", { outputs: [literatureV1] }),
+        stageRunOut("method", "running"),
+      ],
+    });
+    window.history.replaceState(null, "", `/runs/${RUN_ID}?stage=method`);
+    renderRun();
+    expect(await screen.findByRole("heading", { level: 1, name: currentRun.topic })).toBeTruthy();
+    act(() => {
+      FakeEventSource.latest().send(
+        runEvent("stage.waiting", {
+          stage: "method",
+          attempt: 1,
+          reason: "free_quota.exhausted",
+          retry_at: "2099-01-01T03:00:00Z",
+        }),
+      );
+    });
+
+    const alert = await screen.findByText("Method is waiting");
+    const box = alert.closest('[data-slot="alert"]') as HTMLElement;
+    expect(box.textContent).toContain(
+      "The lab's free-model quota or rate limit is used up for now.",
+    );
+    // 03:00 UTC is noon in Seoul, the app's time zone (ICU puts a narrow space before PM).
+    expect(box.textContent).toMatch(/It tries again by itself at Jan 1, 12:00\sPM\./);
+    const timeline = screen.getByRole("region", { name: "Stages" });
+    expect(within(timeline).getByText(/It tries again by itself at Jan 1/)).toBeTruthy();
+    expect(screen.getByText(/Method is waiting: The lab's free-model quota/)).toBeTruthy();
+
+    // The stage runs again: its next event ends the wait.
+    act(() => {
+      FakeEventSource.latest().send(
+        runEvent("llm.call", { stage: "method", model: "m", tier: "free", cost_usd: "0" }),
+      );
+    });
+    await waitFor(() => expect(screen.queryByText("Method is waiting")).toBeNull());
+  });
+
+  it("says a run paused for the lab balance continues by itself, and when it checks again", async () => {
+    currentRun = runDetailOut({
+      id: RUN_ID,
+      project_id: PROJECT.id,
+      status: "paused_budget",
+      stages: [stageRunOut("literature", "running")],
+    });
+    renderRun();
+    const title = await screen.findByText("Paused: the lab's LLM balance is used up");
+    const box = title.closest('[data-slot="alert"]') as HTMLElement;
+    expect(box.textContent).toContain("The run continues by itself once the balance is topped up");
+    act(() => {
+      FakeEventSource.latest().send(
+        runEvent("stage.waiting", {
+          stage: "literature",
+          attempt: 1,
+          reason: "lab_balance.exhausted",
+          retry_at: "2099-01-01T03:15:00Z",
+        }),
+      );
+    });
+    await waitFor(() =>
+      expect(box.textContent).toMatch(/The balance is checked again at Jan 1, 12:15\sPM\./),
+    );
   });
 });

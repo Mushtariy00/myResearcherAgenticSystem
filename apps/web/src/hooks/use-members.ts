@@ -7,7 +7,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { ListMembersError, MemberOut, ProjectRole } from "@/client";
 import {
   addMemberMutation,
@@ -36,7 +36,10 @@ export type MemberAction = "add" | "updateRole" | "remove";
 
 export type MemberActionError = {
   action: MemberAction;
-  /** The member acted on; null when adding. */
+  /**
+   * The member acted on. When adding: null, or the member who already has that email
+   * (`exists`) once the list shows them.
+   */
   userId: string | null;
   /** `code` is e.g. "member.last_owner", "member.not_found", "user.not_found", "permission.denied". */
   error: ApiError;
@@ -47,6 +50,10 @@ export type MemberActionError = {
    * "user.not_found" (no account has that email: a lab admin has to invite them first).
    */
   notFound: boolean;
+  /** "member.exists": that person is in the project already; their role changes in the list. */
+  exists: boolean;
+  /** The email an add was for. */
+  email?: string;
 };
 
 export type ProjectMembers = {
@@ -54,7 +61,10 @@ export type ProjectMembers = {
   query: UseQueryResult<MemberOut[], ListMembersError>;
   /** Members in the order they joined; [] until loaded. */
   members: MemberOut[];
-  /** Adds someone by the email they were invited with (or changes their role if already in). */
+  /**
+   * Adds someone by the email they were invited with. A member already in the project is
+   * refused (409 `member.exists`): roles change through `updateRole`, which guards the owners.
+   */
   add: (input: { email: string; role: ProjectRole }) => Promise<ActionResult<MemberOut>>;
   updateRole: (userId: string, role: ProjectRole) => Promise<ActionResult<MemberOut>>;
   remove: (userId: string) => Promise<ActionResult<null>>;
@@ -147,6 +157,7 @@ export function useMembers(projectId: string): ProjectMembers {
           error,
           lastOwner: error.code === "member.last_owner",
           notFound: error.code === "member.not_found" || error.code === "user.not_found",
+          exists: error.code === "member.exists",
         });
         if (error.code === "member.not_found") {
           refreshMembership(queryClient, projectId);
@@ -160,13 +171,20 @@ export function useMembers(projectId: string): ProjectMembers {
   );
 
   const add = useCallback(
-    ({ email, role }: { email: string; role: ProjectRole }) => {
+    async ({ email, role }: { email: string; role: ProjectRole }) => {
       if (!isMemberEmail(email)) {
         const error = new ApiError("validation.failed", 422);
-        setLastError({ action: "add", userId: null, error, lastOwner: false, notFound: false });
-        return Promise.resolve<ActionResult<MemberOut>>({ ok: false, error });
+        setLastError({
+          action: "add",
+          userId: null,
+          error,
+          lastOwner: false,
+          notFound: false,
+          exists: false,
+        });
+        return { ok: false, error } satisfies ActionResult<MemberOut>;
       }
-      return perform(
+      const result = await perform(
         "add",
         null,
         () =>
@@ -176,8 +194,18 @@ export function useMembers(projectId: string): ProjectMembers {
           }),
         upsert,
       );
+      if (!result.ok && result.error.code === "member.exists") {
+        // Remember whom it was about (to point at their role control), and refresh the list
+        // in case they joined after it loaded.
+        const existingEmail = email.trim();
+        setLastError((current) =>
+          current?.action === "add" ? { ...current, email: existingEmail } : current,
+        );
+        refreshMembership(queryClient, projectId);
+      }
+      return result;
     },
-    [addMember.mutateAsync, perform, projectId],
+    [addMember.mutateAsync, perform, projectId, queryClient],
   );
 
   const updateRole = useCallback(
@@ -211,6 +239,15 @@ export function useMembers(projectId: string): ProjectMembers {
 
   const clearError = useCallback(() => setLastError(null), []);
 
+  // An add refused with `member.exists` names the member as soon as the list shows them.
+  const resolvedError = useMemo(() => {
+    const email = lastError?.exists && lastError.userId === null ? lastError.email : undefined;
+    const member = email
+      ? query.data?.find((item) => item.email.toLowerCase() === email.toLowerCase())
+      : undefined;
+    return member && lastError ? { ...lastError, userId: member.user_id } : lastError;
+  }, [lastError, query.data]);
+
   return {
     query,
     members: query.data ?? [],
@@ -219,7 +256,7 @@ export function useMembers(projectId: string): ProjectMembers {
     remove,
     isAdding: addMember.isPending,
     pendingUserIds,
-    lastError,
+    lastError: resolvedError,
     clearError,
   };
 }
