@@ -3,6 +3,7 @@
 [tool.uv.workspace]
 members = [
     "apps/api",
+    "apps/executor",
     "apps/gateway",
     "apps/worker",
     "packages/core",
@@ -37,13 +38,20 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "S", "ASYNC", "RUF"]
 "packages/db/migrations/versions/*" = ["E501", "W291"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentic_*", "api_testkit", "gateway_testkit", "worker_testkit"]
+known-first-party = [
+    "agentic_*",
+    "api_testkit",
+    "executor_testkit",
+    "gateway_testkit",
+    "worker_testkit",
+]
 
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
 include = [
     "apps/api",
+    "apps/executor",
     "apps/gateway",
     "apps/worker",
     "packages/core",
@@ -51,11 +59,12 @@ include = [
     "packages/scholarly",
 ]
 exclude = ["**/.venv", "**/node_modules", "legacy", "sandbox"]
-extraPaths = ["apps/api/tests", "apps/gateway/tests", "apps/worker/tests"]
+extraPaths = ["apps/api/tests", "apps/executor/tests", "apps/gateway/tests", "apps/worker/tests"]
 
 [tool.pytest.ini_options]
 testpaths = [
     "apps/api/tests",
+    "apps/executor/tests",
     "apps/gateway/tests",
     "apps/worker/tests",
     "packages/core/tests",
@@ -66,4 +75,4 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "--import-mode=importlib"
 # Test helper modules (uniquely named) importable from test files.
-pythonpath = ["apps/api/tests", "apps/gateway/tests", "apps/worker/tests"]
+pythonpath = ["apps/api/tests", "apps/executor/tests", "apps/gateway/tests", "apps/worker/tests"]

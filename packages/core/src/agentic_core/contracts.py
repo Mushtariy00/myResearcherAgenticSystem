@@ -61,3 +61,6 @@ class EventType(StrEnum):
     RUN_RETRIED = "run.retried"
     LLM_CALL = "llm.call"
     LOG = "log"
+    # One training epoch of a GPU job, for live curves (written by the executor). Payload: stage,
+    # job_id, kind, ordinal, epoch, train and val (metric name to value, null when not measured).
+    EXPERIMENT_EPOCH = "experiment.epoch"

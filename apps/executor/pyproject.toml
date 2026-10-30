@@ -1,0 +1,19 @@
+[project]
+name = "agentic-executor"
+version = "0.1.0"
+description = "Runs GPU jobs in hardened sandbox containers: the only component that talks to Docker."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "agentic-core",
+    "agentic-db",
+    "httpx>=0.28,<0.29",
+    "pydantic-settings>=2.10,<3",
+]
+
+[tool.uv.sources]
+agentic-core = { workspace = true }
+agentic-db = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"

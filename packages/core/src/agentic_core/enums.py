@@ -77,3 +77,31 @@ class PdfStatus(StrEnum):
     AVAILABLE = "available"  # stored; papers.pdf_sha256 names the file
     ABSTRACT_ONLY = "abstract_only"  # no open-access copy anywhere in the waterfall
     FAILED = "failed"  # a copy was found but could not be fetched or was not a valid PDF
+
+
+class GpuJobKind(StrEnum):
+    """What a GPU job is for (docs/design/experiments.md)."""
+
+    SMOKE = "smoke"  # the coding stage's dry run of generated code
+    TRAIN = "train"  # the experiment stage's training run
+
+
+class GpuJobStatus(StrEnum):
+    """queued → starting → running → succeeded | failed | timeout | cancelled."""
+
+    QUEUED = "queued"
+    STARTING = "starting"  # claimed by the executor; its container is being created
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    TIMEOUT = "timeout"
+    CANCELLED = "cancelled"
+
+    @property
+    def is_terminal(self) -> bool:
+        return self in {
+            GpuJobStatus.SUCCEEDED,
+            GpuJobStatus.FAILED,
+            GpuJobStatus.TIMEOUT,
+            GpuJobStatus.CANCELLED,
+        }

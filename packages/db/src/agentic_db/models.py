@@ -31,6 +31,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from agentic_core.enums import (
     Decision,
+    GpuJobKind,
+    GpuJobStatus,
     LlmCallState,
     LlmPolicy,
     LlmTier,
@@ -417,3 +419,88 @@ class RunPaper(Base):
     analysis: Mapped[dict[str, Any] | None] = mapped_column(nullable=True)  # PaperAnalysis
     analysis_model: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = _created_at()
+
+
+class Dataset(Base):
+    """A dataset GPU jobs can mount, read-only, at /data/<name> (docs/design/experiments.md)."""
+
+    __tablename__ = "datasets"
+
+    name: Mapped[str] = mapped_column(String(64), primary_key=True)  # "nyu2"
+    version: Mapped[str] = mapped_column(String(64))
+    title: Mapped[str] = mapped_column(String(200))
+    # The folder on the GPU host. NULL when the executor's setting names it (ARP_DATASET_NYU2),
+    # since the folder differs from machine to machine.
+    host_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # sha256 of the dataset's file list (relative paths and sizes), written by the executor.
+    checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    checksum_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # The data contract: inputs, targets, units, valid_range, missing_values, evaluation.
+    contract: Mapped[dict[str, Any]] = mapped_column(default=dict)
+    # For the datasets page: description, tasks, modality, scenes, width, height, splits
+    # (name to sample count), size_bytes, license, homepage.
+    details: Mapped[dict[str, Any]] = mapped_column(default=dict)
+    enabled: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
+    created_at: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class GpuJob(Base):
+    """A container run on the lab GPU: a smoke test of generated code or a training run.
+
+    The worker submits it (agentic_db.gpu_jobs.submit_job) and the executor (apps/executor) runs
+    it: queued → starting → running → succeeded | failed | timeout | cancelled. A stage attempt
+    finds its job again by (stage_run_id, kind, ordinal), so a worker that crashes and runs the
+    activity again never submits a second one.
+    """
+
+    __tablename__ = "gpu_jobs"
+    __table_args__ = (
+        UniqueConstraint("stage_run_id", "kind", "ordinal"),
+        # The executor's queue scan and the API's queue page.
+        Index("ix_gpu_jobs_status_created", "status", "created_at"),
+        Index("ix_gpu_jobs_run_id", "run_id"),
+        Index("ix_gpu_jobs_user_status", "user_id", "status"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    stage_run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("stage_runs.id", ondelete="CASCADE"))
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("runs.id", ondelete="CASCADE"))
+    user_id: Mapped[str] = mapped_column(String(64))  # whose queue share the job counts against
+    kind: Mapped[GpuJobKind] = mapped_column(str_enum(GpuJobKind))
+    ordinal: Mapped[int] = mapped_column(Integer, default=1)  # the coding stage's try, from 1
+    status: Mapped[GpuJobStatus] = mapped_column(
+        str_enum(GpuJobStatus), default=GpuJobStatus.QUEUED
+    )
+    # Set by a cancel the executor has to carry out (agentic_db.gpu_jobs.request_cancel).
+    cancel_requested: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
+    dataset: Mapped[str] = mapped_column(ForeignKey("datasets.name"))
+    # What runs: the generated files ({"model.py": source, "loss.py": source}) and the harness's
+    # ExperimentConfig as JSON. The executor writes both under ARP_DATA_DIR/jobs/<id>.
+    code: Mapped[dict[str, Any]] = mapped_column()
+    config: Mapped[dict[str, Any]] = mapped_column()
+    # The job's wall clock; the executor caps it (agentic_core.gpu_jobs.max_timeout_seconds).
+    timeout_seconds: Mapped[int] = mapped_column(Integer)
+    container_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    # Renewed by the executor while it holds the job: a lease in the past means it is down.
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Epoch records already sent as experiment.epoch events: a follower that starts again after
+    # a restart sends only the ones after them.
+    epochs_reported: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # The latest metric record from the job: {"kind", "epoch", "step", "loss", "ts"}.
+    progress: Mapped[dict[str, Any] | None] = mapped_column(nullable=True)
+    exit_code: Mapped[int | None] = mapped_column(Integer, nullable=True)  # the training's
+    gpu_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    result: Mapped[dict[str, Any] | None] = mapped_column(
+        nullable=True
+    )  # the harness's results.json
+    # image and image_id, code and config sha256, dataset name, version and checksum, seed, GPU.
+    provenance: Mapped[dict[str, Any] | None] = mapped_column(nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    log_tail: Mapped[str | None] = mapped_column(Text, nullable=True)  # the output's last lines
+    created_at: Mapped[datetime] = _created_at()
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

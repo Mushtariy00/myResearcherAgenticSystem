@@ -6,8 +6,9 @@ Writes, under --out:
   metrics.jsonl  one line per logged step and per epoch, for live charts
   checkpoints/   last.pt and best.pt (state dicts only)
 
-Every metric record is also printed to stdout as `ARP-METRIC <json>`, flushed, so the executor can
-follow the container's logs for live curves (docs/design/experiments.md).
+Every metric record also goes out as an `ARP-METRIC <json>` line, flushed, for live curves
+(docs/design/experiments.md): to the pipe harness.job reads when it started this process
+(ARP_METRIC_FD), otherwise to stdout.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ import argparse
 import hashlib
 import json
 import logging
+import os
 import random
 import sys
 import time
@@ -126,11 +128,23 @@ def _smoke_probe(
     return loss_fn
 
 
+_metric_channel: TextIO | None = None
+
+
+def _metrics_out() -> TextIO:
+    """Where ARP-METRIC lines go: harness.job's pipe when it set ARP_METRIC_FD, else stdout."""
+    global _metric_channel
+    if _metric_channel is None:
+        fd = os.environ.get("ARP_METRIC_FD")
+        _metric_channel = os.fdopen(int(fd), "w", encoding="utf-8") if fd else sys.stdout
+    return _metric_channel
+
+
 def _emit(stream: TextIO, **record: Any) -> None:
     line = json.dumps({"ts": datetime.now(UTC).isoformat(), **record})
     stream.write(line + "\n")
     stream.flush()
-    print(f"ARP-METRIC {line}", flush=True)
+    print(f"ARP-METRIC {line}", file=_metrics_out(), flush=True)
 
 
 def _run_epoch(

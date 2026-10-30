@@ -7,6 +7,7 @@ members = [
     "agentic-api",
     "agentic-core",
     "agentic-db",
+    "agentic-executor",
     "agentic-gateway",
     "agentic-scholarly",
     "agentic-worker",
@@ -81,6 +82,25 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.20,<2" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.1,<2.2" },
+]
+
+[[package]]
+name = "agentic-executor"
+version = "0.1.0"
+source = { editable = "apps/executor" }
+dependencies = [
+    { name = "agentic-core" },
+    { name = "agentic-db" },
+    { name = "httpx" },
+    { name = "pydantic-settings" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "agentic-core", editable = "packages/core" },
+    { name = "agentic-db", editable = "packages/db" },
+    { name = "httpx", specifier = ">=0.28,<0.29" },
+    { name = "pydantic-settings", specifier = ">=2.10,<3" },
 ]
 
 [[package]]
