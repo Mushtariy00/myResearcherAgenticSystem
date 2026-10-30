@@ -42,6 +42,7 @@ export const KNOWN_ERROR_CODES = [
   "lab_balance.exhausted",
   "free_models.disabled",
   "free_quota.exhausted",
+  "literature.no_papers",
   "gateway.error",
   "db.error",
   "validation.failed",

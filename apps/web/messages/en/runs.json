@@ -411,6 +411,24 @@
     }
   },
   "shared": {
+    "literatureLog": {
+      "searched": "Searched {sources} with {queries, plural, one {# query} other {# queries}}: {found, plural, one {# paper} other {# papers}} found",
+      "searchedIncomplete": "Searched {sources} with {queries, plural, one {# query} other {# queries}}: {found, plural, one {# paper} other {# papers}} found, {incomplete} of them left out for lack of authors, a year or an abstract",
+      "sourceFailed": "{source} could not be searched ({reason}); continuing without it",
+      "sourceErrors": {
+        "rate_limited": "it is limiting requests",
+        "quota_exhausted": "its daily quota is used up",
+        "http_status": "it answered with an error",
+        "network": "it could not be reached",
+        "bad_response": "its answer could not be read"
+      },
+      "screened": "Screened {candidates, plural, one {# candidate} other {# candidates}} and included {included, plural, one {# paper} other {# papers}} for full reading",
+      "fetched": "Fetched {pdfs, plural, one {# open-access PDF} other {# open-access PDFs}}; {abstractOnly, plural, one {# paper has only an abstract} other {# papers have only an abstract}}",
+      "fetchedAll": "Fetched {pdfs, plural, one {# open-access PDF} other {# open-access PDFs}}: every included paper has its full text",
+      "parsed": "Extracted the full text of {papers, plural, one {# paper} other {# papers}}",
+      "analyzed": "Analysed {papers, plural, one {# paper} other {# papers}}",
+      "synthesized": "Wrote the synthesis from {findings, plural, one {# key finding} other {# key findings}}"
+    },
     "demo": {
       "badge": "Demo",
       "title": "Demo data",

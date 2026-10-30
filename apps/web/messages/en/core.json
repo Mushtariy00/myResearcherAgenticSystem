@@ -220,6 +220,9 @@
     },
     "papers": {
       "invalid_year_range": "The start year must not be after the end year."
+    },
+    "literature": {
+      "no_papers": "No paper matched the search, or screening left none to read. Try a broader topic or a wider range of years."
     }
   },
   "degradedReasons": {

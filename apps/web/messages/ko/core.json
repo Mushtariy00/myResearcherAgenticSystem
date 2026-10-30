@@ -220,6 +220,9 @@
     },
     "papers": {
       "invalid_year_range": "시작 연도는 끝 연도보다 늦을 수 없습니다."
+    },
+    "literature": {
+      "no_papers": "검색에 맞는 논문이 없거나 선별 후 읽을 논문이 남지 않았습니다. 주제를 넓히거나 연도 범위를 늘려 보세요."
     }
   },
   "degradedReasons": {

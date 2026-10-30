@@ -411,6 +411,24 @@
     }
   },
   "shared": {
+    "literatureLog": {
+      "searched": "{sources}에서 검색어 {queries}개로 검색해 논문 {found}편을 찾았습니다",
+      "searchedIncomplete": "{sources}에서 검색어 {queries}개로 검색해 논문 {found}편을 찾았고, 그중 {incomplete}편은 저자·연도·초록이 없어 제외했습니다",
+      "sourceFailed": "{source}에서 검색하지 못해({reason}) 이 출처 없이 계속합니다",
+      "sourceErrors": {
+        "rate_limited": "요청이 제한됨",
+        "quota_exhausted": "일일 한도 소진",
+        "http_status": "오류 응답",
+        "network": "연결할 수 없음",
+        "bad_response": "응답을 읽을 수 없음"
+      },
+      "screened": "후보 {candidates}편을 선별해 {included}편을 정독 대상으로 포함했습니다",
+      "fetched": "공개 PDF {pdfs}편을 가져왔습니다. {abstractOnly}편은 초록만 있습니다",
+      "fetchedAll": "공개 PDF {pdfs}편을 가져왔습니다. 포함된 모든 논문의 전문이 있습니다",
+      "parsed": "논문 {papers}편의 본문을 추출했습니다",
+      "analyzed": "논문 {papers}편을 분석했습니다",
+      "synthesized": "핵심 발견 {findings}개로 종합을 작성했습니다"
+    },
     "demo": {
       "badge": "데모",
       "title": "데모 데이터",
