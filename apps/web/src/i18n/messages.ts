@@ -18,6 +18,8 @@ export const MESSAGE_AREAS = [
   "notifications",
   "profile",
   "studio",
+  "studioRun",
+  "studioWork",
 ] as const;
 
 export type MessageArea = (typeof MESSAGE_AREAS)[number];

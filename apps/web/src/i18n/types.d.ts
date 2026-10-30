@@ -8,6 +8,8 @@ import type projects from "../../messages/en/projects.json";
 import type runs from "../../messages/en/runs.json";
 import type shell from "../../messages/en/shell.json";
 import type studio from "../../messages/en/studio.json";
+import type studioRun from "../../messages/en/studioRun.json";
+import type studioWork from "../../messages/en/studioWork.json";
 import type wizard from "../../messages/en/wizard.json";
 import type { Locale } from "./config";
 
@@ -22,7 +24,9 @@ type Messages = typeof core &
   typeof admin &
   typeof notifications &
   typeof profile &
-  typeof studio;
+  typeof studio &
+  typeof studioRun &
+  typeof studioWork;
 
 // Typed message keys: `t("missing.key")` fails the type check.
 declare module "next-intl" {
