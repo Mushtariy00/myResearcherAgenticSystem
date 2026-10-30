@@ -22,8 +22,10 @@ Fixed in these commits, on top of the shared contract in 196a045:
 
 Every finding was re-checked against that day's code. The ticked ones are fixed, or were
 already fixed, each with a test that fails without the fix. Exceptions:
-- **Strict CSP** (Web, unverified): still open. API responses now carry a deny-all policy;
-  the Next.js pages don't have one yet.
+- **Strict CSP** (Web, unverified): fixed later the same day. API responses carry a deny-all
+  policy. Next.js pages carry a nonce-based policy (src/lib/csp.ts), with no inline or eval'd
+  scripts in production; it was checked in the browser on both interfaces, with Monaco, the
+  PDF viewer and the Studio inline scripts.
 - **Member-add by email** (Backend, unverified): unchanged on purpose. Only lab admins
   create projects now, and accounts exist only by admin invite.
 - **Offboarding** (Web, confirmed): ticked for ban, unban and revoking sessions. Deleting the
@@ -435,7 +437,7 @@ already fixed, each with a test that fails without the fix. Exceptions:
   - Scenario: The web job runs only lint, typecheck and build, and `make test` runs only pytest, so `pnpm --filter @agentic/web test` (vitest) never runs automatically. That suite holds the only checks that ko.json has every key and placeholder of en.json (TypeScript types only en.json) and that every API/auth error code has a translation. It also holds the plan's security test that an <img onerror> payload in LLM output renders inert (src/components/runs/approval-panel.test.tsx). A PR that adds a key only to en.json passes CI, and Korean users see the raw fallback path (e.g. "run.approval.newKey"). The same goes for a change that swaps JsonView for an HTML or Markdown renderer: CI is green and the XSS r…
   - Suggested fix: Add `- run: pnpm --filter @agentic/web test` to the web job, and add the same command to the Makefile `test` target.
 
-- [ ] **[low] The strict CSP promised in PLAN.md is not sent anywhere; nosniff and frame headers cover only Next.js responses**  
+- [x] **[low] The strict CSP promised in PLAN.md is not sent anywhere; nosniff and frame headers cover only Next.js responses**  
   `apps/web/next.config.ts:9` · area: platform
   - Scenario: PLAN.md's browser-hardening list promises "a strict CSP". securityHeaders sets only nosniff, Referrer-Policy, X-Frame-Options and Permissions-Policy, and Caddyfile.dev adds no headers. FastAPI responses under /api/v1, including the HTML docs page, get none of these headers. Right now React's escaping is the only barrier. Phase 2 adds paper Markdown, PDF evidence and citation links, and the plan relies on the CSP as the second layer there. Without it, a single sanitizer gap runs script with no limit on script-src or connect-src: data can be sent to any host and the user's same-origin session can be used.
   - Suggested fix: Send a nonce-based CSP from proxy.ts (default-src 'self'; script-src 'self' 'nonce-...' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; connect-src 'self') and pass the nonce to next-themes. Also add nosniff and frame-ancestors for /api/v1/* in Caddy.

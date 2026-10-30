@@ -3,6 +3,7 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { type ReactNode, useState } from "react";
+import { NonceContext } from "@/components/nonce";
 import { Toaster } from "@/components/ui/sonner";
 import { configureApiClient } from "@/lib/api-client";
 import { toApiError } from "@/lib/api-error";
@@ -43,14 +44,23 @@ function makeQueryClient(): QueryClient {
   });
 }
 
-export function Providers({ children }: { children: ReactNode }) {
+/** `nonce`: the page's CSP nonce, for next-themes' script and our own inline scripts. */
+export function Providers({ children, nonce }: { children: ReactNode; nonce?: string }) {
   const [queryClient] = useState(makeQueryClient);
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <QueryClientProvider client={queryClient}>
-        {children}
-        <Toaster closeButton richColors position="top-right" />
-      </QueryClientProvider>
-    </ThemeProvider>
+    <NonceContext value={nonce}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+        nonce={nonce}
+      >
+        <QueryClientProvider client={queryClient}>
+          {children}
+          <Toaster closeButton richColors position="top-right" />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </NonceContext>
   );
 }

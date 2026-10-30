@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   listNotificationsQueryKey,
   listProjectsQueryKey,
 } from "@/client/@tanstack/react-query.gen";
+import { NonceContext } from "@/components/nonce";
+import { InlineScript } from "@/studio/components/inline-script";
 import { installDomFakes } from "@/studio/test/dom";
 import { makeQueryClient, renderStudio, TEST_USER } from "@/studio/test/render";
 import { StudioShell } from "./studio-shell";
@@ -117,5 +119,14 @@ describe("InlineScript", () => {
     expect(script.type).toBe("text/plain");
     expect(errors.mock.calls.flat().join(" ")).not.toMatch(/Encountered a script tag/);
     errors.mockRestore();
+  });
+
+  it("carries the page's CSP nonce, without which the browser would not run it", () => {
+    render(
+      <NonceContext value="page-nonce">
+        <InlineScript html="window.ran = true" />
+      </NonceContext>,
+    );
+    expect(document.querySelector("script")?.getAttribute("nonce")).toBe("page-nonce");
   });
 });
