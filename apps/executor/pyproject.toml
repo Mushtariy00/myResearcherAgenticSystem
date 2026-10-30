@@ -8,6 +8,7 @@ dependencies = [
     "agentic-db",
     "httpx>=0.28,<0.29",
     "pydantic-settings>=2.10,<3",
+    "redis>=6,<8",
 ]
 
 [tool.uv.sources]

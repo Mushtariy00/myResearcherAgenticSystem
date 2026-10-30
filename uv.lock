@@ -93,6 +93,7 @@ dependencies = [
     { name = "agentic-db" },
     { name = "httpx" },
     { name = "pydantic-settings" },
+    { name = "redis" },
 ]
 
 [package.metadata]
@@ -101,6 +102,7 @@ requires-dist = [
     { name = "agentic-db", editable = "packages/db" },
     { name = "httpx", specifier = ">=0.28,<0.29" },
     { name = "pydantic-settings", specifier = ">=2.10,<3" },
+    { name = "redis", specifier = ">=6,<8" },
 ]
 
 [[package]]

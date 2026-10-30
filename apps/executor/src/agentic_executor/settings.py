@@ -16,6 +16,8 @@ class ExecutorSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="ARP_", env_file=".env", extra="ignore")
 
     database_url: str = ""
+    # Wake-ups for SSE streams after an experiment.epoch event (best effort, as the worker's).
+    valkey_url: str = "redis://localhost:6379/0"
     data_dir: Path = Field(default=Path(DEFAULT_DATA_DIR), validate_default=True)  # jobs/<id>
     # The Docker API, through the socket proxy's Unix socket (infra/compose/compose.yaml). The
     # executor never opens /var/run/docker.sock itself.
