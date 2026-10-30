@@ -100,6 +100,17 @@ async def test_run_options_are_stored_and_shown(client: httpx.AsyncClient, db: F
     ).json()
     assert listed[0]["config"] == expected
 
+    # The worker's own knobs sit next to the options (the demo seed's runs) and don't hide them.
+    async with db() as session:
+        await session.execute(
+            update(Run)
+            .where(Run.id == uuid.UUID(run_id))
+            .values(config={**expected, "simulated": True, "demo_stage_seconds": 600})
+        )
+        await session.commit()
+    detail = (await client.get(f"/api/v1/runs/{run_id}", headers=as_user("vera"))).json()
+    assert detail["config"] == expected
+
 
 async def test_run_options_default_and_are_validated(client: httpx.AsyncClient) -> None:
     project_id = await team_project(client)

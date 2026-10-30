@@ -59,11 +59,14 @@ Usd = Annotated[Decimal, Field(max_digits=12, decimal_places=6)]
 def stored_run_config(value: Any) -> RunConfig:
     """``runs.config`` as a RunConfig. Runs from before run options were added store ``{}``, the
     defaults; a stored value that no longer validates also reads as the defaults (and is logged)
-    instead of failing every response that lists the run."""
+    instead of failing every response that lists the run. Keys RunConfig doesn't have are the
+    worker's internal knobs (``simulated``, ``demo_stage_seconds``) and are left out, as the
+    worker does."""
     if isinstance(value, RunConfig):
         return value
+    known = {key: item for key, item in (value or {}).items() if key in RunConfig.model_fields}
     try:
-        return RunConfig.model_validate(value or {})
+        return RunConfig.model_validate(known)
     except ValidationError:
         log.warning("a stored run config does not validate; using the defaults")
         return RunConfig()
