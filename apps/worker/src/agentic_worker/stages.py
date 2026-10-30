@@ -1,19 +1,58 @@
-"""What each stage produces. Phase 1: literature returns a real search plan from a CrewAI agent;
-the other stages return clearly flagged placeholders (degraded=True) until Phases 2 and 3.
+"""What each stage produces.
+
+Literature runs its real CrewAI research-plan step, then fills in search, screening and
+analysis with demo data until Phase 2 builds them. Method, coding, experiment and writing
+return demo outputs (``agentic_core.demo``) built on the approved outputs of the stages before
+them. Every demo output is flagged degraded, and each simulated stage takes a while and reports
+its progress as log events, so the front end sees what a real run looks like.
 """
 
 import asyncio
-from collections.abc import Coroutine
+import logging
+from collections.abc import Awaitable, Callable, Coroutine, Mapping
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
-from pydantic import Field
+from pydantic import ValidationError
 
-from agentic_core.schemas import NonEmptyStr, StrictModel
+from agentic_core import demo
+from agentic_core.schemas import (
+    CodingOutput,
+    ExperimentOutput,
+    LiteratureOutput,
+    MethodOutput,
+    ResearchPlan,
+    RunConfig,
+    StrictModel,
+)
+from agentic_core.stages import Stage
 from agentic_worker.gateway_llm import GatewayLLM
 from agentic_worker.llm_json import InvalidModelOutputError, parse_model_output
+from agentic_worker.outputs import (
+    DEMO_PROMPT_VERSION,
+    LITERATURE_DEMO_REASON,
+    PLAN_PROMPT_VERSION,
+    STAGE_DEMO_REASON,
+    demo_seed,
+    progress_steps,
+)
 
-PROMPT_VERSION = "literature-plan@1"
+log = logging.getLogger(__name__)
+
+DEFAULT_DEMO_STAGE_SECONDS = 6.0
+MAX_DEMO_STAGE_SECONDS = 20 * 60.0  # well inside execute_stage's 30-minute timeout
+
+# Appends one progress line (code, params, English message) to the run's event log.
+type LogEvent = Callable[[str, dict[str, Any], str], Awaitable[None]]
+
+
+async def _discard_log(code: str, params: dict[str, Any], message: str) -> None:
+    """Progress sink for contexts built outside an activity (unit tests, scripts)."""
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
 
 
 class StageFailedError(Exception):
@@ -32,6 +71,12 @@ class StageContext:
     project_id: str
     llm_policy: str
     budget_cap_usd: str | None
+    config: RunConfig = field(default_factory=RunConfig)
+    # Approved outputs of the earlier stages of this run, keyed by stage (the latest approval).
+    inputs: Mapping[str, dict[str, Any]] = field(default_factory=dict)
+    # Per-run override of the simulated stage duration (runs.config "demo_stage_seconds").
+    demo_stage_seconds: float | None = None
+    log: LogEvent = _discard_log
 
 
 @dataclass
@@ -48,12 +93,17 @@ class StageRunner(Protocol):
     async def run(self, ctx: StageContext) -> StageOutcome: ...
 
 
-class ResearchPlan(StrictModel):
-    topic: NonEmptyStr
-    queries: list[NonEmptyStr] = Field(min_length=3, max_length=8)
-    scope: NonEmptyStr
-    inclusion_criteria: list[NonEmptyStr] = Field(min_length=1)
-    subtopics: list[NonEmptyStr] = Field(min_length=1)
+@dataclass(frozen=True)
+class PlannedSearch:
+    plan: ResearchPlan
+    model: str | None = None
+    llm_calls: list[dict[str, Any]] = field(default_factory=list)
+
+
+class ResearchPlanner(Protocol):
+    """Writes the literature search plan (the stage's one real LLM step for now)."""
+
+    async def plan(self, ctx: StageContext) -> PlannedSearch: ...
 
 
 # Ported from legacy/src/agentic_ai_system/config/agents.yaml ("researcher").
@@ -83,23 +133,15 @@ Return ONLY the corrected JSON object with the keys topic, queries, scope, inclu
 subtopics."""
 
 
-class PipelineStageRunner:
+class CrewAIPlanner:
+    """The literature research plan from a CrewAI agent, through the LLM gateway."""
+
     def __init__(self, gateway_url: str, gateway_token: str) -> None:
         self._gateway_url = gateway_url
         self._gateway_token = gateway_token
 
-    async def run(self, ctx: StageContext) -> StageOutcome:
-        if ctx.stage == "literature":
-            return await asyncio.to_thread(self._literature_plan, ctx)
-        return StageOutcome(
-            data={
-                "stage": ctx.stage,
-                "note": f"The {ctx.stage} stage is a placeholder in Phase 1; "
-                "it is built in later phases.",
-            },
-            degraded=True,
-            degraded_reason="stage.placeholder",
-        )
+    async def plan(self, ctx: StageContext) -> PlannedSearch:
+        return await asyncio.to_thread(self._plan, ctx)
 
     def _llm(self, ctx: StageContext) -> GatewayLLM:
         return GatewayLLM(
@@ -116,7 +158,7 @@ class PipelineStageRunner:
             max_output_tokens=1500,
         )
 
-    def _literature_plan(self, ctx: StageContext) -> StageOutcome:
+    def _plan(self, ctx: StageContext) -> PlannedSearch:
         from crewai import Agent  # imported late: heavy, and only needed in agent activities
 
         llm = self._llm(ctx)
@@ -147,12 +189,141 @@ class PipelineStageRunner:
                 plan = parse_model_output(repaired, ResearchPlan)
             except InvalidModelOutputError as exc:
                 raise StageFailedError(f"literature.invalid_output: {exc}") from exc
-        return StageOutcome(
-            data=plan.model_dump(),
+        return PlannedSearch(
+            plan=plan,
             model=llm.calls[-1]["model"] if llm.calls else None,
-            # Honest about scope: Phase 2 adds the actual search, screening and analysis.
-            degraded=True,
-            degraded_reason="literature.search_pending",
-            prompt_version=PROMPT_VERSION,
             llm_calls=list(llm.calls),
         )
+
+
+class PipelineStageRunner:
+    def __init__(
+        self,
+        planner: ResearchPlanner,
+        *,
+        demo_stage_seconds: float = DEFAULT_DEMO_STAGE_SECONDS,
+        clock: Callable[[], datetime] = _utc_now,  # the demo seed backdates finished runs
+    ) -> None:
+        self._planner = planner
+        self._demo_stage_seconds = demo_stage_seconds
+        self._clock = clock
+
+    async def run(self, ctx: StageContext) -> StageOutcome:
+        try:
+            stage = Stage(ctx.stage)
+        except ValueError:
+            raise StageFailedError(f"stage.unknown: {ctx.stage}") from None
+        if stage is Stage.LITERATURE:
+            planned = await self._planner.plan(ctx)
+            seed = demo_seed(ctx.run_id, ctx.stage, ctx.attempt)
+            output = demo.literature(ctx.topic, planned.plan, ctx.config, seed, ctx.feedback)
+            await self._simulate(ctx, output)
+            return StageOutcome(
+                data=output.model_dump(mode="json"),
+                model=planned.model,
+                # Honest about scope: the plan is real, the papers are generated (Phase 2).
+                degraded=True,
+                degraded_reason=LITERATURE_DEMO_REASON,
+                prompt_version=PLAN_PROMPT_VERSION,
+                llm_calls=planned.llm_calls,
+            )
+        output = self._demo_output(ctx, stage)
+        await self._simulate(ctx, output)
+        return StageOutcome(
+            data=output.model_dump(mode="json"),
+            degraded=True,
+            degraded_reason=STAGE_DEMO_REASON,
+            prompt_version=DEMO_PROMPT_VERSION,
+        )
+
+    def stage_seconds(self, ctx: StageContext) -> float:
+        seconds = self._demo_stage_seconds
+        if ctx.demo_stage_seconds is not None:
+            seconds = ctx.demo_stage_seconds
+        return min(MAX_DEMO_STAGE_SECONDS, max(0.0, seconds))
+
+    async def _simulate(self, ctx: StageContext, output: StrictModel) -> None:
+        """Spread the stage's duration over its progress lines (the caller heartbeats)."""
+        steps = progress_steps(output, ctx.config)
+        pause = self.stage_seconds(ctx) / len(steps)
+        for step in steps:
+            await ctx.log(step.code, step.params, step.message)
+            await asyncio.sleep(pause)
+
+    def _demo_output(self, ctx: StageContext, stage: Stage) -> StrictModel:
+        seed = demo_seed(ctx.run_id, ctx.stage, ctx.attempt)
+        if stage is Stage.METHOD:
+            return demo.method(
+                ctx.topic, self._literature(ctx), seed, ctx.feedback, config=ctx.config
+            )
+        if stage is Stage.CODING:
+            # One seed for all attempts: attempt n revises attempt n - 1 (a readable diff).
+            return demo.coding(
+                ctx.topic,
+                self._method(ctx),
+                demo_seed(ctx.run_id, ctx.stage),
+                ctx.attempt,
+                ctx.feedback,
+            )
+        if stage is Stage.EXPERIMENT:
+            finished = self._clock() + timedelta(seconds=self.stage_seconds(ctx))
+            return demo.experiment(
+                ctx.topic, self._coding(ctx), seed, feedback=ctx.feedback, finished_at=finished
+            )
+        return demo.writing(
+            ctx.topic,
+            self._literature(ctx),
+            self._method(ctx),
+            self._experiment(ctx),
+            seed,
+            ctx.feedback,
+        )
+
+    # Approved outputs of earlier stages. Runs started in Phase 1 approved placeholders that
+    # predate the v1 schemas; those are rebuilt from the generators instead of failing the run.
+
+    def _approved[ModelT: StrictModel](
+        self, ctx: StageContext, stage: Stage, model: type[ModelT], rebuild: Callable[[], ModelT]
+    ) -> ModelT:
+        data = ctx.inputs.get(stage.value)
+        if data is None:
+            raise StageFailedError(f"{ctx.stage}.missing_input: no approved {stage.value} output")
+        try:
+            return model.model_validate(data)
+        except ValidationError:
+            log.warning("run %s: approved %s output predates the v1 schema", ctx.run_id, stage)
+            return rebuild()
+
+    def _literature(self, ctx: StageContext) -> LiteratureOutput:
+        def rebuild() -> LiteratureOutput:
+            try:  # a Phase 1 literature output is the plan on its own
+                plan = ResearchPlan.model_validate(ctx.inputs["literature"])
+            except ValidationError:
+                plan = demo.research_plan(
+                    ctx.topic, demo_seed(ctx.run_id, "plan"), config=ctx.config
+                )
+            seed = demo_seed(ctx.run_id, Stage.LITERATURE, 1)
+            return demo.literature(ctx.topic, plan, ctx.config, seed)
+
+        return self._approved(ctx, Stage.LITERATURE, LiteratureOutput, rebuild)
+
+    def _method(self, ctx: StageContext) -> MethodOutput:
+        def rebuild() -> MethodOutput:
+            seed = demo_seed(ctx.run_id, Stage.METHOD, 1)
+            return demo.method(ctx.topic, self._literature(ctx), seed, config=ctx.config)
+
+        return self._approved(ctx, Stage.METHOD, MethodOutput, rebuild)
+
+    def _coding(self, ctx: StageContext) -> CodingOutput:
+        def rebuild() -> CodingOutput:
+            seed = demo_seed(ctx.run_id, Stage.CODING)
+            return demo.coding(ctx.topic, self._method(ctx), seed)
+
+        return self._approved(ctx, Stage.CODING, CodingOutput, rebuild)
+
+    def _experiment(self, ctx: StageContext) -> ExperimentOutput:
+        def rebuild() -> ExperimentOutput:
+            seed = demo_seed(ctx.run_id, Stage.EXPERIMENT, 1)
+            return demo.experiment(ctx.topic, self._coding(ctx), seed)
+
+        return self._approved(ctx, Stage.EXPERIMENT, ExperimentOutput, rebuild)

@@ -7,7 +7,6 @@ from datetime import timedelta
 
 import pytest
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from temporalio.client import (
     Client,
     WorkflowFailureError,
@@ -20,18 +19,15 @@ from temporalio.worker import Worker
 from agentic_core.contracts import (
     DECIDE_UPDATE,
     RUN_WORKFLOW,
-    STATUS_QUERY,
     TASK_QUEUE,
     DecisionInput,
     RunInput,
 )
 from agentic_core.enums import RunStatus, StageStatus
-from agentic_db.models import Approval, Project, Run, RunEvent, StageOutput, StageRun
+from agentic_db.models import Approval, Project, Run, RunEvent, StageRun
 from agentic_worker.activities import StageActivities
 from agentic_worker.workflows import RunWorkflow
-from worker_testkit import FakeRunner, FakeValkey
-
-Factory = async_sessionmaker[AsyncSession]
+from worker_testkit import Factory, FakeRunner, FakeValkey, awaiting, run_status
 
 
 @pytest.fixture
@@ -51,15 +47,7 @@ async def client(
 ) -> AsyncIterator[Client]:
     activities = StageActivities(db, FakeValkey(), runner)
     async with Worker(
-        env.client,
-        task_queue=TASK_QUEUE,
-        workflows=[RunWorkflow],
-        activities=[
-            activities.start_stage,
-            activities.execute_stage,
-            activities.record_decision,
-            activities.finish_run,
-        ],
+        env.client, task_queue=TASK_QUEUE, workflows=[RunWorkflow], activities=activities.all()
     ):
         yield env.client
 
@@ -77,32 +65,6 @@ async def start(client: Client, db: Factory) -> tuple[str, WorkflowHandle]:
         RUN_WORKFLOW, RunInput(run_id=run_id), id=f"run-{run_id}", task_queue=TASK_QUEUE
     )
     return run_id, handle
-
-
-async def awaiting(handle: WorkflowHandle, db: Factory, stage: str) -> DecisionInput:
-    """Wait until `stage` has an output to review; return an approve decision for it."""
-    for _ in range(400):
-        status = await handle.query(STATUS_QUERY)
-        if status["awaiting"] and status["stage"] == stage:
-            async with db() as session:
-                output = await session.get(StageOutput, uuid.UUID(status["awaiting"]))
-            assert output is not None
-            return DecisionInput(
-                stage=stage,
-                stage_output_id=str(output.id),
-                sha256=output.sha256,
-                decision="approve",
-                actor_id="bob",
-            )
-        await asyncio.sleep(0.05)
-    raise AssertionError(f"{stage} never became ready for review")
-
-
-async def run_status(db: Factory, run_id: str) -> tuple[RunStatus, str | None]:
-    async with db() as session:
-        run = await session.get(Run, uuid.UUID(run_id))
-    assert run is not None
-    return RunStatus(run.status), run.error
 
 
 async def test_approving_every_stage_completes_the_run(client: Client, db: Factory) -> None:

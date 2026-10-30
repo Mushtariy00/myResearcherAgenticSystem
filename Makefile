@@ -9,7 +9,7 @@ export ARP_UID := $(shell id -u)
 export ARP_GID := $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor setup env up down ps logs migrate migration bootstrap-admin client api gateway worker fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
+.PHONY: help doctor setup env up down ps logs migrate migration bootstrap-admin demo-seed client api gateway worker fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -39,6 +39,10 @@ bootstrap-admin: .env ## Create the first admin (prompts for a password): make b
 	@test -n "$(email)" -a -n "$(name)" || { echo 'usage: make bootstrap-admin email=you@lab.kr name="Your Name"'; exit 1; }
 	@read -rsp "Password for $(email) (at least 12 characters): " pw && echo && \
 		BOOTSTRAP_ADMIN_PASSWORD="$$pw" pnpm --silent --filter @agentic/web bootstrap-admin -- --email "$(email)" --name "$(name)"
+
+demo-seed: .env ## Demo users, projects and runs for the UI (needs make up, migrate and a worker)
+	pnpm --filter @agentic/web exec node scripts/seed-demo-users.ts
+	uv run --package agentic-worker python -m agentic_worker.seed_demo
 
 client: ## Regenerate the TypeScript API client from FastAPI's OpenAPI
 	pnpm --filter @agentic/web gen:openapi
