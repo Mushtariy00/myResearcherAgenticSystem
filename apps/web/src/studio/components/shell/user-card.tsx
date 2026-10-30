@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronsUpDownIcon, LayoutTemplateIcon, LogOutIcon } from "lucide-react";
+import { ChevronsUpDownIcon, CircleUserIcon, LayoutTemplateIcon, LogOutIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -17,6 +17,7 @@ import {
 import { toClassicPath } from "@/lib/ui-version";
 import { cn } from "@/lib/utils";
 import { useStudioSignOut } from "@/studio/hooks/use-studio-sign-out";
+import { STUDIO_PROFILE_PATH } from "@/studio/lib/nav";
 
 function initials(name: string, email: string): string {
   const source = name.trim() || email;
@@ -48,16 +49,20 @@ export function StudioAvatar({
 }
 
 /**
- * The signed-in user at the bottom of the sidebar: name and role, with a menu to open the page
- * in Classic or sign out (back to the Studio sign-in page).
+ * The signed-in user at the bottom of the sidebar: name and role, with a menu to open their
+ * profile, open the page in Classic or sign out (back to the Studio sign-in page). The visible
+ * name and role are the button's accessible name (a menu button, so it is announced as one); in
+ * the collapsed sidebar they stay for screen readers and show as a tooltip.
  */
 export function StudioUserCard({ collapsed = false }: { collapsed?: boolean }) {
   const t = useTranslations("nav");
   const tVersion = useTranslations("shell.version");
+  const tProfile = useTranslations("profile");
   const user = useCurrentUser();
   const pathname = usePathname();
   const { signOut, signingOut } = useStudioSignOut();
   const role = t(`roles.${user.role}`);
+  const displayName = user.name || user.email;
 
   return (
     <DropdownMenu>
@@ -65,16 +70,14 @@ export function StudioUserCard({ collapsed = false }: { collapsed?: boolean }) {
         render={
           <button
             type="button"
-            aria-label={t("userMenu")}
+            title={collapsed ? `${displayName} (${role})` : undefined}
             className="flex w-full min-w-0 items-center gap-3 rounded-xl p-2 text-left outline-none transition-colors hover:bg-(--studio-hover) focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-(--studio-hover) group-data-[sidebar=collapsed]/shell:justify-center"
           />
         }
       >
         <StudioAvatar name={user.name} email={user.email} />
-        <span className="studio-sidebar-label grid min-w-0 flex-1 group-data-[sidebar=collapsed]/shell:hidden">
-          <span className="truncate text-sm font-medium text-foreground">
-            {user.name || user.email}
-          </span>
+        <span className="studio-sidebar-label grid min-w-0 flex-1 group-data-[sidebar=collapsed]/shell:sr-only">
+          <span className="truncate text-sm font-medium text-foreground">{displayName}</span>
           <span className="truncate text-xs text-muted-foreground">{role}</span>
         </span>
         <ChevronsUpDownIcon
@@ -96,6 +99,10 @@ export function StudioUserCard({ collapsed = false }: { collapsed?: boolean }) {
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+        <DropdownMenuItem render={<Link href={STUDIO_PROFILE_PATH} />}>
+          <CircleUserIcon aria-hidden />
+          {tProfile("menu")}
+        </DropdownMenuItem>
         <DropdownMenuItem render={<Link href={toClassicPath(pathname)} prefetch={false} />}>
           <LayoutTemplateIcon aria-hidden />
           {tVersion("switchToClassic")}

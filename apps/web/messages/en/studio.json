@@ -134,7 +134,6 @@
       "search": "Search",
       "searchPlaceholder": "Search or jump to…",
       "unread": "{count} unread",
-      "notificationsWithCount": "Notifications, {count} unread",
       "crumbs": {
         "project": "Project",
         "run": "Run",
@@ -168,31 +167,9 @@
       "node": "{stage}: {status}",
       "attempt": "Attempt {attempt}"
     },
-    "dashboard": {
-      "greeting": {
-        "morning": "Good morning, {name}",
-        "afternoon": "Good afternoon, {name}",
-        "evening": "Good evening, {name}"
-      },
-      "subtitle": "Here is where your research stands.",
-      "overview": "Overview",
-      "kpi": {
-        "projects": "Projects",
-        "projectsHint": "Projects you can open",
-        "spent": "Spent this month",
-        "left": "Left this month",
-        "leftHint": "{percent}% of {budget} used",
-        "unread": "Unread notifications",
-        "unreadHint": "Approvals, finished runs and budget alerts"
-      },
-      "projects": {
-        "title": "Projects",
-        "count": "{count, plural, one {# project} other {# projects}}"
-      }
-    },
     "notFound": {
       "title": "Not in Studio yet",
-      "description": "This page does not exist in Studio yet, or you do not have access to it. The switch at the top opens it in Classic.",
+      "description": "This page does not exist in Studio yet, or you do not have access to it. To try it in Classic, choose Open in Classic in your account menu at the bottom of the navigation.",
       "back": "Go to the dashboard"
     }
   }

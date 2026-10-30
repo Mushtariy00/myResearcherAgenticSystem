@@ -29,9 +29,11 @@ export function StudioSidebar({
   return (
     <div
       id="studio-sidebar"
-      className="sticky top-0 z-20 hidden h-dvh w-64 shrink-0 flex-col border-r border-(--studio-glass-border) bg-(--studio-glass) px-3 py-3 shadow-[inset_-1px_0_0_0_var(--studio-glass-highlight)] lg:flex group-data-[sidebar=collapsed]/shell:w-19"
+      className="sticky top-0 z-20 hidden h-dvh w-64 shrink-0 flex-col border-r border-(--studio-glass-border) bg-(--studio-glass) px-3 pb-3 shadow-[inset_-1px_0_0_0_var(--studio-glass-highlight)] lg:flex group-data-[sidebar=collapsed]/shell:w-19"
     >
-      <div className="flex h-11 items-center px-1.5 group-data-[sidebar=collapsed]/shell:justify-center group-data-[sidebar=collapsed]/shell:px-0">
+      {/* As tall as the top bar's row (h-14) and flush with the top, so the brand sits level with
+          the breadcrumbs instead of 6px below them. */}
+      <div className="flex h-14 shrink-0 items-center px-1.5 group-data-[sidebar=collapsed]/shell:justify-center group-data-[sidebar=collapsed]/shell:px-0">
         <StudioBrand href={STUDIO_ROUTES.dashboard} collapsible />
       </div>
       {/* Reaches 4px past the items: the scroll box clips, and focus rings must stay whole. */}

@@ -6,8 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCurrentUser } from "@/components/app/current-user";
+import { useNotifications } from "@/hooks/use-notifications";
 import { cn } from "@/lib/utils";
-import { useUnreadNotifications } from "@/studio/hooks/use-unread-notifications";
 import { SPRING } from "@/studio/lib/motion";
 import { activeNavId, type StudioNavId, visibleNav } from "@/studio/lib/nav";
 
@@ -44,7 +44,8 @@ export function StudioNavList({
   const pathname = usePathname();
   const user = useCurrentUser();
   const labels = useNavLabels();
-  const unread = useUnreadNotifications().count;
+  // The same query as the bell and the notifications page (one request, polled while visible).
+  const unread = useNotifications().unreadCount;
   const active = activeNavId(pathname);
 
   return (

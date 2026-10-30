@@ -1,1 +1,353 @@
-{}
+{
+  "studioWork": {
+    "dashboard": {
+      "greeting": {
+        "morning": "Good morning, {name}",
+        "afternoon": "Good afternoon, {name}",
+        "evening": "Good evening, {name}"
+      },
+      "subtitle": "Here is where your research stands.",
+      "overview": "Overview",
+      "kpi": {
+        "active": "Active runs",
+        "activeHint": "Started in the last 14 days: {count}",
+        "review": "Awaiting your review",
+        "reviewHint": "Outputs waiting for your decision",
+        "reviewExpiring": "{count, plural, one {# expires within a day} other {# expire within a day}}",
+        "spend": "Spend this month",
+        "spendHint": "{percent}% of {budget} used",
+        "freeCalls": "Free calls today",
+        "freeCallsHint": "UTC day · {paid, plural, one {# paid call} other {# paid calls}}",
+        "failed": "Could not load"
+      },
+      "review": {
+        "title": "Needs your review",
+        "description": "Outputs waiting for your decision, the most urgent first.",
+        "all": "All notifications",
+        "empty": "Nothing is waiting for you",
+        "emptyDescription": "When a stage you can decide on finishes, it shows up here.",
+        "stage": "{stage} ready for review",
+        "expiring": "Expires within a day",
+        "ready": "Ready {time}",
+        "pipeline": "Pipeline of {topic}",
+        "more": "{count, plural, one {# more in your notifications} other {# more in your notifications}}"
+      },
+      "recent": {
+        "title": "Recent runs",
+        "empty": "No runs yet",
+        "emptyDescription": "Start a run from one of your projects.",
+        "updated": "Updated {time}"
+      },
+      "gpu": {
+        "title": "Lab GPU",
+        "description": "Live readings and the experiment queue.",
+        "sampled": "Read {time}",
+        "utilisation": "Utilisation",
+        "device": "GPU",
+        "memory": "Memory",
+        "memoryValue": "{used} of {total}",
+        "temperature": "Temperature",
+        "power": "Power",
+        "powerValue": "{draw} W of {limit} W",
+        "myRunning": "Your experiment is running now.",
+        "myNext": "Your experiment is next in the queue.",
+        "myQueued": "Your experiment is number {position} in the queue.",
+        "running": "Running",
+        "idle": "Nothing is running on the GPU.",
+        "you": "You",
+        "unknownTopic": "Experiment",
+        "progressLabel": "Progress of {topic}",
+        "progress": "{percent}% done",
+        "epoch": "epoch {epoch} of {total}",
+        "eta": "finishes {time}",
+        "etaEstimated": "finishes {time} (estimated)",
+        "queue": "Queue ({count})",
+        "queueEmpty": "No experiments are waiting.",
+        "position": "Position {position}",
+        "starts": "starts {time}",
+        "moreQueued": "{count, plural, one {# more waiting} other {# more waiting}}"
+      },
+      "spend": {
+        "title": "Spend, last 30 days",
+        "description": "Your paid-model spending per day (UTC).",
+        "total": "in 30 days",
+        "paid": "Paid spend",
+        "paidCalls": "Paid calls",
+        "freeCalls": "Free calls",
+        "day": "Day",
+        "tableCaption": "Paid spend and LLM calls per day",
+        "empty": "No LLM calls in the last 30 days."
+      },
+      "projects": {
+        "title": "Projects",
+        "count": "{count, plural, one {# project} other {# projects}}",
+        "active": "{count, plural, one {# active run} other {# active runs}}"
+      },
+      "createFailed": "Project not created"
+    },
+    "wizard": {
+      "steps": "Steps",
+      "stepTitles": {
+        "topic": "Topic",
+        "literature": "Literature",
+        "stages": "Stages",
+        "budget": "Models and budget"
+      },
+      "stepDescriptions": {
+        "topic": "What should the agents research? The literature search starts from it.",
+        "literature": "Where to search, how far back, and how many papers to keep.",
+        "stages": "How far the run goes, and the dataset its experiments use.",
+        "budget": "Paid or free models, and an optional cost cap for this run."
+      },
+      "stepOf": "Step {step} of {total}",
+      "stepHasErrors": "(needs attention)",
+      "back": "Back",
+      "next": "Next",
+      "submitFailed": "Run not started",
+      "topic": {
+        "hint": "Be specific: name the task, the data and the setting you care about. Enter moves on; Shift+Enter adds a line."
+      },
+      "literature": {
+        "yearFrom": "From year",
+        "yearTo": "To year",
+        "sources": "Sources",
+        "maxPapers": "Papers to keep",
+        "maxPapersHint": "Between {min} and {max}; the most relevant are kept."
+      },
+      "stages": {
+        "legend": "Stop after",
+        "summary": "The run goes up to and including {stage}.",
+        "choose": "Choose the stage the run stops after.",
+        "skipped": "Not run: {stages}."
+      },
+      "dataset": {
+        "legend": "Dataset",
+        "notUsed": "This run stops before the experiment stage, so the dataset is not used.",
+        "version": "v{version}",
+        "samples": "{count, plural, one {# sample} other {# samples}}",
+        "none": "No dataset"
+      },
+      "budget": {
+        "freeDisabled": "Not available: this project does not allow free models."
+      },
+      "estimate": {
+        "title": "Estimated cost",
+        "updating": "Updating",
+        "invalid": "Fix the highlighted options to see an estimate.",
+        "failed": "No estimate",
+        "loading": "Estimating the cost…",
+        "expected": "Expected paid spend",
+        "range": "Between {low} and {high}",
+        "calls": "LLM calls",
+        "callsValue": "{expected} ({low} to {high})",
+        "budgetLeft": "Your budget left",
+        "blocked": {
+          "policy": "Free models only: this run spends nothing.",
+          "kill_switch": "Paid models are turned off for the lab, so the run uses free models.",
+          "budget": "Your paid budget for this month is used up, so the run uses free models.",
+          "run_cap": "The cost cap is zero, so the run uses free models."
+        },
+        "capped": {
+          "run_cap": "This run's cost cap limits paid spend; free models do the rest.",
+          "budget": "What is left of your monthly budget limits paid spend; free models do the rest."
+        },
+        "paidPossible": "Paid models are used while the estimate fits your budget."
+      },
+      "errors": {
+        "topic": {
+          "tooShort": "Describe the topic in at least {min} characters.",
+          "tooLong": "Keep the topic to at most {max} characters."
+        },
+        "year": {
+          "invalid": "Enter the year as a whole number.",
+          "outOfRange": "Enter a year between {min} and {max}.",
+          "order": "The end year must not be before the start year."
+        },
+        "sources": {
+          "empty": "Choose at least one source.",
+          "invalid": "One of the sources is not supported.",
+          "duplicate": "Each source can be chosen once."
+        },
+        "maxPapers": {
+          "invalid": "Enter a whole number.",
+          "outOfRange": "Choose between {min} and {max} papers."
+        },
+        "stages": {
+          "empty": "The run needs at least the literature stage.",
+          "invalid": "One of the stages is not known.",
+          "notPrefix": "Stages start with literature and follow the pipeline order."
+        },
+        "dataset": {
+          "invalid": "Choose a dataset from the list."
+        },
+        "llmPolicy": {
+          "invalid": "Choose Auto or Free only."
+        },
+        "budget": {
+          "invalid": "Enter an amount in US dollars, such as 2.50.",
+          "negative": "The cap cannot be negative.",
+          "tooHigh": "The cap can be at most {max} US dollars."
+        },
+        "server": {
+          "rejected": "The server did not accept this value."
+        }
+      }
+    },
+    "project": {
+      "loading": "Loading the project…",
+      "notFoundTitle": "Project not found",
+      "notFoundDescription": "It does not exist, or you are not a member. Ask a project owner to add you.",
+      "yourRole": "Your role: {role}",
+      "adminAccess": "Lab admin access",
+      "confidential": "Confidential",
+      "tabs": {
+        "label": "Project sections",
+        "runs": "Runs",
+        "papers": "Papers",
+        "members": "Members",
+        "settings": "Settings"
+      },
+      "runs": {
+        "loading": "Loading runs…",
+        "emptyCanStart": "Start the first run: the pipeline begins with a literature search on your topic.",
+        "emptyViewer": "Runs appear here once a researcher or owner starts one.",
+        "startFirst": "Start the first run",
+        "search": "Search runs",
+        "searchPlaceholder": "Search by topic",
+        "filter": "Status",
+        "filters": {
+          "all": "All statuses",
+          "active": "In progress",
+          "review": "Awaiting approval",
+          "completed": "Completed",
+          "stopped": "Failed, rejected or cancelled"
+        },
+        "showing": "Showing {shown} of {total}",
+        "noMatch": "No runs match the search and filter.",
+        "clearFilters": "Clear search and filter",
+        "caption": "Runs of this project"
+      },
+      "papers": {
+        "caption": "Papers found by this project's runs",
+        "empty": "No papers yet: they appear once a run's literature stage has finished.",
+        "openPage": "Paper page"
+      },
+      "members": {
+        "lastOwner": "Make someone else an owner first.",
+        "lastOwnerNamed": "{name} is the last owner. Make someone else an owner first.",
+        "dismiss": "Dismiss",
+        "you": "(you)",
+        "saving": "Saving",
+        "roleOf": "Role of {name}",
+        "remove": "Remove {name}",
+        "removeTitle": "Remove {name} from the project?",
+        "removeDescription": "They will no longer see its runs and papers. Their runs stay in the project.",
+        "removeConfirm": "Remove",
+        "roleChanged": "{name} is now {role}.",
+        "removed": "{name} was removed from the project."
+      },
+      "settings": {
+        "title": "Project settings",
+        "description": "These apply to every run of the project.",
+        "readOnly": "Only project owners and lab admins can change these settings.",
+        "saved": "Settings saved.",
+        "saveFailed": "Settings not saved",
+        "save": "Save settings",
+        "saving": "Saving…",
+        "discard": "Discard changes",
+        "unsaved": "Unsaved changes",
+        "privacy": {
+          "label": "Privacy",
+          "standard": "Standard",
+          "standardDescription": "Every configured model provider can be used.",
+          "confidential": "Confidential",
+          "confidentialDescription": "Only providers that keep no data are used, so fewer free models are available."
+        },
+        "freeModels": {
+          "label": "Allow free models",
+          "description": "Runs continue on free models when paid models are not available or the budget runs out."
+        },
+        "autoApprove": {
+          "label": "Approve stages automatically",
+          "description": "Outputs move on without a reviewer, except coding, which a person always reviews."
+        },
+        "expiry": {
+          "label": "Approval expiry (days)",
+          "description": "A decision left open this long cancels the run. Between {min} and {max} days."
+        },
+        "errors": {
+          "privacy": {
+            "invalid": "Choose Standard or Confidential."
+          },
+          "value": {
+            "invalid": "This value is not valid."
+          },
+          "approvalExpiryDays": {
+            "invalid": "Enter a whole number of days.",
+            "outOfRange": "Choose between {min} and {max} days."
+          }
+        }
+      }
+    },
+    "papers": {
+      "title": "Paper library",
+      "description": "Every paper your runs found, with their analyses and the runs that used them.",
+      "searchLabel": "Search the library",
+      "search": "Search",
+      "searchPlaceholder": "Title, abstract, author or venue",
+      "filters": {
+        "project": "Project",
+        "anyProject": "All projects",
+        "yearFrom": "From year",
+        "yearTo": "To year",
+        "decision": "Screening",
+        "anyDecision": "Any decision",
+        "source": "Source",
+        "anySource": "Any source"
+      },
+      "yearsInvalid": "Use years between {min} and {max}, the first not after the second.",
+      "searching": "Searching…",
+      "results": "{count, plural, one {# paper} other {# papers}}",
+      "resultsFor": "{count, plural, one {# paper} other {# papers}} for “{q}”",
+      "resultsLabel": "Papers",
+      "clearFilters": "Clear search and filters",
+      "view": {
+        "label": "Show results as",
+        "grid": "Cards",
+        "table": "Table"
+      },
+      "noMatch": "No papers match",
+      "noMatchDescription": "Try other words, or clear the filters.",
+      "emptyTitle": "The library is empty",
+      "emptyDescription": "Papers appear here once a run's literature stage has searched the sources.",
+      "pager": {
+        "label": "Result pages",
+        "previous": "Previous",
+        "next": "Next",
+        "page": "Page {page} of {total}"
+      },
+      "citations": "{count, plural, one {# citation} other {# citations}}",
+      "relevance": "Relevance {value}",
+      "foundIn": "Found by {runs, plural, one {# run} other {# runs}} in {projects, plural, one {# project} other {# projects}}",
+      "links": {
+        "doi": "DOI",
+        "arxiv": "arXiv",
+        "source": "Source page",
+        "newTab": "(opens in a new tab)"
+      },
+      "detail": {
+        "title": "Paper",
+        "notFoundTitle": "Paper not found",
+        "backToLibrary": "Paper library",
+        "abstract": "Abstract",
+        "pdf": "PDF",
+        "analyses": "Analyses ({count})",
+        "noAnalyses": "No run has analysed this paper yet.",
+        "analysisFrom": "From “{topic}”, {date}",
+        "unknownRun": "a run",
+        "runs": "Runs that found it ({count})",
+        "noRuns": "No run you can open found this paper."
+      }
+    }
+  }
+}

@@ -2,7 +2,10 @@
 
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useReducedMotionPreference } from "@/studio/hooks/use-media-query";
+import { usePauseOffscreen } from "@/studio/lib/offscreen";
 
 const SIZES = {
   sm: "h-8 gap-1.5 px-3 text-sm [&_svg:not([class*='size-'])]:size-3.5",
@@ -16,8 +19,9 @@ export type ShimmerButtonProps = useRender.ComponentProps<"button"> & {
 
 /**
  * The primary call to action: violet-to-indigo (white text keeps >= 5.5:1), a soft aurora glow
- * and a light sweep every few seconds (none with reduced motion). Renders a `<button
- * type="button">` unless `render` swaps it, e.g. `render={<Link href="/studio/login" />}`.
+ * and a light sweep every few seconds (none with reduced motion, paused while off screen).
+ * Renders a `<button type="button">` unless `render` swaps it, e.g.
+ * `render={<Link href="/studio/login" />}`.
  */
 export function ShimmerButton({
   size = "md",
@@ -25,11 +29,16 @@ export function ShimmerButton({
   render,
   children,
   type,
+  ref,
   ...props
 }: ShimmerButtonProps) {
+  const own = useRef<HTMLButtonElement>(null);
+  const reduced = useReducedMotionPreference();
+  usePauseOffscreen(own, !reduced);
   return useRender({
     defaultTagName: "button",
     render,
+    ref: ref ? [ref, own] : own,
     props: mergeProps<"button">(props, {
       type: render ? undefined : (type ?? "button"),
       className: cn(

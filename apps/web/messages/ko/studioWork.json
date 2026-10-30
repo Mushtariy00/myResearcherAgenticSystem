@@ -1,1 +1,353 @@
-{}
+{
+  "studioWork": {
+    "dashboard": {
+      "greeting": {
+        "morning": "좋은 아침이에요, {name}님",
+        "afternoon": "좋은 오후예요, {name}님",
+        "evening": "좋은 저녁이에요, {name}님"
+      },
+      "subtitle": "연구 진행 상황을 한눈에 확인하세요.",
+      "overview": "요약",
+      "kpi": {
+        "active": "진행 중인 실행",
+        "activeHint": "최근 14일 동안 시작: {count}개",
+        "review": "내 검토 대기",
+        "reviewHint": "결정을 기다리는 단계 결과",
+        "reviewExpiring": "{count}개가 하루 안에 만료됩니다",
+        "spend": "이번 달 사용액",
+        "spendHint": "{budget} 중 {percent}% 사용",
+        "freeCalls": "오늘의 무료 호출",
+        "freeCallsHint": "UTC 기준 · 유료 호출 {paid}회",
+        "failed": "불러오지 못했습니다"
+      },
+      "review": {
+        "title": "검토가 필요한 결과",
+        "description": "결정을 기다리는 단계 결과입니다. 급한 것부터 보여 줍니다.",
+        "all": "알림 전체 보기",
+        "empty": "기다리는 결과가 없습니다",
+        "emptyDescription": "내가 결정할 수 있는 단계가 끝나면 여기에 나타납니다.",
+        "stage": "{stage} 검토 대기",
+        "expiring": "하루 안에 만료",
+        "ready": "{time} 준비됨",
+        "pipeline": "{topic}의 파이프라인",
+        "more": "알림에서 {count}개 더 보기"
+      },
+      "recent": {
+        "title": "최근 실행",
+        "empty": "아직 실행이 없습니다",
+        "emptyDescription": "프로젝트에서 실행을 시작해 보세요.",
+        "updated": "{time} 업데이트"
+      },
+      "gpu": {
+        "title": "랩 GPU",
+        "description": "실시간 상태와 실험 대기열입니다.",
+        "sampled": "{time} 측정",
+        "utilisation": "사용률",
+        "device": "GPU",
+        "memory": "메모리",
+        "memoryValue": "{total} 중 {used}",
+        "temperature": "온도",
+        "power": "전력",
+        "powerValue": "{limit} W 중 {draw} W",
+        "myRunning": "내 실험이 지금 실행 중입니다.",
+        "myNext": "내 실험이 다음 차례입니다.",
+        "myQueued": "내 실험은 대기열 {position}번째입니다.",
+        "running": "실행 중",
+        "idle": "지금 GPU에서 실행 중인 작업이 없습니다.",
+        "you": "나",
+        "unknownTopic": "실험",
+        "progressLabel": "{topic} 진행률",
+        "progress": "{percent}% 완료",
+        "epoch": "에포크 {epoch}/{total}",
+        "eta": "{time} 완료 예정",
+        "etaEstimated": "{time} 완료 예정(추정)",
+        "queue": "대기열 ({count})",
+        "queueEmpty": "기다리는 실험이 없습니다.",
+        "position": "{position}번째",
+        "starts": "{time} 시작 예정",
+        "moreQueued": "{count}개 더 대기 중"
+      },
+      "spend": {
+        "title": "최근 30일 사용액",
+        "description": "하루 단위 유료 모델 사용액(UTC)입니다.",
+        "total": "30일 합계",
+        "paid": "유료 사용액",
+        "paidCalls": "유료 호출",
+        "freeCalls": "무료 호출",
+        "day": "날짜",
+        "tableCaption": "일별 유료 사용액과 LLM 호출 수",
+        "empty": "최근 30일 동안 LLM 호출이 없습니다."
+      },
+      "projects": {
+        "title": "프로젝트",
+        "count": "프로젝트 {count}개",
+        "active": "진행 중 {count}개"
+      },
+      "createFailed": "프로젝트를 만들지 못했습니다"
+    },
+    "wizard": {
+      "steps": "단계",
+      "stepTitles": {
+        "topic": "주제",
+        "literature": "문헌 조사",
+        "stages": "진행 단계",
+        "budget": "모델과 예산"
+      },
+      "stepDescriptions": {
+        "topic": "에이전트가 무엇을 연구할까요? 문헌 검색이 이 주제에서 시작합니다.",
+        "literature": "어디에서, 몇 년까지 거슬러 찾을지, 논문을 몇 편 남길지 정합니다.",
+        "stages": "실행을 어느 단계까지 진행할지와 실험에 쓸 데이터셋을 고릅니다.",
+        "budget": "유료 또는 무료 모델과, 필요하면 이 실행의 비용 상한을 정합니다."
+      },
+      "stepOf": "{total}단계 중 {step}단계",
+      "stepHasErrors": "(확인 필요)",
+      "back": "이전",
+      "next": "다음",
+      "submitFailed": "실행을 시작하지 못했습니다",
+      "topic": {
+        "hint": "과제, 데이터, 관심 있는 조건을 구체적으로 적어 주세요. Enter를 누르면 다음으로, Shift+Enter를 누르면 줄이 바뀝니다."
+      },
+      "literature": {
+        "yearFrom": "시작 연도",
+        "yearTo": "끝 연도",
+        "sources": "출처",
+        "maxPapers": "남길 논문 수",
+        "maxPapersHint": "{min}~{max}편이며, 관련성이 높은 논문부터 남깁니다."
+      },
+      "stages": {
+        "legend": "어디까지 진행할까요?",
+        "summary": "{stage} 단계까지 진행합니다.",
+        "choose": "실행을 마칠 단계를 고르세요.",
+        "skipped": "실행하지 않음: {stages}."
+      },
+      "dataset": {
+        "legend": "데이터셋",
+        "notUsed": "이 실행은 실험 단계 전에 끝나므로 데이터셋을 쓰지 않습니다.",
+        "version": "v{version}",
+        "samples": "샘플 {count}개",
+        "none": "데이터셋 없음"
+      },
+      "budget": {
+        "freeDisabled": "사용할 수 없음: 이 프로젝트는 무료 모델을 허용하지 않습니다."
+      },
+      "estimate": {
+        "title": "예상 비용",
+        "updating": "업데이트 중",
+        "invalid": "표시된 옵션을 고치면 예상 비용을 볼 수 있습니다.",
+        "failed": "예상 비용을 계산하지 못했습니다",
+        "loading": "비용을 계산하는 중…",
+        "expected": "예상 유료 사용액",
+        "range": "{low}~{high}",
+        "calls": "LLM 호출",
+        "callsValue": "{expected}회 ({low}~{high}회)",
+        "budgetLeft": "남은 내 예산",
+        "blocked": {
+          "policy": "무료 모델만 사용하므로 비용이 들지 않습니다.",
+          "kill_switch": "랩에서 유료 모델을 꺼 두어 무료 모델로 실행합니다.",
+          "budget": "이번 달 유료 예산을 모두 써서 무료 모델로 실행합니다.",
+          "run_cap": "비용 상한이 0이라 무료 모델로 실행합니다."
+        },
+        "capped": {
+          "run_cap": "이 실행의 비용 상한까지만 유료 모델을 쓰고, 나머지는 무료 모델이 맡습니다.",
+          "budget": "남은 월 예산까지만 유료 모델을 쓰고, 나머지는 무료 모델이 맡습니다."
+        },
+        "paidPossible": "예상 비용이 예산 안에 있으면 유료 모델을 사용합니다."
+      },
+      "errors": {
+        "topic": {
+          "tooShort": "주제를 {min}자 이상으로 적어 주세요.",
+          "tooLong": "주제는 {max}자 이하로 적어 주세요."
+        },
+        "year": {
+          "invalid": "연도를 정수로 입력하세요.",
+          "outOfRange": "{min}년부터 {max}년 사이의 연도를 입력하세요.",
+          "order": "끝 연도는 시작 연도보다 빠를 수 없습니다."
+        },
+        "sources": {
+          "empty": "출처를 하나 이상 고르세요.",
+          "invalid": "지원하지 않는 출처가 있습니다.",
+          "duplicate": "같은 출처는 한 번만 고를 수 있습니다."
+        },
+        "maxPapers": {
+          "invalid": "정수를 입력하세요.",
+          "outOfRange": "논문 수는 {min}편에서 {max}편 사이로 고르세요."
+        },
+        "stages": {
+          "empty": "최소한 문헌 조사 단계는 포함해야 합니다.",
+          "invalid": "알 수 없는 단계가 있습니다.",
+          "notPrefix": "단계는 문헌 조사부터 시작해 파이프라인 순서를 따라야 합니다."
+        },
+        "dataset": {
+          "invalid": "목록에 있는 데이터셋을 고르세요."
+        },
+        "llmPolicy": {
+          "invalid": "자동 또는 무료 전용을 고르세요."
+        },
+        "budget": {
+          "invalid": "2.50처럼 미국 달러 금액을 입력하세요.",
+          "negative": "상한은 음수일 수 없습니다.",
+          "tooHigh": "상한은 최대 {max}달러입니다."
+        },
+        "server": {
+          "rejected": "서버가 이 값을 받아들이지 않았습니다."
+        }
+      }
+    },
+    "project": {
+      "loading": "프로젝트를 불러오는 중…",
+      "notFoundTitle": "프로젝트를 찾을 수 없습니다",
+      "notFoundDescription": "존재하지 않거나 구성원이 아닌 프로젝트입니다. 프로젝트 소유자에게 추가해 달라고 요청하세요.",
+      "yourRole": "내 역할: {role}",
+      "adminAccess": "랩 관리자 권한",
+      "confidential": "기밀",
+      "tabs": {
+        "label": "프로젝트 메뉴",
+        "runs": "실행",
+        "papers": "논문",
+        "members": "구성원",
+        "settings": "설정"
+      },
+      "runs": {
+        "loading": "실행 목록을 불러오는 중…",
+        "emptyCanStart": "첫 실행을 시작해 보세요. 파이프라인은 주제에 대한 문헌 검색부터 시작합니다.",
+        "emptyViewer": "연구원이나 소유자가 실행을 시작하면 여기에 나타납니다.",
+        "startFirst": "첫 실행 시작",
+        "search": "실행 검색",
+        "searchPlaceholder": "주제로 검색",
+        "filter": "상태",
+        "filters": {
+          "all": "모든 상태",
+          "active": "진행 중",
+          "review": "승인 대기",
+          "completed": "완료",
+          "stopped": "실패, 반려 또는 취소"
+        },
+        "showing": "{total}개 중 {shown}개 표시",
+        "noMatch": "검색어와 필터에 맞는 실행이 없습니다.",
+        "clearFilters": "검색어와 필터 지우기",
+        "caption": "이 프로젝트의 실행"
+      },
+      "papers": {
+        "caption": "이 프로젝트의 실행이 찾은 논문",
+        "empty": "아직 논문이 없습니다. 실행의 문헌 조사 단계가 끝나면 나타납니다.",
+        "openPage": "논문 페이지"
+      },
+      "members": {
+        "lastOwner": "먼저 다른 사람을 소유자로 지정하세요.",
+        "lastOwnerNamed": "{name}님이 마지막 소유자입니다. 먼저 다른 사람을 소유자로 지정하세요.",
+        "dismiss": "닫기",
+        "you": "(나)",
+        "saving": "저장 중",
+        "roleOf": "{name}님의 역할",
+        "remove": "{name}님 내보내기",
+        "removeTitle": "{name}님을 프로젝트에서 내보낼까요?",
+        "removeDescription": "더 이상 이 프로젝트의 실행과 논문을 볼 수 없습니다. 이 구성원의 실행은 프로젝트에 남습니다.",
+        "removeConfirm": "내보내기",
+        "roleChanged": "{name}님의 역할이 {role}(으)로 바뀌었습니다.",
+        "removed": "{name}님을 프로젝트에서 내보냈습니다."
+      },
+      "settings": {
+        "title": "프로젝트 설정",
+        "description": "이 프로젝트의 모든 실행에 적용됩니다.",
+        "readOnly": "이 설정은 프로젝트 소유자와 랩 관리자만 바꿀 수 있습니다.",
+        "saved": "설정을 저장했습니다.",
+        "saveFailed": "설정을 저장하지 못했습니다",
+        "save": "설정 저장",
+        "saving": "저장하는 중…",
+        "discard": "변경 취소",
+        "unsaved": "저장하지 않은 변경 사항",
+        "privacy": {
+          "label": "공개 범위",
+          "standard": "일반",
+          "standardDescription": "설정된 모든 모델 제공자를 사용할 수 있습니다.",
+          "confidential": "기밀",
+          "confidentialDescription": "데이터를 보관하지 않는 제공자만 사용하므로 쓸 수 있는 무료 모델이 줄어듭니다."
+        },
+        "freeModels": {
+          "label": "무료 모델 허용",
+          "description": "유료 모델을 쓸 수 없거나 예산을 다 쓰면 무료 모델로 이어서 실행합니다."
+        },
+        "autoApprove": {
+          "label": "단계 자동 승인",
+          "description": "검토 없이 다음 단계로 넘어갑니다. 단, 코딩 단계는 항상 사람이 검토합니다."
+        },
+        "expiry": {
+          "label": "승인 만료 기간(일)",
+          "description": "이 기간 동안 결정하지 않으면 실행이 취소됩니다. {min}~{max}일 사이로 정하세요."
+        },
+        "errors": {
+          "privacy": {
+            "invalid": "일반 또는 기밀을 고르세요."
+          },
+          "value": {
+            "invalid": "올바른 값이 아닙니다."
+          },
+          "approvalExpiryDays": {
+            "invalid": "일수를 정수로 입력하세요.",
+            "outOfRange": "{min}일에서 {max}일 사이로 고르세요."
+          }
+        }
+      }
+    },
+    "papers": {
+      "title": "논문 라이브러리",
+      "description": "내 실행이 찾은 모든 논문과 그 분석, 논문을 사용한 실행을 볼 수 있습니다.",
+      "searchLabel": "라이브러리 검색",
+      "search": "검색",
+      "searchPlaceholder": "제목, 초록, 저자 또는 학술지",
+      "filters": {
+        "project": "프로젝트",
+        "anyProject": "모든 프로젝트",
+        "yearFrom": "시작 연도",
+        "yearTo": "끝 연도",
+        "decision": "선별 결과",
+        "anyDecision": "모든 결과",
+        "source": "출처",
+        "anySource": "모든 출처"
+      },
+      "yearsInvalid": "{min}년부터 {max}년 사이로 입력하고, 시작 연도가 끝 연도보다 늦지 않게 하세요.",
+      "searching": "검색하는 중…",
+      "results": "논문 {count}편",
+      "resultsFor": "“{q}” 검색 결과 {count}편",
+      "resultsLabel": "논문",
+      "clearFilters": "검색어와 필터 지우기",
+      "view": {
+        "label": "결과 보기 방식",
+        "grid": "카드",
+        "table": "표"
+      },
+      "noMatch": "맞는 논문이 없습니다",
+      "noMatchDescription": "다른 검색어를 써 보거나 필터를 지워 보세요.",
+      "emptyTitle": "라이브러리가 비어 있습니다",
+      "emptyDescription": "실행의 문헌 조사 단계가 출처를 검색하면 논문이 여기에 나타납니다.",
+      "pager": {
+        "label": "결과 페이지",
+        "previous": "이전",
+        "next": "다음",
+        "page": "{total}쪽 중 {page}쪽"
+      },
+      "citations": "인용 {count}회",
+      "relevance": "관련성 {value}",
+      "foundIn": "프로젝트 {projects}개에서 실행 {runs}개가 찾음",
+      "links": {
+        "doi": "DOI",
+        "arxiv": "arXiv",
+        "source": "원문 페이지",
+        "newTab": "(새 탭에서 열림)"
+      },
+      "detail": {
+        "title": "논문",
+        "notFoundTitle": "논문을 찾을 수 없습니다",
+        "backToLibrary": "논문 라이브러리",
+        "abstract": "초록",
+        "pdf": "PDF",
+        "analyses": "분석 ({count})",
+        "noAnalyses": "아직 이 논문을 분석한 실행이 없습니다.",
+        "analysisFrom": "“{topic}” 실행, {date}",
+        "unknownRun": "알 수 없는 실행",
+        "runs": "이 논문을 찾은 실행 ({count})",
+        "noRuns": "열람할 수 있는 실행 중 이 논문을 찾은 실행이 없습니다."
+      }
+    }
+  }
+}

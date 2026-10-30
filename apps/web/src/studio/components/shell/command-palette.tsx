@@ -236,15 +236,21 @@ export function CommandPaletteContent({
   );
 }
 
-/** Whether a key press is the palette shortcut: ⌘K on Apple devices, Ctrl+K elsewhere. */
+/**
+ * Whether a key press is the palette shortcut: ⌘K on Apple devices, Ctrl+K elsewhere. Keyboard
+ * layouts that do not type a Latin letter on that key (Korean, Cyrillic, Greek...) report their
+ * own character in `key`, or "Process" while an IME composes; the physical K key (`code`) counts
+ * then. A Latin layout that puts another letter there (Dvorak's T) keeps its own shortcuts.
+ */
 export function isPaletteShortcut(event: KeyboardEvent): boolean {
-  return (
-    typeof event.key === "string" &&
-    event.key.toLowerCase() === "k" &&
-    (event.metaKey || event.ctrlKey) &&
-    !event.altKey &&
-    !event.shiftKey
-  );
+  if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) {
+    return false;
+  }
+  const key = typeof event.key === "string" ? event.key.toLowerCase() : "";
+  if (key === "k") {
+    return true;
+  }
+  return event.code === "KeyK" && !/^[a-z]$/.test(key);
 }
 
 /**

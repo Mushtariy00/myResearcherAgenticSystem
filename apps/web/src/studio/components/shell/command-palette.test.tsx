@@ -128,6 +128,28 @@ describe("CommandPalette", () => {
     expect(isPaletteShortcut(key({ key: "j", ctrlKey: true }))).toBe(false);
   });
 
+  it("finds the K key on layouts that do not type a Latin k there", () => {
+    const key = (init: KeyboardEventInit) => new KeyboardEvent("keydown", init);
+    // Korean 2-set, Cyrillic and an IME that is composing all report another `key`.
+    expect(isPaletteShortcut(key({ key: "ㅏ", code: "KeyK", ctrlKey: true }))).toBe(true);
+    expect(isPaletteShortcut(key({ key: "л", code: "KeyK", metaKey: true }))).toBe(true);
+    expect(isPaletteShortcut(key({ key: "Process", code: "KeyK", ctrlKey: true }))).toBe(true);
+    // Dvorak types "t" on that key: Ctrl+T stays the browser's.
+    expect(isPaletteShortcut(key({ key: "t", code: "KeyK", ctrlKey: true }))).toBe(false);
+    expect(isPaletteShortcut(key({ key: "ㅏ", code: "KeyK" }))).toBe(false);
+    expect(isPaletteShortcut(key({ key: "ㅏ", code: "KeyK", ctrlKey: true, altKey: true }))).toBe(
+      false,
+    );
+  });
+
+  it("opens with Ctrl+K on a Korean keyboard layout", async () => {
+    const queryClient = makeQueryClient();
+    queryClient.setQueryData(listProjectsQueryKey(), PROJECTS);
+    renderStudio(<PaletteHarness />, { user: TEST_USER, queryClient });
+    fireEvent.keyDown(document, { key: "ㅏ", code: "KeyK", ctrlKey: true });
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+  });
+
   it("opens with Ctrl+K, focused on the search field", async () => {
     const queryClient = makeQueryClient();
     queryClient.setQueryData(listProjectsQueryKey(), PROJECTS);

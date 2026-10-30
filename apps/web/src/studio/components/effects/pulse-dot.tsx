@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useReducedMotionPreference } from "@/studio/hooks/use-media-query";
+import { usePauseOffscreen } from "@/studio/lib/offscreen";
 import type { Tone } from "@/studio/lib/stages";
 
 const SIZES = { sm: "size-1.5", md: "size-2", lg: "size-2.5" } as const;
@@ -18,7 +20,10 @@ export type PulseDotProps = {
   className?: string;
 };
 
-/** A status dot whose ring pulses only while live, and never with reduced motion. */
+/**
+ * A status dot whose ring pulses only while live, never with reduced motion, and not while the
+ * dot is off screen.
+ */
 export function PulseDot({
   tone = "info",
   stage,
@@ -28,14 +33,18 @@ export function PulseDot({
   className,
 }: PulseDotProps) {
   const reduced = useReducedMotionPreference();
+  const pulsing = live && !reduced;
+  const ref = useRef<HTMLSpanElement>(null);
+  usePauseOffscreen(ref, pulsing);
   return (
     <span
+      ref={ref}
       data-tone={stage ? undefined : tone}
       data-stage={stage}
       data-live={live ? "true" : undefined}
       className={cn("relative inline-flex shrink-0", SIZES[size], className)}
     >
-      {live && !reduced && (
+      {pulsing && (
         <span aria-hidden className="studio-pulse absolute inset-0 rounded-full bg-(--tone)" />
       )}
       <span aria-hidden className="relative inline-flex size-full rounded-full bg-(--tone)" />

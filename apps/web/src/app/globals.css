@@ -431,12 +431,15 @@
     }
   }
 
-  /* Display headings: tight tracking in Latin scripts, gentler for Hangul. */
+  /* Display headings: tight tracking in Latin scripts, gentler for Hangul. A word longer than
+     the line (an email in a greeting, a long project name) breaks instead of overflowing a
+     360px screen. */
   [data-ui="studio"] .studio-display {
     font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 1.05;
     text-wrap: balance;
+    overflow-wrap: anywhere;
   }
   [data-ui="studio"] .studio-display:lang(ko) {
     letter-spacing: -0.01em;
@@ -466,7 +469,11 @@
     animation-delay: var(--rise-delay, 0ms);
   }
 
-  /* AuroraBackground: slow mesh-gradient blobs, a masked dot grid and a noise overlay. */
+  /* AuroraBackground: mesh-gradient blobs, a masked dot grid and a noise overlay. Behind working
+     screens (subtle) the blobs stand still: no animation and no will-change, so they paint once
+     into the backdrop's layer instead of each holding a viewport-sized GPU layer. Only the vivid
+     aurora (landing hero, sign-in panel) drifts, with longhands only, so the pause rules below
+     still apply. */
   [data-ui="studio"] .studio-aurora {
     --aurora-alpha: var(--aurora-blob-opacity);
     contain: strict;
@@ -481,7 +488,9 @@
     border-radius: 9999px;
     background: radial-gradient(closest-side, var(--blob), transparent);
     opacity: var(--aurora-alpha);
-    will-change: transform;
+  }
+  [data-ui="studio"] .studio-aurora[data-variant="vivid"] .studio-aurora-blob {
+    animation-name: var(--blob-keyframes);
     animation-duration: var(--blob-duration, 30s);
     animation-timing-function: ease-in-out;
     animation-iteration-count: infinite;
@@ -490,32 +499,32 @@
   [data-ui="studio"] .studio-aurora-blob[data-blob="1"] {
     --blob: var(--aurora-violet);
     --blob-duration: 26s;
+    --blob-keyframes: studio-aurora-a;
     top: -34vmax;
     left: -20vmax;
-    animation-name: studio-aurora-a;
   }
   [data-ui="studio"] .studio-aurora-blob[data-blob="2"] {
     --blob: var(--aurora-cyan);
     --blob-duration: 32s;
+    --blob-keyframes: studio-aurora-b;
     top: -30vmax;
     right: -24vmax;
-    animation-name: studio-aurora-b;
   }
   [data-ui="studio"] .studio-aurora-blob[data-blob="3"] {
     --blob: var(--aurora-indigo);
     --blob-duration: 38s;
+    --blob-keyframes: studio-aurora-c;
     top: 28%;
     left: 30%;
     width: 46vmax;
     height: 46vmax;
-    animation-name: studio-aurora-c;
   }
   [data-ui="studio"] .studio-aurora-blob[data-blob="4"] {
     --blob: var(--aurora-emerald);
     --blob-duration: 44s;
+    --blob-keyframes: studio-aurora-d;
     right: 0;
     bottom: -40vmax;
-    animation-name: studio-aurora-d;
   }
   [data-ui="studio"] .studio-aurora-grid {
     position: absolute;
@@ -721,18 +730,31 @@
     }
   }
 
-  /* Loops pause while their element is off screen (useInView sets data-paused). This comes after
+  /* Loops pause while off screen. Regions that hold loops (pipeline graphs, marquees, the vivid
+     aurora) get data-paused from useInView; looping effects that can sit anywhere (ShimmerButton,
+     PulseDot, BorderBeam, ShimmerSkeleton) mark themselves with data-offscreen through one shared
+     observer (src/studio/lib/offscreen.ts). Either pauses the element itself, its pseudo-elements
+     (the button sweep, the skeleton sweep, the beam) and everything inside it. This comes after
      every animation shorthand above, with the same specificity, so it wins. */
+  [data-ui="studio"] [data-paused="true"],
+  [data-ui="studio"] [data-paused="true"]::before,
+  [data-ui="studio"] [data-paused="true"]::after,
   [data-ui="studio"] [data-paused="true"] *,
   [data-ui="studio"] [data-paused="true"] *::before,
-  [data-ui="studio"] [data-paused="true"] *::after {
+  [data-ui="studio"] [data-paused="true"] *::after,
+  [data-ui="studio"] [data-offscreen],
+  [data-ui="studio"] [data-offscreen]::before,
+  [data-ui="studio"] [data-offscreen]::after,
+  [data-ui="studio"] [data-offscreen] *,
+  [data-ui="studio"] [data-offscreen] *::before,
+  [data-ui="studio"] [data-offscreen] *::after {
     animation-play-state: paused;
   }
 
   /* Reduced motion: no infinite or decorative animation; state changes become plain fades.
      Selectors match the specificity of the rules they switch off. */
   @media (prefers-reduced-motion: reduce) {
-    [data-ui="studio"] .studio-aurora-blob[data-blob],
+    [data-ui="studio"] .studio-aurora[data-variant] .studio-aurora-blob,
     [data-ui="studio"] .studio-pulse,
     [data-ui="studio"] .studio-shimmer::before,
     [data-ui="studio"] .studio-skeleton::after,

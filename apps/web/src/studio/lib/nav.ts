@@ -27,8 +27,45 @@ export const STUDIO_ROUTES = {
   admin: `${STUDIO_PREFIX}/admin`,
 } as const satisfies Record<StudioNavId, string>;
 
+/** The signed-in user's own page (account, password, preferences, spending). */
+export const STUDIO_PROFILE_PATH = `${STUDIO_PREFIX}/profile`;
+
 export function studioProjectPath(projectId: string): string {
   return `${STUDIO_PREFIX}/projects/${encodeURIComponent(projectId)}`;
+}
+
+/** The Studio run page (built by the run page area). */
+export function studioRunPath(runId: string): string {
+  return `${STUDIO_PREFIX}/runs/${encodeURIComponent(runId)}`;
+}
+
+/** Path segments a browser would resolve away ("." and ".."), or an empty one ("a//b"). */
+function unsafeSegment(segment: string): boolean {
+  return segment === "" || segment === "." || segment === "..";
+}
+
+/**
+ * The Studio page of a library paper (`/studio/papers/[...paperId]`). Paper ids contain colons
+ * and slashes (`doi:10.5555/abc.12`): each slash-separated part is encoded the way
+ * `paperFileUrl` encodes the whole id, so the slashes stay path separators and the URL reads
+ * like the id. An id that would make an empty or dot segment is encoded as one segment
+ * (`%2F` for its slashes) instead. `paperIdFromSegments` reads both forms back.
+ */
+export function studioPaperPath(paperId: string): string {
+  const parts = paperId.split("/");
+  const path = parts.some(unsafeSegment)
+    ? encodeURIComponent(paperId)
+    : parts.map(encodeURIComponent).join("/");
+  return `${STUDIO_ROUTES.papers}/${path}`;
+}
+
+/**
+ * The paper id from the segments of `/studio/papers/[...paperId]`. Next hands page params over
+ * URL-encoded, one entry per path segment (an encoded `%2F` stays inside its segment); decoding
+ * each and joining them with "/" gives back the id `studioPaperPath` started from.
+ */
+export function paperIdFromSegments(segments: readonly string[]): string {
+  return segments.map(decodeSegment).join("/");
 }
 
 export const STUDIO_NAV: readonly StudioNavItem[] = [

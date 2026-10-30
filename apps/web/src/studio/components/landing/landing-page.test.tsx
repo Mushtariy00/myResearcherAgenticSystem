@@ -86,6 +86,17 @@ describe("Studio landing page", () => {
     expect(screen.getByRole("link", { name: /Open Classic/ }).getAttribute("href")).toBe("/");
   });
 
+  it("wraps the product name in the header instead of cutting it off on phones", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    await renderLanding();
+    const header = screen.getByRole("banner");
+    const brand = within(header).getByRole("link", { name: /Agentic Research Platform/ });
+    expect(brand.getAttribute("href")).toBe("/studio");
+    const name = within(brand).getByText("Agentic Research Platform");
+    expect(name.className).not.toMatch(/(^|\s)(truncate|whitespace-nowrap|line-clamp-\d)(\s|$)/);
+    expect(name.className).toMatch(/text-balance/);
+  });
+
   it("is translated into Korean", async () => {
     vi.mocked(getSession).mockResolvedValue(null);
     await renderLanding("ko");

@@ -1,11 +1,10 @@
 "use client";
 
 import { Popover } from "@base-ui/react/popover";
-import { useQueryClient } from "@tanstack/react-query";
 import { BellIcon, CheckCheckIcon } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { QueryError } from "@/components/app/query-state";
 import {
   BELL_LIMIT,
@@ -22,7 +21,6 @@ import { AnimatedList } from "@/studio/components/effects/animated-list";
 import { LoadingStatus, ShimmerSkeleton } from "@/studio/components/effects/shimmer-skeleton";
 import { StudioNotificationRow } from "@/studio/components/notifications/studio-notification-row";
 import { useReducedMotionPreference } from "@/studio/hooks/use-media-query";
-import { unreadNotificationsQueryKey } from "@/studio/hooks/use-unread-notifications";
 import { glassClassName } from "@/studio/lib/glass";
 import { GHOST_BUTTON, ICON_BUTTON } from "@/studio/lib/ui";
 
@@ -38,20 +36,11 @@ export function NotificationsBell({ className }: { className?: string }) {
   const { markOne, markAll } = useNotificationActions(notifications);
   const toItem = useNotificationItems("/studio");
   const reduced = useReducedMotionPreference();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const unread = unreadCount ?? 0;
   const display = badgeCount(unread);
   const label = unread > 0 ? t("bell.labelWithCount", { count: unread }) : t("bell.label");
   const latest = items.slice(0, BELL_LIMIT).map(toItem);
-
-  // The sidebar and the dashboard still read their own unread-count query; the bell is on
-  // every Studio page, so it keeps that count in step with this one.
-  useEffect(() => {
-    if (unreadCount !== null) {
-      queryClient.setQueryData(unreadNotificationsQueryKey, unreadCount);
-    }
-  }, [queryClient, unreadCount]);
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>

@@ -6,14 +6,26 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { CSSProperties } from "react";
 import type { ProjectOut } from "@/client";
 import { cn } from "@/lib/utils";
+import { PulseDot } from "@/studio/components/effects/pulse-dot";
 import { SpotlightCard } from "@/studio/components/effects/spotlight-card";
 import { riseDelay } from "@/studio/lib/motion";
 import { studioProjectPath } from "@/studio/lib/nav";
 
 const ROLE_TONES = { owner: "info", researcher: "success", viewer: "neutral" } as const;
 
-/** A project as a glass card with a cursor spotlight, linking to its Studio page. */
-export function ProjectCard({ project, index = 0 }: { project: ProjectOut; index?: number }) {
+/**
+ * A project as a glass card with a cursor spotlight, linking to its Studio page. `activeRuns`
+ * (from the dashboard's recent runs) adds a live count of runs still in progress.
+ */
+export function ProjectCard({
+  project,
+  index = 0,
+  activeRuns = 0,
+}: {
+  project: ProjectOut;
+  index?: number;
+  activeRuns?: number;
+}) {
   const t = useTranslations();
   const format = useFormatter();
   const role = project.my_role;
@@ -49,6 +61,15 @@ export function ProjectCard({ project, index = 0 }: { project: ProjectOut; index
             className="inline-flex h-5 items-center rounded-full border border-(--tone)/25 bg-(--tone)/12 px-2 font-medium text-(--tone-fg)"
           >
             {t(`roles.${role}`)}
+          </span>
+        )}
+        {activeRuns > 0 && (
+          <span
+            data-tone="info"
+            className="inline-flex h-5 items-center gap-1.5 rounded-full border border-(--tone)/25 bg-(--tone)/12 px-2 font-medium text-(--tone-fg)"
+          >
+            <PulseDot tone="info" live size="sm" />
+            {t("studioWork.dashboard.projects.active", { count: activeRuns })}
           </span>
         )}
         <span>
