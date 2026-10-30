@@ -37,17 +37,13 @@ import {
 import type { PdfViewerProps } from "./pdf-viewer-types";
 import { useElementWidth, useReducedMotion } from "./use-dom";
 
-// The PDF.js worker comes from the local package (bundled module worker), never a CDN. It must
-// be configured in the module that renders react-pdf components.
-if (
-  typeof window !== "undefined" &&
-  typeof Worker !== "undefined" &&
-  !pdfjs.GlobalWorkerOptions.workerPort
-) {
-  pdfjs.GlobalWorkerOptions.workerPort = new Worker(
-    new URL("./workers/pdf.worker.ts", import.meta.url),
-    { type: "module", name: "pdfjs" },
-  );
+// The PDF.js worker is served from our own origin (never a CDN): scripts/copy-pdf-worker.mjs
+// copies the exact pdfjs-dist version react-pdf uses into public/pdfjs/ before dev and build. A
+// bundled module worker is not used: its dynamic import never finished in the dev bundler, so
+// documents stayed "loading" forever. It must be configured in the module that renders react-pdf.
+export const PDF_WORKER_SRC = "/pdfjs/pdf.worker.min.mjs";
+if (typeof window !== "undefined") {
+  pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_SRC;
 }
 
 /** XFA forms stay off (the default, stated): reviewers read papers, they do not fill them in. */

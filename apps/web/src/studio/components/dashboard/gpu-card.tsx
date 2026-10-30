@@ -99,7 +99,9 @@ export function GpuCard({ className }: { className?: string }) {
                 </span>
               </RingGauge>
             </div>
-            <dl className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 text-sm [min-width:12rem]">
+            {/* At least 12rem wide: in a narrow card the readings wrap below the ring instead of
+                squeezing into a sliver beside it. */}
+            <dl className="grid min-w-48 flex-1 basis-48 grid-cols-2 gap-x-4 gap-y-3 text-sm">
               <div className="col-span-2 grid min-w-0 gap-0.5">
                 <dt className="text-xs text-muted-foreground">{t("device")}</dt>
                 <dd className="truncate font-medium text-foreground" title={data.gpu.name}>

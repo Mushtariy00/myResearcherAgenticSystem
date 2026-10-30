@@ -312,7 +312,13 @@ function ReviewCard({
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const approval = useApprovalDecision(run, {
     onDecided: (decision, { edited }) => {
-      toast.success(edited ? t("sentEdited") : t(`sent.${decision}`));
+      // Approving the run's last stage finishes the run: there is no next stage to announce.
+      const final = decision === "approve" && run.awaiting_stage === run.config.stages.at(-1);
+      if (edited) {
+        toast.success(final ? t("sentEditedFinal") : t("sentEdited"));
+      } else {
+        toast.success(final ? t("sent.approveFinal") : t(`sent.${decision}`));
+      }
       if (edited) {
         setDraft(null);
       }

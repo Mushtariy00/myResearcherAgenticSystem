@@ -292,6 +292,7 @@
       "version": "버전",
       "model": "모델",
       "unknownModel": "알 수 없음",
+      "demoModel": "데모 생성기",
       "produced": "생성 시각",
       "hash": "SHA-256",
       "outputLabel": "단계 결과 (JSON)",
@@ -309,7 +310,8 @@
       "sent": {
         "approve": "승인했습니다. 다음 단계가 시작됩니다.",
         "request_changes": "수정을 요청했습니다. 새로 시도합니다.",
-        "reject": "반려했습니다. 실행이 중단됩니다."
+        "reject": "반려했습니다. 실행이 중단됩니다.",
+        "approveFinal": "승인했습니다. 실행이 완료되었습니다."
       },
       "conflictToast": "검토하는 동안 결과가 바뀌었습니다.",
       "conflictTitle": "결과가 바뀌었습니다",
@@ -339,6 +341,7 @@
       "discardEdits": "수정 취소",
       "approveEdited": "수정 후 승인",
       "sentEdited": "수정한 내용으로 승인했습니다. 다음 단계가 시작됩니다.",
+      "sentEditedFinal": "수정한 내용으로 승인했습니다. 실행이 완료되었습니다.",
       "editsPending": "“승인”은 수정 내용을 빼고 승인합니다. 수정 내용을 넣으려면 “수정 후 승인”을 누르세요.",
       "staleEditTitle": "이전 버전을 기준으로 수정했습니다",
       "staleEditDescription": "수정을 시작한 뒤 버전 {version}이(가) 도착했습니다. 수정 후 승인하기 전에 새 버전에서 다시 시작하세요.",

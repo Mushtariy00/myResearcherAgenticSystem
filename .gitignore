@@ -36,3 +36,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Copied from pdfjs-dist by apps/web/scripts/copy-pdf-worker.mjs before dev and build.
+apps/web/public/pdfjs/

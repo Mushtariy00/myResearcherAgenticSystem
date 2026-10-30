@@ -96,7 +96,9 @@ export function OutputMeta({
         </div>
         <div className="flex gap-1">
           <dt>{t("model")}</dt>
-          <dd className="font-medium text-foreground">{output.model ?? t("unknownModel")}</dd>
+          <dd className="font-medium text-foreground">
+            {output.model ?? (isDemoOutput(output) ? t("demoModel") : t("unknownModel"))}
+          </dd>
         </div>
         <div className="flex gap-1">
           <dt>{t("produced")}</dt>

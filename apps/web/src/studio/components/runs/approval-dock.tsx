@@ -81,7 +81,9 @@ export function ApprovalDock() {
 
   const approval = useApprovalDecision(run, {
     onDecided: (decision) => {
-      toast.success(tApproval(`sent.${decision}`));
+      // Approving the run's last stage finishes the run: there is no next stage to announce.
+      const final = decision === "approve" && run?.awaiting_stage === run?.config.stages.at(-1);
+      toast.success(final ? tApproval("sent.approveFinal") : tApproval(`sent.${decision}`));
       setDraft(null);
       setPanel(null);
     },
@@ -154,7 +156,9 @@ export function ApprovalDock() {
           id={panelId}
           className={cn(
             "min-h-0 shrink overflow-y-auto overscroll-contain border-b border-(--studio-glass-border) p-3 sm:p-4",
-            expanded ? "block" : "hidden md:block",
+            // Collapsed on phones and on short desktop windows, where the open dock would cover
+            // half of the output under review.
+            expanded ? "block" : "hidden md:[@media(min-height:860px)]:block",
           )}
         >
           {panel === "changes" ? (
@@ -193,7 +197,7 @@ export function ApprovalDock() {
             aria-expanded={expanded}
             aria-controls={`${ids}-more`}
             onClick={() => setExpanded((value) => !value)}
-            className={cn(ICON_BUTTON, "ml-auto -my-1 md:hidden")}
+            className={cn(ICON_BUTTON, "ml-auto -my-1 md:[@media(min-height:860px)]:hidden")}
           >
             <ChevronUpIcon
               aria-hidden
@@ -232,7 +236,10 @@ export function ApprovalDock() {
           </Callout>
         )}
 
-        <div id={`${ids}-more`} className={cn("gap-3", expanded ? "grid" : "hidden md:grid")}>
+        <div
+          id={`${ids}-more`}
+          className={cn("gap-3", expanded ? "grid" : "hidden md:[@media(min-height:860px)]:grid")}
+        >
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"

@@ -292,6 +292,7 @@
       "version": "Version",
       "model": "Model",
       "unknownModel": "unknown",
+      "demoModel": "demo generator",
       "produced": "Produced",
       "hash": "SHA-256",
       "outputLabel": "Stage output (JSON)",
@@ -309,7 +310,8 @@
       "sent": {
         "approve": "Approved. The next stage will start.",
         "request_changes": "Changes requested. A new attempt will start.",
-        "reject": "Rejected. The run will stop."
+        "reject": "Rejected. The run will stop.",
+        "approveFinal": "Approved. The run is complete."
       },
       "conflictToast": "This output changed while you were reviewing it.",
       "conflictTitle": "The output changed",
@@ -339,6 +341,7 @@
       "discardEdits": "Discard edits",
       "approveEdited": "Approve with edits",
       "sentEdited": "Approved with your edits. The next stage will start.",
+      "sentEditedFinal": "Approved with your edits. The run is complete.",
       "editsPending": "“Approve” leaves your edits out; “Approve with edits” includes them.",
       "staleEditTitle": "Your edits are for an older version",
       "staleEditDescription": "Version {version} arrived after you started editing. Start over from it before approving with edits.",

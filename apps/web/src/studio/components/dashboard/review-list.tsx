@@ -88,13 +88,15 @@ export function ReviewList({
           description={t("emptyDescription")}
         />
       ) : (
-        <ul className="grid gap-3">
+        // A container: rows put the pipeline beside the text only when the list itself is wide
+        // enough (it shares the row with the GPU card, so the window width says little).
+        <ul className="@container grid gap-3">
           {shown.map((item, index) => {
             const stage = isKnownStage(item.stage) ? tAll(`stages.${item.stage}`) : item.stage;
             return (
               <li
                 key={item.key}
-                className="studio-rise relative isolate flex flex-col gap-3 rounded-xl border border-(--studio-glass-border) bg-(--studio-glass) p-3 transition-colors hover:bg-(--studio-hover) sm:p-4 lg:flex-row lg:items-center"
+                className="studio-rise relative isolate flex flex-col gap-3 rounded-xl border border-(--studio-glass-border) bg-(--studio-glass) p-3 transition-colors hover:bg-(--studio-hover) sm:p-4 @xl:flex-row @xl:items-center"
                 style={{ "--rise-delay": riseDelay(index) } as CSSProperties}
               >
                 <div className="grid min-w-0 flex-1 gap-1">
