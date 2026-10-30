@@ -188,13 +188,17 @@ the next try. The activity timeouts are 2 h (coding) and 8 h (experiment).
 
 ## API and web
 
-- `GET /gpu/queue` reads `gpu_jobs` (with the position and an estimate), and
-  `GET /datasets` reads `datasets`; both are demo today.
+- `GET /gpu/queue` reads `gpu_jobs` in the executor's order, with each job's kind, progress
+  (from its latest progress record) and an estimate, and the GPU's readings from the executor's
+  heartbeat: `gpu` is null and `executor_alive` false once the heartbeat is a minute old.
+- `GET /datasets` reads the enabled rows of `datasets`.
 - Artifacts:
   - the code files from CodingOutput;
-  - from the job outputs: the log, metrics.jsonl as CSV, and the checkpoint, each an
-    attachment with nosniff;
-  - the ones that exist today are generated.
+  - from the training job's files on the GPU host: the full log, metrics.jsonl as CSV, and
+    the checkpoint (best.pt), each streamed as an attachment with nosniff. Their sha256 comes
+    from the job's provenance (`outputs_sha256`, recorded as the executor copied them).
+  - Without the job's files (another host, an older job), the artifacts derived from the
+    stage output stay: the log tail and the per-epoch series as CSV.
 - The web keeps its stage views. The experiment view gains live curves from
   `experiment.epoch` events, translated like the other progress lines.
 

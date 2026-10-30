@@ -25,6 +25,7 @@ const KINDS: readonly ArtifactOut["kind"][] = [
   "code_file",
   "experiment_log",
   "metrics",
+  "checkpoint",
   "draft",
   "references",
 ];
@@ -55,7 +56,8 @@ function DownloadItem({ artifact }: { artifact: ArtifactOut }) {
 
 /**
  * Every file the run's latest outputs make (useRunArtifacts), grouped by stage: the code (all
- * of it as a zip, or file by file), the training log and metrics, the draft and its references.
+ * of it as a zip, or file by file), the training log, metrics and checkpoint (a binary file,
+ * with its size like the others), the draft and its references.
  */
 export function DownloadsMenu({ runId }: { runId: string }) {
   const t = useTranslations("run.downloads");

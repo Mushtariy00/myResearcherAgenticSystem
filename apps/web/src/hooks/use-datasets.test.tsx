@@ -76,6 +76,34 @@ describe("useDatasets", () => {
     expect(second.result.current.data).toEqual(DATASETS);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps a size and checksum the executor has not measured yet unknown, not 0", async () => {
+    const [nyu2] = DATASETS.items;
+    if (!nyu2) {
+      throw new Error("fixture changed");
+    }
+    const unmeasured: DatasetList = {
+      items: [{ ...nyu2, size_bytes: null, checksum_sha256: null, demo: false }],
+      demo: false,
+    };
+    fetchMock.mockImplementation(
+      async () =>
+        new Response(JSON.stringify(unmeasured), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useDatasets(), { wrapper });
+    await waitFor(() => expect(result.current.data).toEqual(unmeasured));
+    expect(result.current.data?.items[0]).toMatchObject({
+      size_bytes: null,
+      checksum_sha256: null,
+    });
+  });
 });
 
 /** The path of the request the generated client sent first. */

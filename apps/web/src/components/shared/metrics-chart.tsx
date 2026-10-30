@@ -67,6 +67,13 @@ export type MetricsChartProps = {
   metricOrder?: readonly string[];
   /** CSS height of the plot; default 18rem. */
   height?: string;
+  /** Shown instead of the plot while no point has a value; default "No metrics were recorded." */
+  emptyText?: string;
+  /**
+   * The series grow while the chart is on screen (live training): updates merge the lines by
+   * id, so a new epoch extends them instead of every line being drawn again.
+   */
+  live?: boolean;
   className?: string;
 };
 
@@ -82,6 +89,8 @@ export function MetricsChart({
   hideTitle = false,
   metricOrder,
   height = "18rem",
+  emptyText,
+  live = false,
   className,
 }: MetricsChartProps) {
   const t = useTranslations("shared.chart");
@@ -163,9 +172,10 @@ export function MetricsChart({
         metricOrder,
         reducedMotion,
       }),
-      { notMerge: true },
+      // Series missing from the new option are removed either way.
+      live ? { replaceMerge: ["series"] } : { notMerge: true },
     );
-  }, [ready, series, labels, metricOrder, reducedMotion, themeKey]);
+  }, [ready, series, labels, metricOrder, reducedMotion, themeKey, live]);
 
   const table = useMemo(() => {
     const ids = seriesIds(series);
@@ -193,7 +203,7 @@ export function MetricsChart({
         <div ref={plot} aria-hidden className="w-full min-w-0" style={{ height }} />
       ) : (
         <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-          {t("empty")}
+          {emptyText ?? t("empty")}
         </p>
       )}
       {hasData && (

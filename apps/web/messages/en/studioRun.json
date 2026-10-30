@@ -47,6 +47,7 @@
         "code_archive": "All code (zip)",
         "experiment_log": "Experiment log",
         "metrics": "Metrics",
+        "checkpoint": "Model checkpoint",
         "draft": "Draft",
         "references": "References"
       }
@@ -224,7 +225,17 @@
       "provenance": "Provenance",
       "logs": "Training log",
       "logText": "Last lines of the training log",
-      "downloadLog": "Download the full log"
+      "downloadLog": "Download the full log",
+      "downloadCheckpoint": "Download the checkpoint",
+      "live": {
+        "title": "Live training curves",
+        "titleAttempt": "Live training curves of attempt {attempt}",
+        "badge": "Live",
+        "waiting": "The curves appear here after the first epoch.",
+        "epochs": "{count, plural, one {# epoch} other {# epochs}} so far",
+        "latest": "Latest: {line}",
+        "notMeasured": "Not measured yet."
+      }
     },
     "writing": {
       "stats": {

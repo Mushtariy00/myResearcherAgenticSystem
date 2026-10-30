@@ -31,6 +31,21 @@ async function wait(ms: number) {
   });
 }
 
+describe("useRunEvents batching", () => {
+  it("shows events on a hidden page too, which runs no animation frames", async () => {
+    vi.stubGlobal("requestAnimationFrame", () => 1); // a frame that never comes
+    vi.stubGlobal("cancelAnimationFrame", () => {});
+    const { result } = follow();
+    act(() => {
+      FakeEventSource.latest().open();
+      FakeEventSource.latest().send(runEvent("log", { message: "while hidden" }, 7));
+    });
+    expect(result.current.events).toHaveLength(0); // still batching
+    await wait(250);
+    expect(result.current.events.map((event) => event.seq)).toEqual([7]);
+  });
+});
+
 describe("useRunEvents reconnecting", () => {
   it("opens the stream again after the browser gave up, after the newest event it has", async () => {
     const { result, check } = follow();

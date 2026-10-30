@@ -34,6 +34,7 @@ import {
 } from "@/lib/run-events";
 import { type StageOverview, stageOverviews } from "@/lib/stage-output";
 import { buildTimeline, isTerminalRunStatus, retryableStages, STAGE_ORDER } from "@/lib/timeline";
+import { isTrainingEvent, type LiveTraining, liveTraining } from "@/lib/training-curves";
 
 /** How often the run detail (and a live stage's detail) is polled in case the stream is down. */
 export const RUN_POLL_MS = 20_000;
@@ -79,13 +80,20 @@ export type RunView = {
   spend: RunSpend;
   /** Stages whose attempt waits and then runs again by itself (`stage.waiting`), by stage id. */
   waits: Readonly<Record<string, StageWait>>;
+  /**
+   * The experiment stage's live training curves: its current attempt's `experiment.epoch`
+   * events (kind "train") as metric series. Null before the first epoch. The stage view draws
+   * them while the stage runs, and its stored series once the output is ready.
+   */
+  training: LiveTraining | null;
   /** Refetches the run and everything on screen that shows it. */
   refresh: () => void;
 };
 
 /**
  * Everything a run page shows: the run detail, its live events (one EventSource for the page),
- * the stage timeline, the flags that decide which actions to offer, and the live spend.
+ * the stage timeline, the flags that decide which actions to offer, the live spend and the live
+ * training curves.
  *
  * The event stream also keeps the rest of the page fresh: stage events refetch the details of
  * the stages they name (`useStage`) and the run's artifacts (`useRunArtifacts`).
@@ -123,6 +131,8 @@ export function useRunView(runId: string): RunView {
   const stream = useRunEvents(runId, refreshDetail, canResume);
   useStageRefresh(runId, stream.events);
   const loggedSpend = useRunSpend(runId, stream.events);
+  const trainingEvents = useKeptEvents(runId, stream.events, isTrainingEvent);
+  const training = useMemo(() => liveTraining(trainingEvents), [trainingEvents]);
 
   const stageOrder = useMemo(
     () =>
@@ -169,6 +179,7 @@ export function useRunView(runId: string): RunView {
     retryableStages: retryable,
     spend,
     waits,
+    training,
     refresh,
   };
 }
@@ -269,23 +280,24 @@ function useStageRefresh(runId: string, events: readonly RunEvent[]): void {
   );
 }
 
-type SpendCalls = { runId: string; from: readonly RunEvent[]; calls: readonly RunEvent[] };
+type KeptEvents = { runId: string; from: readonly RunEvent[]; kept: readonly RunEvent[] };
 
 const NO_EVENTS: readonly RunEvent[] = [];
 
-function llmCalls(events: readonly RunEvent[]): RunEvent[] {
-  return events.filter((event) => event.type === "llm.call");
-}
-
 /**
- * The spend of every `llm.call` event seen since mount. The calls are kept apart from the event
- * log, which drops its oldest events beyond MAX_EVENTS, so the total never shrinks.
+ * Every event `keep` selects that arrived since mount, in seq order. They are kept apart from
+ * the event log, which drops its oldest events beyond MAX_EVENTS, so none of them is lost.
+ * `keep` must not change between renders (a module-level function).
  */
-function useRunSpend(runId: string, events: readonly RunEvent[]): RunSpend {
-  const [stored, setStored] = useState<SpendCalls>(() => ({
+function useKeptEvents(
+  runId: string,
+  events: readonly RunEvent[],
+  keep: (event: RunEvent) => boolean,
+): readonly RunEvent[] {
+  const [stored, setStored] = useState<KeptEvents>(() => ({
     runId,
     from: events,
-    calls: llmCalls(events),
+    kept: events.filter(keep),
   }));
   let current = stored;
   if (stored.from !== events || stored.runId !== runId) {
@@ -293,14 +305,23 @@ function useRunSpend(runId: string, events: readonly RunEvent[]): RunSpend {
     current = {
       runId,
       from: events,
-      calls: mergeEvents(
-        stored.runId === runId ? stored.calls : NO_EVENTS,
-        llmCalls(events),
+      kept: mergeEvents(
+        stored.runId === runId ? stored.kept : NO_EVENTS,
+        events.filter(keep),
         Number.POSITIVE_INFINITY,
       ),
     };
     setStored(current);
   }
-  const calls = current.calls;
+  return current.kept;
+}
+
+function isLlmCall(event: RunEvent): boolean {
+  return event.type === "llm.call";
+}
+
+/** The spend of every `llm.call` event seen since mount: the total never shrinks. */
+function useRunSpend(runId: string, events: readonly RunEvent[]): RunSpend {
+  const calls = useKeptEvents(runId, events, isLlmCall);
   return useMemo(() => summarizeSpend(calls), [calls]);
 }

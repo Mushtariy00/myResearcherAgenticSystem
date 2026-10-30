@@ -368,6 +368,42 @@ async def test_a_training_that_fails_or_times_out_is_an_output_that_says_so(
     assert (await stage.lines())[-1] == (FINISHED, {"status": status.value, "epochs": 1})
 
 
+async def test_a_dataset_the_harness_warned_about_flags_the_output(db: Factory) -> None:
+    await heartbeat(db)
+    stage = await attempt(db)
+    executor = FakeExecutor(db, stage)
+    # What the harness said of the lab's NYU2 copy (sandbox/pytorch/harness/data.py).
+    warning = (
+        "Depth scale differs between splits: median train 0.076 vs val 2.746 (about x36). "
+        "Check the dataset units before trusting val metrics."
+    )
+
+    async def plays() -> None:
+        job = await executor.submitted()
+        await executor.start(job)
+        for epoch, (train, val) in enumerate(EPOCHS):
+            await executor.report_epoch(job, epoch, train, val)
+        await executor.finish(
+            job,
+            GpuJobStatus.SUCCEEDED,
+            result=train_results(EPOCHS[-1][1], dataset_warnings=[warning]),
+            provenance=train_provenance(job.code),
+            exit_code=0,
+            gpu_seconds=1_830.0,
+            log_tail=LOG_TAIL,
+        )
+
+    await execute(stage, plays)
+    stored = await stored_output(db, stage.stage_run_id)
+    assert (stored.degraded, stored.degraded_reason) == (True, "experiment.dataset_warning")
+    output = ExperimentOutput.model_validate(stored.data)
+    assert output.status == "succeeded"
+    assert (
+        "The harness warned about the dataset, so these metrics can't be trusted until it is "
+        f"checked: {warning}"
+    ) in output.summary
+
+
 async def test_an_attempt_that_runs_again_waits_on_the_job_it_submitted(db: Factory) -> None:
     await heartbeat(db, used_mb=1024)
     stage = await attempt(db)

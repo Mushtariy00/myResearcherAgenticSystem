@@ -12,8 +12,3 @@ def rng_for(*parts: object) -> random.Random:
     key = "\x1f".join(str(part) for part in parts)
     digest = hashlib.sha256(key.encode()).digest()
     return random.Random(int.from_bytes(digest[:8], "big"))  # noqa: S311 - demo data, not secrets
-
-
-def sha256_hex(*parts: object) -> str:
-    """A stable SHA-256 over ``parts``, for generated checksums."""
-    return hashlib.sha256("\x1f".join(str(part) for part in parts).encode()).hexdigest()

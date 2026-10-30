@@ -41,7 +41,8 @@ STATUSES: dict[GpuJobStatus, ExperimentStatus] = {
     GpuJobStatus.CANCELLED: "cancelled",
 }
 UNKNOWN = "unknown"  # a provenance value the job never recorded
-ERROR_CHARS = 400  # of the job's error, in the summary
+ERROR_CHARS = 400  # of the job's error, and of each dataset warning, in the summary
+MAX_WARNINGS = 3  # the harness's dataset warnings the summary quotes
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
@@ -157,9 +158,14 @@ def experiment_output(
     sentences = [
         _outcome(job, status, _dataset_label(job.dataset, dataset, provenance), epochs, planned),
         _measurements(final, after, results, epochs),
-        _setup(job, config, status, results, provenance),
-        batch_reason or resumed,
     ]
+    warnings = dataset_warnings(results)
+    if warnings:
+        sentences.append(
+            "The harness warned about the dataset, so these metrics can't be trusted until it is "
+            f"checked: {' '.join(warnings)}"
+        )
+    sentences += [_setup(job, config, status, results, provenance), batch_reason or resumed]
     if len(records) < epochs:
         missing = epochs - len(records)
         sentences.append(
@@ -192,6 +198,19 @@ def finished_line(output: ExperimentOutput, error_code: str | None) -> tuple[dic
     else:
         message = f"Training was cancelled after {done}"
     return {"status": output.status, "epochs": epochs}, message
+
+
+def dataset_warnings(results: Mapping[str, Any]) -> list[str]:
+    """The harness's warnings about the dataset (results.json), such as depth units that differ
+    between the splits; a few, each cut short, since they come out of the sandbox."""
+    found = results.get("dataset_warnings")
+    if not isinstance(found, list):
+        return []
+    return [
+        _cut(" ".join(warning.split()), ERROR_CHARS)
+        for warning in found[:MAX_WARNINGS]
+        if isinstance(warning, str) and warning.strip()
+    ]
 
 
 # --- the parts of the output ---------------------------------------------------------------------

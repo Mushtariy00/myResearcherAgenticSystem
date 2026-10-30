@@ -58,6 +58,17 @@
       "temperature": "Temperature",
       "power": "Power",
       "powerValue": "{draw} of {limit} W",
+      "powerDraw": "{draw} W",
+      "notReported": "not reported",
+      "noReadings": "The GPU has not reported any readings yet.",
+      "offline": {
+        "title": "The GPU executor is not running",
+        "description": "Queued jobs wait until it is back."
+      },
+      "kinds": {
+        "smoke": "Smoke test",
+        "train": "Training"
+      },
       "running": "On the GPU",
       "idle": "Nothing is running.",
       "waiting": "Waiting ({count})",
@@ -75,7 +86,7 @@
         "none": "You have no jobs on the GPU.",
         "running": "Your job is on the GPU now.",
         "queued": "Your job is number {position} in the queue.",
-        "limit": "Up to {limit} jobs per person can wait at a time; you have {count}."
+        "limit": "Up to {limit} jobs per person can wait at a time; you have {count} on the GPU or waiting."
       }
     },
     "spend": {

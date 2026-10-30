@@ -1622,7 +1622,7 @@
           "artifacts"
         ],
         "summary": "List Run Artifacts",
-        "description": "Every file the run's latest coding, experiment and writing outputs make; anyone who can\nopen the run may download them.",
+        "description": "Every file the run's latest coding, experiment and writing outputs make; anyone who can\nopen the run may download them. An experiment's log, metrics and checkpoint are its training\njob's files where this machine has them.",
         "operationId": "listRunArtifacts",
         "parameters": [
           {
@@ -1666,7 +1666,7 @@
           "artifacts"
         ],
         "summary": "Get Artifact",
-        "description": "Download one artifact. The id names a stage output and an item of it; both are checked\nagain here, and the caller must be able to open the run the output belongs to.",
+        "description": "Download one artifact. The id names a stage output and an item of it; both are checked\nagain here, and the caller must be able to open the run the output belongs to. A job's\nfile is streamed from disk.",
         "operationId": "getArtifact",
         "parameters": [
           {
@@ -1714,6 +1714,12 @@
                   "type": "string",
                   "format": "binary"
                 }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
@@ -1736,7 +1742,7 @@
           "compute"
         ],
         "summary": "List Datasets",
-        "description": "Datasets experiments can mount (read-only), with their data contracts.",
+        "description": "Datasets experiments can mount (read-only), with their data contracts: the enabled\nregistered datasets.",
         "operationId": "listDatasets",
         "responses": {
           "200": {
@@ -1758,7 +1764,7 @@
           "compute"
         ],
         "summary": "Get Gpu Queue",
-        "description": "The GPU's live readings, the job on it and the jobs waiting, with the caller's place.\n\nReal experiment stages that are running come from the database, oldest first; runs in\nprojects the caller can't open show no topic. Telemetry and the other jobs are demo data.",
+        "description": "The GPU's live readings, the jobs on it and the jobs waiting, with the caller's place.\n\nThe jobs are the executor's (gpu_jobs), queued ones in the order it will run them; runs in\nprojects the caller can't open show no run, topic or project. The readings come from the\nexecutor's heartbeat, and are null while it is not running.",
         "operationId": "getGpuQueue",
         "responses": {
           "200": {

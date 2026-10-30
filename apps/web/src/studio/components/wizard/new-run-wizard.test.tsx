@@ -155,9 +155,9 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function renderWizard() {
+function renderWizard(datasets: DatasetList = DATASETS) {
   const queryClient = makeQueryClient();
-  queryClient.setQueryData(listDatasetsQueryKey(), DATASETS);
+  queryClient.setQueryData(listDatasetsQueryKey(), datasets);
   const onOpenChange = vi.fn();
   renderStudio(<NewRunWizard projectId={PROJECT} open onOpenChange={onOpenChange} />, {
     user: TEST_USER,
@@ -189,6 +189,22 @@ function message(code: string, values: Record<string, number> = {}): string {
 const next = () => fireEvent.click(screen.getByRole("button", { name: /^Next/ }));
 
 describe("NewRunWizard steps", () => {
+  it("says a dataset's size is unknown until it is measured, never 0 bytes", async () => {
+    renderWizard({
+      ...DATASETS,
+      items: DATASETS.items.map((item) => ({ ...item, size_bytes: null, checksum_sha256: null })),
+    });
+    fireEvent.change(await screen.findByRole("textbox", { name: "Research topic" }), {
+      target: { value: "Monocular depth estimation" },
+    });
+    next();
+    await stepHeading("Literature", 2);
+    next();
+    await stepHeading("Stages", 3);
+    const datasets = screen.getByRole("radiogroup", { name: "Dataset" });
+    expect(within(datasets).getByText("depth · RGB-D · 1,449 samples · size unknown")).toBeTruthy();
+  });
+
   it("walks the four steps, validating each before moving on", async () => {
     renderWizard();
     const first = await stepHeading("Topic", 1);

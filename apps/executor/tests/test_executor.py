@@ -176,6 +176,12 @@ async def test_a_smoke_job_runs_end_to_end(db: Factory, tmp_path: Path) -> None:
             "metrics.jsonl": len(outputs["metrics.jsonl"]),
             "checkpoints/best.pt": 7,
         },
+        # The API lists the outputs with these, without hashing a large checkpoint again.
+        "outputs_sha256": {
+            "results.json": _sha256(results_ok()),
+            "metrics.jsonl": _sha256(outputs["metrics.jsonl"]),
+            "checkpoints/best.pt": _sha256(b"weights"),
+        },
     }
 
 
@@ -442,6 +448,10 @@ async def test_a_job_past_its_time_limit_keeps_its_partial_outputs(
     assert (out / "checkpoints" / "best.pt").read_bytes() == b"weights"
     assert finished.provenance is not None
     assert finished.provenance["outputs"] == {"metrics.jsonl": 18, "checkpoints/best.pt": 7}
+    assert finished.provenance["outputs_sha256"] == {
+        "metrics.jsonl": _sha256(outputs["metrics.jsonl"]),
+        "checkpoints/best.pt": _sha256(b"weights"),
+    }
     assert len(await epoch_events(db, job.run_id)) == 1
 
 
@@ -466,6 +476,7 @@ async def test_an_output_over_its_cap_is_noted_in_the_error(
     assert finished.provenance["outputs_skipped"] == {
         CHECKPOINT_FILE: "11 bytes, over the 10-byte cap"
     }
+    assert set(finished.provenance["outputs_sha256"]) == {"results.json"}  # only what was copied
 
 
 async def test_the_vram_preflight_waits_until_memory_frees_up(db: Factory, tmp_path: Path) -> None:

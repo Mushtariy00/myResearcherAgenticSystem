@@ -549,7 +549,7 @@ class GpuJobOut(BaseModel):
     id: str  # the GPU job's id
     kind: Literal["smoke", "train"] | None = None  # a coding stage's smoke test, or training
     status: Literal["running", "queued"]
-    run_id: uuid.UUID | None  # None for demo jobs and for runs the caller can't open
+    run_id: uuid.UUID | None  # None for runs the caller can't open
     topic: str | None
     project_name: str | None
     owner_name: str | None
@@ -564,7 +564,7 @@ class GpuJobOut(BaseModel):
     estimated_start_at: datetime
     estimated_finish_at: datetime
     eta_seconds: int  # until it finishes, waiting time included
-    estimated: bool  # progress and ETA guessed from the elapsed time (no executor reports yet)
+    estimated: bool  # progress and ETA guessed: the job has reported no progress yet
     demo: bool
 
 
@@ -577,7 +577,7 @@ class GpuQueueOut(BaseModel):
     queued: list[GpuJobOut]  # in the order they will run
     my_position: int | None  # 0: the caller's job is running; n: n-th in the queue; None: none
     my_jobs: int
-    per_user_limit: int  # jobs one user may have running or queued
+    per_user_limit: int  # jobs one user may have queued (agentic_core.gpu_jobs)
     demo: bool
 
 

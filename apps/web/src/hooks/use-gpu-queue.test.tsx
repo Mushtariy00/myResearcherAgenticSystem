@@ -21,6 +21,8 @@ const QUEUE: GpuQueueOut = {
     sampled_at: "2026-10-30T01:00:00Z",
     demo: true,
   },
+  // The API's demo queue has no executor behind it.
+  executor_alive: false,
   concurrency: 1,
   running: [],
   queued: [],

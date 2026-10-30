@@ -14,6 +14,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { useStageWaitText } from "@/components/shared/wait-text";
 import { useErrorMessage } from "@/hooks/use-error-message";
+import { TRAINING_STAGE } from "@/lib/training-curves";
 import { cn } from "@/lib/utils";
 import { GlassCard } from "@/studio/components/effects/glass-card";
 import { PulseDot } from "@/studio/components/effects/pulse-dot";
@@ -22,6 +23,7 @@ import { StudioStatePanel } from "@/studio/components/studio-state-panel";
 import { stageAttr } from "@/studio/lib/stages";
 import { OUTLINE_BUTTON } from "@/studio/lib/ui";
 import { useEventDescriber } from "./event-lines";
+import { LiveTrainingCard } from "./experiment-view";
 import { useRunPage } from "./run-context";
 import { Callout } from "./run-ui";
 import { useRunLabels } from "./use-run-labels";
@@ -109,20 +111,24 @@ export function StageEmpty({
   );
 }
 
+/** Events whose line says what a running stage does now. */
+const STEP_EVENTS = new Set(["log", "stage.started", "experiment.epoch"]);
+
 /**
  * A stage at work with nothing to show yet: a pulsing title, its newest progress line from the
- * live log, and placeholders where the output will appear.
+ * live log, and placeholders where the output will appear. The experiment stage shows its live
+ * training curves instead of the placeholders.
  */
 export function StageRunning({ stage }: { stage: string }) {
   const t = useTranslations("studioRun.stage");
   const { view } = useRunPage();
   const labels = useRunLabels();
   const describe = useEventDescriber();
+  const trains = stage === TRAINING_STAGE;
   const latest = view.events.findLast(
-    (event) =>
-      event.payload.stage === stage && (event.type === "log" || event.type === "stage.started"),
+    (event) => event.payload.stage === stage && STEP_EVENTS.has(event.type),
   );
-  return (
+  const card = (
     <GlassCard
       data-stage={stageAttr(stage)}
       aria-busy="true"
@@ -141,12 +147,22 @@ export function StageRunning({ stage }: { stage: string }) {
           <span className="min-w-0 break-words">{describe(latest).text}</span>
         </p>
       )}
-      <div aria-hidden className="grid gap-2.5 pt-1">
-        <ShimmerSkeleton className="h-3.5 w-11/12" />
-        <ShimmerSkeleton className="h-3.5 w-4/5" />
-        <ShimmerSkeleton className="h-3.5 w-2/3" />
-      </div>
+      {!trains && (
+        <div aria-hidden className="grid gap-2.5 pt-1">
+          <ShimmerSkeleton className="h-3.5 w-11/12" />
+          <ShimmerSkeleton className="h-3.5 w-4/5" />
+          <ShimmerSkeleton className="h-3.5 w-2/3" />
+        </div>
+      )}
     </GlassCard>
+  );
+  return trains ? (
+    <div className="grid min-w-0 gap-4">
+      {card}
+      <LiveTrainingCard />
+    </div>
+  ) : (
+    card
   );
 }
 

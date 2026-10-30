@@ -323,7 +323,8 @@ export const getPaper = <ThrowOnError extends boolean = false>(options: Options<
  * List Run Artifacts
  *
  * Every file the run's latest coding, experiment and writing outputs make; anyone who can
- * open the run may download them.
+ * open the run may download them. An experiment's log, metrics and checkpoint are its training
+ * job's files where this machine has them.
  */
 export const listRunArtifacts = <ThrowOnError extends boolean = false>(options: Options<ListRunArtifactsData, ThrowOnError>): RequestResult<ListRunArtifactsResponses, ListRunArtifactsErrors, ThrowOnError> => (options.client ?? client).get<ListRunArtifactsResponses, ListRunArtifactsErrors, ThrowOnError>({ url: '/api/v1/runs/{run_id}/artifacts', ...options });
 
@@ -331,24 +332,27 @@ export const listRunArtifacts = <ThrowOnError extends boolean = false>(options: 
  * Get Artifact
  *
  * Download one artifact. The id names a stage output and an item of it; both are checked
- * again here, and the caller must be able to open the run the output belongs to.
+ * again here, and the caller must be able to open the run the output belongs to. A job's
+ * file is streamed from disk.
  */
 export const getArtifact = <ThrowOnError extends boolean = false>(options: Options<GetArtifactData, ThrowOnError>): RequestResult<GetArtifactResponses, GetArtifactErrors, ThrowOnError> => (options.client ?? client).get<GetArtifactResponses, GetArtifactErrors, ThrowOnError>({ url: '/api/v1/artifacts/{artifact_id}', ...options });
 
 /**
  * List Datasets
  *
- * Datasets experiments can mount (read-only), with their data contracts.
+ * Datasets experiments can mount (read-only), with their data contracts: the enabled
+ * registered datasets.
  */
 export const listDatasets = <ThrowOnError extends boolean = false>(options?: Options<ListDatasetsData, ThrowOnError>): RequestResult<ListDatasetsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListDatasetsResponses, unknown, ThrowOnError>({ url: '/api/v1/datasets', ...options });
 
 /**
  * Get Gpu Queue
  *
- * The GPU's live readings, the job on it and the jobs waiting, with the caller's place.
+ * The GPU's live readings, the jobs on it and the jobs waiting, with the caller's place.
  *
- * Real experiment stages that are running come from the database, oldest first; runs in
- * projects the caller can't open show no topic. Telemetry and the other jobs are demo data.
+ * The jobs are the executor's (gpu_jobs), queued ones in the order it will run them; runs in
+ * projects the caller can't open show no run, topic or project. The readings come from the
+ * executor's heartbeat, and are null while it is not running.
  */
 export const getGpuQueue = <ThrowOnError extends boolean = false>(options?: Options<GetGpuQueueData, ThrowOnError>): RequestResult<GetGpuQueueResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetGpuQueueResponses, unknown, ThrowOnError>({ url: '/api/v1/gpu/queue', ...options });
 

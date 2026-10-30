@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
-import type { LiteratureOutput, RunDetail } from "@/client";
+import type { LiteratureOutput, RunDetail, StageAttemptOut } from "@/client";
 import { EmptyState, LoadingRows, QueryError } from "@/components/app/query-state";
 import { StageStatusBadge } from "@/components/app/status-badge";
 import { JsonView } from "@/components/shared/json-view";
@@ -20,12 +20,32 @@ import { Button } from "@/components/ui/button";
 import { type StageView, useStage } from "@/hooks/use-stage";
 import type { StageWait } from "@/lib/run-events";
 import type { StageOverview } from "@/lib/stage-output";
+import { isTerminalRunStatus } from "@/lib/timeline";
+import type { LiveTraining } from "@/lib/training-curves";
 import { ApprovalPanel, AwaitingPreview } from "./approval-panel";
 import { StageWaitAlert } from "./stage-wait";
 import { useLabels } from "./use-labels";
 import { VersionDetails, VersionSwitcher } from "./versions";
 import type { CodingBase } from "./views/coding-view";
+import { LiveTrainingCurves } from "./views/experiment-view";
 import { StageOutputView } from "./views/stage-output-view";
+
+/**
+ * The live curves of a stage that trains (`undefined` for the stages that don't): null until
+ * the first epoch of its current attempt arrives.
+ */
+type Training = LiveTraining | null | undefined;
+
+/** The stage's newest attempt while it works without an output yet (a finished run has none). */
+function workingAttempt(run: RunDetail, view: StageView): StageAttemptOut | null {
+  const attempt = view.currentAttempt;
+  return attempt &&
+    !isTerminalRunStatus(run.status) &&
+    (attempt.status === "running" || attempt.status === "pending") &&
+    attempt.outputs.length === 0
+    ? attempt
+    : null;
+}
 
 /** The coding version or attempt that `view.selected` is compared with, if any. */
 function codingBaseOf(view: StageView): CodingBase | null {
@@ -43,10 +63,34 @@ function codingBaseOf(view: StageView): CodingBase | null {
 }
 
 /** The stage has no output to show: why, and what happens next. */
-function NoOutput({ run, entry, view }: { run: RunDetail; entry: StageOverview; view: StageView }) {
+function NoOutput({
+  run,
+  entry,
+  view,
+  training,
+}: {
+  run: RunDetail;
+  entry: StageOverview;
+  view: StageView;
+  training: Training;
+}) {
   const t = useTranslations("run.stage");
   const labels = useLabels();
   const attempt = view.currentAttempt;
+  const working = workingAttempt(run, view);
+  if (working && training !== undefined) {
+    // A stage that trains shows its curves while it works.
+    return (
+      <div className="grid gap-4">
+        <Alert role="status">
+          <LoaderCircleIcon aria-hidden className="motion-safe:animate-spin" />
+          <AlertTitle>{t("working", { attempt: working.attempt })}</AlertTitle>
+          <AlertDescription>{t("workingDescription")}</AlertDescription>
+        </Alert>
+        <LiveTrainingCurves training={training} />
+      </div>
+    );
+  }
   if (!run.config.stages.some((stage) => stage === entry.stage)) {
     return (
       <EmptyState
@@ -143,6 +187,7 @@ function StageBody({
   view,
   literature,
   underReview,
+  training,
 }: {
   run: RunDetail;
   entry: StageOverview;
@@ -150,6 +195,7 @@ function StageBody({
   literature: LiteratureOutput | null;
   /** An output of this stage waits for review while another version is on screen. */
   underReview: boolean;
+  training: Training;
 }) {
   const t = useTranslations("run.stage");
   const tApproval = useTranslations("run.approval");
@@ -161,9 +207,11 @@ function StageBody({
   }
   const selected = view.selected;
   if (!selected || !view.narrowed) {
-    return <NoOutput run={run} entry={entry} view={view} />;
+    return <NoOutput run={run} entry={entry} view={view} training={training} />;
   }
   const newest = view.current;
+  // A newer attempt trains while an earlier attempt's output is on screen.
+  const trainingAttempt = training !== undefined ? workingAttempt(run, view) : null;
   return (
     <div className="grid gap-4">
       {underReview && (
@@ -193,6 +241,9 @@ function StageBody({
           </Alert>
         )}
       <NewerAttemptNote view={view} />
+      {training !== undefined && trainingAttempt && (
+        <LiveTrainingCurves training={training} attempt={trainingAttempt.attempt} />
+      )}
       <VersionDetails version={selected} />
       <StageOutputView
         runId={run.id}
@@ -218,13 +269,15 @@ function StageBody({
 /**
  * One stage of the run: its versions (with a switcher when there are several) and the chosen
  * one in the stage's view. While the stage's output waits for review, the review takes its place:
- * the approval panel for people who may decide, a read-only preview for everyone else.
+ * the approval panel for people who may decide, a read-only preview for everyone else. A stage
+ * that trains (the experiment) draws its live curves while its attempt works.
  */
 export function StagePanel({
   run,
   entry,
   literature,
   wait,
+  training,
 }: {
   run: RunDetail;
   entry: StageOverview;
@@ -232,6 +285,11 @@ export function StagePanel({
   literature: LiteratureOutput | null;
   /** The stage's attempt waits before it tries again (`stage.waiting`). */
   wait?: StageWait;
+  /**
+   * For the experiment stage: its live training curves (null before the first epoch); left
+   * out for the other stages.
+   */
+  training?: LiveTraining | null;
 }) {
   const labels = useLabels();
   const headingId = useId();
@@ -268,6 +326,7 @@ export function StagePanel({
           view={view}
           literature={literature}
           underReview={awaiting !== null}
+          training={training}
         />
       )}
     </section>

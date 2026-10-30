@@ -96,6 +96,77 @@ describe("useEventDescriber", () => {
     ).toBe("방법론부터 실행을 다시 시작함");
   });
 
+  it("words a finished epoch by its headline metric, never as raw JSON", () => {
+    const toLine = describer();
+    const epoch = runEvent("experiment.epoch", {
+      stage: "experiment",
+      job_id: "job-1",
+      kind: "train",
+      ordinal: 1,
+      epoch: 2,
+      train: { loss: 0.31, rmse: 0.4981, mae: 0.35, abs_rel: 0.11 },
+      val: { loss: 0.43, rmse: 0.512, mae: 0.38, abs_rel: 0.12 },
+    });
+    expect(toLine(epoch)).toEqual({
+      kind: "epoch",
+      tone: "info",
+      stage: "experiment",
+      text: "Epoch 2: val RMSE 0.512",
+      detail: "train 0.4981",
+      group: "stages",
+    });
+    const smoke = runEvent("experiment.epoch", {
+      stage: "coding",
+      job_id: "smoke-2",
+      kind: "smoke",
+      ordinal: 2,
+      epoch: 0,
+      val: { loss: 2.5, rmse: null },
+      train: {},
+    });
+    expect(toLine(smoke)).toMatchObject({
+      stage: "coding",
+      text: "Smoke test 2, epoch 0: val loss 2.5",
+      detail: null,
+    });
+    expect(describer("ko")(epoch)).toMatchObject({
+      text: "에포크 2: 검증 RMSE 0.512",
+      detail: "학습 0.4981",
+    });
+    expect(toLine(runEvent("experiment.epoch", { stage: "experiment" }))).toMatchObject({
+      kind: "raw",
+      text: 'experiment.epoch {"stage":"experiment"}',
+    });
+  });
+
+  it("translates the GPU stages' progress in both languages", () => {
+    const lines = [
+      progress("coding", "coding.written", { try: 1, files: 2, lines: 87 }),
+      progress("coding", "gpu.started", { kind: "smoke", ordinal: 1 }),
+      progress("coding", "coding.smoke_passed", { try: 1, seconds: 16.04 }),
+      progress("experiment", "gpu.queue_full", { kind: "train", limit: 2 }),
+      progress("experiment", "experiment.finished", { status: "timeout", epochs: 2 }),
+    ];
+    expect(lines.map((event) => describer()(event).text)).toEqual([
+      "Try 1: wrote 2 files (87 lines)",
+      "Smoke test 1 running on the GPU",
+      "Try 1: the smoke test passed in 16 s",
+      "Training waits: you already have 2 GPU jobs queued, the most allowed",
+      "Training stopped at its time limit after 2 epochs",
+    ]);
+    expect(lines.map((event) => describer("ko")(event).text)).toEqual([
+      "1번째 시도: 파일 2개를 작성했습니다(87줄)",
+      "스모크 테스트 1: GPU에서 실행 중",
+      "1번째 시도: 스모크 테스트 통과(16초)",
+      "학습 대기 중: 대기열에 올린 GPU 작업이 이미 최대치(2개)입니다",
+      "학습 시간 한도 도달: 2에포크 후 중단",
+    ]);
+    expect(describer()(lines[0] as ReturnType<typeof runEvent>)).toMatchObject({
+      kind: "progress",
+      stage: "coding",
+    });
+  });
+
   it("falls back to the English message for unknown codes and malformed params", () => {
     const toLine = describer("ko");
     expect(

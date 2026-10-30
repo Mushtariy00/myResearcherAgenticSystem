@@ -155,6 +155,8 @@ const GPU: GpuQueueOut = {
     sampled_at: hoursAgo(0),
     demo: true,
   },
+  // The API's demo queue has no executor behind it; its readings are generated.
+  executor_alive: false,
   concurrency: 1,
   running: [
     {
@@ -185,6 +187,34 @@ const GPU: GpuQueueOut = {
   per_user_limit: 2,
   demo: true,
 };
+
+/** The real queue: the executor reports the readings, and the jobs carry their kind. */
+function realGpu(overrides: Partial<GpuQueueOut> = {}): GpuQueueOut {
+  const [running] = GPU.running;
+  if (!running || !GPU.gpu) {
+    throw new Error("fixture changed");
+  }
+  return {
+    ...GPU,
+    gpu: { ...GPU.gpu, demo: false },
+    executor_alive: true,
+    running: [{ ...running, kind: "train", demo: false }],
+    queued: [
+      {
+        ...running,
+        id: "job-2",
+        status: "queued",
+        kind: "smoke",
+        topic: "Topic r-queued",
+        run_id: "r-queued",
+        owner_name: "Ada Lovelace",
+        demo: false,
+      },
+    ],
+    demo: false,
+    ...overrides,
+  };
+}
 
 const PROJECTS: ProjectOut[] = [
   {
@@ -361,6 +391,73 @@ describe("StudioDashboard sections", () => {
     );
     expect(within(gpu).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("42");
     expect(within(gpu).getByText("No experiments are waiting.")).toBeTruthy();
+  });
+
+  it("labels each GPU job a smoke test or a training", () => {
+    vi.mocked(useGpuQueue).mockReturnValue(loaded(realGpu()) as never);
+    renderDashboard();
+    const gpu = screen.getByRole("region", { name: /Lab GPU/ });
+    expect(within(gpu).queryByText("Demo")).toBeNull();
+    const running = within(gpu).getByRole("link", { name: "Topic r-running" }).closest("li");
+    expect(running?.textContent).toContain("Training · Grace Hopper · 42% done");
+    const queued = within(gpu).getByRole("link", { name: "Topic r-queued" }).closest("li");
+    expect(queued?.textContent).toContain("Smoke test · Ada Lovelace · starts");
+  });
+
+  it("shows a dash for a reading the GPU does not give, never 0", () => {
+    const gpuReading = realGpu().gpu;
+    if (!gpuReading) {
+      throw new Error("fixture changed");
+    }
+    vi.mocked(useGpuQueue).mockReturnValue(
+      loaded(
+        realGpu({
+          gpu: {
+            ...gpuReading,
+            utilization_percent: null,
+            temperature_c: null,
+            power_draw_w: null,
+            power_limit_w: 450,
+            fan_percent: null,
+          },
+        }),
+      ) as never,
+    );
+    renderDashboard();
+    const gpu = screen.getByRole("region", { name: /Lab GPU/ });
+    // No meter without a value: an empty ring with a dash.
+    expect(within(gpu).queryByRole("meter")).toBeNull();
+    expect(within(gpu).getAllByText("not reported")).toHaveLength(3);
+    for (const term of ["Temperature", "Power"]) {
+      expect(within(gpu).getByText(term).nextElementSibling?.textContent).toBe("—not reported");
+    }
+    expect(within(gpu).getByText("Memory").nextElementSibling?.textContent).toMatch(/GB/);
+    expect(gpu.textContent).not.toContain("°C");
+  });
+
+  it("says the GPU executor is not running, and that queued jobs wait for it", () => {
+    vi.mocked(useGpuQueue).mockReturnValue(
+      loaded(realGpu({ gpu: null, executor_alive: false, running: [] })) as never,
+    );
+    renderDashboard();
+    const gpu = screen.getByRole("region", { name: /Lab GPU/ });
+    const notice = within(gpu).getByRole("status");
+    expect(notice.textContent).toBe(
+      "The GPU executor is not runningQueued jobs wait until it is back.",
+    );
+    expect(within(gpu).getByText("Not running")).toBeTruthy();
+    expect(within(gpu).queryByRole("meter")).toBeNull();
+    expect(within(gpu).queryByText(/^Read /)).toBeNull();
+    expect(within(gpu).getByText("Nothing is running on the GPU.")).toBeTruthy();
+    expect(within(gpu).getByRole("link", { name: "Topic r-queued" })).toBeTruthy();
+  });
+
+  it("waits for the first reading of an executor that runs", () => {
+    vi.mocked(useGpuQueue).mockReturnValue(loaded(realGpu({ gpu: null })) as never);
+    renderDashboard();
+    const gpu = screen.getByRole("region", { name: /Lab GPU/ });
+    expect(within(gpu).getByText("The GPU has not reported any readings yet.")).toBeTruthy();
+    expect(within(gpu).queryByRole("meter")).toBeNull();
   });
 
   it("draws 30 days of paid spend, with the same figures in a data table", async () => {

@@ -5,6 +5,7 @@ import {
   ChevronDownIcon,
   DownloadIcon,
   FileArchiveIcon,
+  FileBoxIcon,
   FileCodeIcon,
   FileTextIcon,
   FlaskConicalIcon,
@@ -33,6 +34,7 @@ const KIND_ICONS: Record<ArtifactOut["kind"], LucideIcon> = {
   code_archive: FileArchiveIcon,
   experiment_log: FileTextIcon,
   metrics: FileTextIcon,
+  checkpoint: FileBoxIcon,
   draft: FileTextIcon,
   references: FileTextIcon,
 };

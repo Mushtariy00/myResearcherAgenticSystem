@@ -23,7 +23,7 @@ from agentic_core.schemas import CodingOutput
 from agentic_core.stages import Stage
 from agentic_db.gpu_jobs import find_job
 from agentic_db.models import GpuJob, RunEvent
-from agentic_worker.experiment.output import experiment_output, finished_line
+from agentic_worker.experiment.output import dataset_warnings, experiment_output, finished_line
 from agentic_worker.experiment.plan import approved_code, free_memory, plan_training
 from agentic_worker.gpu import GpuJobs, JobSpec, executor_status
 from agentic_worker.outputs import EXPERIMENT_PROMPT_VERSION, STAGE_DEMO_REASON
@@ -37,6 +37,9 @@ log = logging.getLogger(__name__)
 # lines come from GpuJobs, and the executor's experiment.epoch events carry the live curves.
 PLANNED = "experiment.planned"  # {epochs, steps, batch_size}
 FINISHED = "experiment.finished"  # {status, epochs}: the epochs the job completed
+# The degraded reason the web shows when the harness warned about the dataset (depth units that
+# differ between the splits, say): the metrics can't be trusted until the dataset is checked.
+DATASET_WARNING_REASON = "experiment.dataset_warning"
 # Each attempt is a stage run of its own, with one training job.
 TRAIN_ORDINAL = 1
 
@@ -105,8 +108,12 @@ class ExperimentRunner:
             job, await self._epoch_events(job), dataset=dataset, batch_reason=reason
         )
         await lines.say(FINISHED, *finished_line(output, job.error_code))
+        warned = bool(dataset_warnings(job.result if isinstance(job.result, dict) else {}))
         return StageOutcome(
-            data=output.model_dump(mode="json"), prompt_version=EXPERIMENT_PROMPT_VERSION
+            data=output.model_dump(mode="json"),
+            degraded=warned,
+            degraded_reason=DATASET_WARNING_REASON if warned else None,
+            prompt_version=EXPERIMENT_PROMPT_VERSION,
         )
 
     async def _submitted(self, ctx: StageContext) -> GpuJob | None:

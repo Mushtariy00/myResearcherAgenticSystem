@@ -8,6 +8,7 @@ import { CodeBlock } from "@/components/shared/code-block";
 import { DownloadLink } from "@/components/shared/download-link";
 import { MetricsChart } from "@/components/shared/metrics-chart";
 import { ProvenanceList } from "@/components/shared/provenance-list";
+import { useEpochLine } from "@/components/shared/stage-log";
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { artifactUrl, useRunArtifacts } from "@/hooks/use-run-artifacts";
+import type { LiveTraining } from "@/lib/training-curves";
 import { artifactsOf } from "../run-data";
 import { Prose, ViewSection } from "./view-section";
 
@@ -99,9 +101,76 @@ function FinalMetrics({ data }: { data: ExperimentOutput }) {
 }
 
 /**
+ * While the experiment stage trains: its curves so far, from the run's `experiment.epoch`
+ * events (useRunView `training`), one chart per metric (validation against training) that
+ * grows as each epoch arrives; a metric not measured yet leaves a gap. Before the first epoch
+ * it says the curves are on their way. Once the output is ready, ExperimentView shows the
+ * stored series instead.
+ */
+export function LiveTrainingCurves({
+  training,
+  attempt,
+}: {
+  training: LiveTraining | null;
+  /** Named in the title when an earlier attempt's output is on screen too. */
+  attempt?: number;
+}) {
+  const t = useTranslations("run.experiment");
+  const epochLine = useEpochLine();
+  const series = training?.series;
+  const groups = useMemo(() => seriesByMetric(series ?? []), [series]);
+  const metricOrder = useMemo(() => groups.map(([name]) => name), [groups]);
+
+  return (
+    <ViewSection
+      title={attempt === undefined ? t("live.title") : t("live.titleAttempt", { attempt })}
+      actions={
+        <span
+          data-tone="info"
+          className="inline-flex h-6 items-center gap-1.5 rounded-full bg-(--tone)/15 px-2.5 text-xs font-medium text-(--tone-fg)"
+        >
+          <span
+            aria-hidden
+            className="size-1.5 rounded-full bg-current motion-safe:animate-pulse"
+          />
+          {training ? t("live.epochs", { count: training.epochs }) : t("live.badge")}
+        </span>
+      }
+    >
+      {training === null ? (
+        <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+          {t("live.waiting")}
+        </p>
+      ) : (
+        <>
+          <p className="text-sm text-muted-foreground">
+            {t("live.latest", { line: epochLine(training.latest).text })}
+          </p>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {groups.map(([name, metricSeries]) => (
+              <MetricsChart
+                key={name}
+                live
+                series={metricSeries}
+                title={t("curve", { metric: name })}
+                metricOrder={metricOrder}
+                height="14rem"
+                emptyText={t("live.notMeasured")}
+                className="rounded-xl border p-3"
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </ViewSection>
+  );
+}
+
+/**
  * An experiment output: the status and summary, one chart per metric (train against
  * validation), the final metrics (a missing measurement says so, never 0), the config, the
- * end of the training log, and the provenance of the numbers.
+ * end of the training log with the log, metrics and checkpoint downloads, and the provenance
+ * of the numbers.
  */
 export function ExperimentView({
   runId,
@@ -119,6 +188,7 @@ export function ExperimentView({
   const own = artifactsOf(artifacts, outputId);
   const log = own.find((artifact) => artifact.kind === "experiment_log");
   const metricsCsv = own.find((artifact) => artifact.kind === "metrics");
+  const checkpoint = own.find((artifact) => artifact.kind === "checkpoint");
   const config = Object.entries(data.config);
 
   return (
@@ -176,7 +246,7 @@ export function ExperimentView({
       <ViewSection
         title={t("logs")}
         actions={
-          (log || metricsCsv) && (
+          (log || metricsCsv || checkpoint) && (
             <div className="flex flex-wrap gap-2">
               {log && (
                 <DownloadLink
@@ -194,6 +264,15 @@ export function ExperimentView({
                   sizeBytes={metricsCsv.size_bytes}
                 >
                   {t("downloadMetrics")}
+                </DownloadLink>
+              )}
+              {checkpoint && (
+                <DownloadLink
+                  href={artifactUrl(checkpoint.id)}
+                  filename={checkpoint.filename}
+                  sizeBytes={checkpoint.size_bytes}
+                >
+                  {t("downloadCheckpoint")}
                 </DownloadLink>
               )}
             </div>

@@ -1,5 +1,6 @@
 """Executor settings from ARP_* environment variables or the repo-root .env (see .env.example)."""
 
+import shutil
 from pathlib import Path
 
 from pydantic import Field, field_validator
@@ -10,6 +11,7 @@ from agentic_executor.template import SandboxLimits
 
 # The same default as the worker's: job files live next to the paper library.
 DEFAULT_DATA_DIR = "~/.local/share/arp"
+WSL_NVIDIA_SMI = "/usr/lib/wsl/lib/nvidia-smi"
 
 
 class ExecutorSettings(BaseSettings):
@@ -37,8 +39,8 @@ class ExecutorSettings(BaseSettings):
     max_train_hours: float = Field(default=DEFAULT_MAX_TRAIN_HOURS, gt=0, le=72)
 
     # The VRAM preflight: a job starts only once this much GPU memory is free (another process
-    # may be using the GPU). nvidia-smi is found on PATH; under WSL it is /usr/lib/wsl/lib.
-    nvidia_smi: str = "nvidia-smi"
+    # may be using the GPU). nvidia-smi is found on PATH, else, under WSL, in /usr/lib/wsl/lib.
+    nvidia_smi: str = Field(default="nvidia-smi", validate_default=True)
     min_free_vram_mb: int = Field(default=3072, ge=0)
 
     poll_seconds: float = Field(default=2.0, gt=0)  # how often an idle executor looks at the queue
@@ -55,6 +57,14 @@ class ExecutorSettings(BaseSettings):
         # .env.example leaves ARP_DATA_DIR empty: that means the default.
         text = str(value).strip() if value is not None else ""
         return Path(text or DEFAULT_DATA_DIR).expanduser()
+
+    @field_validator("nvidia_smi")
+    @classmethod
+    def _nvidia_smi(cls, value: str) -> str:
+        # WSL puts nvidia-smi in /usr/lib/wsl/lib, which a service's trimmed PATH may lack.
+        if value == "nvidia-smi" and shutil.which(value) is None and Path(WSL_NVIDIA_SMI).is_file():
+            return WSL_NVIDIA_SMI
+        return value
 
     @field_validator("dataset_nyu2", mode="before")
     @classmethod

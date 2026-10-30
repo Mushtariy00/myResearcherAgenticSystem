@@ -49,6 +49,16 @@
         "temperature": "Temperature",
         "power": "Power",
         "powerValue": "{draw} W of {limit} W",
+        "powerDraw": "{draw} W",
+        "notReported": "not reported",
+        "noReadings": "The GPU has not reported any readings yet.",
+        "notRunning": "Not running",
+        "offline": "The GPU executor is not running",
+        "offlineDescription": "Queued jobs wait until it is back.",
+        "kinds": {
+          "smoke": "Smoke test",
+          "train": "Training"
+        },
         "myRunning": "Your experiment is running now.",
         "myNext": "Your experiment is next in the queue.",
         "myQueued": "Your experiment is number {position} in the queue.",
@@ -125,6 +135,7 @@
         "notUsed": "This run stops before the experiment stage, so the dataset is not used.",
         "version": "v{version}",
         "samples": "{count, plural, one {# sample} other {# samples}}",
+        "sizeUnknown": "size unknown",
         "none": "No dataset"
       },
       "budget": {

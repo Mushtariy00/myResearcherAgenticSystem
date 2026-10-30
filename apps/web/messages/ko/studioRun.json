@@ -47,6 +47,7 @@
         "code_archive": "전체 코드 (zip)",
         "experiment_log": "실험 로그",
         "metrics": "지표",
+        "checkpoint": "모델 체크포인트",
         "draft": "초안",
         "references": "참고문헌"
       }
@@ -224,7 +225,17 @@
       "provenance": "재현 정보",
       "logs": "학습 로그",
       "logText": "학습 로그 마지막 부분",
-      "downloadLog": "전체 로그 내려받기"
+      "downloadLog": "전체 로그 내려받기",
+      "downloadCheckpoint": "체크포인트 내려받기",
+      "live": {
+        "title": "실시간 학습 곡선",
+        "titleAttempt": "{attempt}번째 시도의 실시간 학습 곡선",
+        "badge": "실시간",
+        "waiting": "첫 에포크가 끝나면 여기에 곡선이 나타납니다.",
+        "epochs": "지금까지 {count}에포크",
+        "latest": "최근: {line}",
+        "notMeasured": "아직 측정되지 않았습니다."
+      }
     },
     "writing": {
       "stats": {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   affectsRunDetail,
+  epochRecord,
   lastSeq,
   mergeEvents,
   parseRunEvent,
@@ -110,6 +111,67 @@ describe("affectsRunDetail", () => {
       expect(affectsRunDetail(type), type).toBe(false);
     }
   });
+
+  it("leaves the run alone on each finished epoch (the curves come from the events)", () => {
+    expect(affectsRunDetail("experiment.epoch")).toBe(false);
+  });
+});
+
+describe("epochRecord", () => {
+  it("reads an experiment.epoch payload as the executor writes it", () => {
+    expect(
+      epochRecord({
+        stage: "experiment",
+        job_id: "5b1e",
+        kind: "train",
+        ordinal: 1,
+        epoch: 2,
+        train: { loss: 0.31, rmse: 0.498, mae: null, abs_rel: 0.11 },
+        val: { loss: 0.43, rmse: 0.512, mae: 0.38, abs_rel: null },
+      }),
+    ).toEqual({
+      stage: "experiment",
+      jobId: "5b1e",
+      kind: "train",
+      ordinal: 1,
+      epoch: 2,
+      train: { loss: 0.31, rmse: 0.498, mae: null, abs_rel: 0.11 },
+      val: { loss: 0.43, rmse: 0.512, mae: 0.38, abs_rel: null },
+    });
+  });
+
+  it("takes anything that is not a finite number as not measured, never 0", () => {
+    const record = epochRecord({
+      epoch: 0,
+      kind: "smoke",
+      ordinal: 3,
+      stage: "coding",
+      val: { loss: "0.4", rmse: true, mae: null, abs_rel: [1] },
+      train: "broken",
+    });
+    expect(record).toMatchObject({
+      kind: "smoke",
+      ordinal: 3,
+      stage: "coding",
+      val: { loss: null, rmse: null, mae: null, abs_rel: null },
+      train: {},
+    });
+  });
+
+  it("needs a whole epoch number from 0, and fills in what the event leaves out", () => {
+    for (const epoch of [-1, 1.5, "2", null, undefined]) {
+      expect(epochRecord({ epoch, kind: "train" }), String(epoch)).toBeNull();
+    }
+    expect(epochRecord({ epoch: 0, kind: "eval", ordinal: 0 })).toEqual({
+      stage: "experiment",
+      jobId: "",
+      kind: null,
+      ordinal: 1,
+      epoch: 0,
+      train: {},
+      val: {},
+    });
+  });
 });
 
 describe("stageWaits", () => {
@@ -142,6 +204,12 @@ describe("stageWaits", () => {
     );
     expect(stageWaits([wait, event(2, "run.status", { status: "running" })])).toEqual({});
     expect(stageWaits([wait, event(2, "run.status", { status: "cancelled" })])).toEqual({});
+  });
+
+  it("ends the experiment's wait when its training reports an epoch", () => {
+    const wait = waiting(1, "experiment", "call.in_progress");
+    const epoch = event(2, "experiment.epoch", { stage: "experiment", kind: "train", epoch: 0 });
+    expect(stageWaits([wait, epoch])).toEqual({});
   });
 
   it("keeps the latest wait of a stage, and a wait without a valid time", () => {
@@ -219,6 +287,34 @@ describe("summarizeEvent", () => {
     });
     const retry = event(7, "stage.started", { stage: "method", attempt: 2 });
     expect(summarizeEvent(retry)).toEqual({ kind: "stageStarted", stage: "method", attempt: 2 });
+  });
+
+  it("reads a finished epoch of a GPU job", () => {
+    const epoch = event(8, "experiment.epoch", {
+      stage: "experiment",
+      job_id: "job-1",
+      kind: "train",
+      ordinal: 1,
+      epoch: 0,
+      train: { rmse: 1.4 },
+      val: { rmse: 1.2 },
+    });
+    expect(summarizeEvent(epoch)).toEqual({
+      kind: "experimentEpoch",
+      record: {
+        stage: "experiment",
+        jobId: "job-1",
+        kind: "train",
+        ordinal: 1,
+        epoch: 0,
+        train: { rmse: 1.4 },
+        val: { rmse: 1.2 },
+      },
+    });
+    expect(summarizeEvent(event(9, "experiment.epoch", { val: {} }))).toEqual({
+      kind: "raw",
+      text: '{"val":{}}',
+    });
   });
 
   it("falls back to JSON text for unknown or incomplete events", () => {
@@ -329,6 +425,11 @@ describe("stageDetailChanges", () => {
       all: false,
       lastSeq: 4,
     });
+  });
+
+  it("ignores finished epochs, which change no stage detail either", () => {
+    const epoch = event(40, "experiment.epoch", { stage: "experiment", kind: "train", epoch: 0 });
+    expect(stageDetailChanges([epoch], 0)).toEqual({ stages: [], all: false, lastSeq: 40 });
   });
 
   it("follows retries to the stage the run restarts at", () => {

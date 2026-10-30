@@ -223,6 +223,16 @@
     },
     "literature": {
       "no_papers": "No paper matched the search, or screening left none to read. Try a broader topic or a wider range of years."
+    },
+    "coding": {
+      "no_dataset": "The run's dataset is not registered, or the training harness cannot use it, so no code was written. Start a run with a dataset from the list.",
+      "smoke_failed": "The generated code failed its smoke test on the GPU in every try (at most 3). The event log says why each try failed.",
+      "job_cancelled": "A smoke test was cancelled outside this run, so the coding stage stopped. Retry the run to test the code again."
+    },
+    "experiment": {
+      "no_dataset": "The run's dataset is not registered or is turned off, so the training could not start.",
+      "demo_code": "The approved code is demo output that never ran, so it cannot be trained. Retry the run from the coding stage.",
+      "invalid_code_config": "The approved code's config.json cannot be trained (an edit on approval may have broken it). Retry the run from the coding stage."
     }
   },
   "degradedReasons": {
@@ -238,6 +248,12 @@
     },
     "method": {
       "demo_literature": "the literature review it builds on was generated for a demo, so the papers it cites are not real."
+    },
+    "coding": {
+      "demo_literature": "the literature review behind its method was generated for a demo, so the code does not build on real papers."
+    },
+    "experiment": {
+      "dataset_warning": "the training harness warned about the dataset (see the summary), such as depth in different units across its splits, so the metrics can't be trusted until the dataset is checked."
     },
     "writing": {
       "demo_literature": "the literature review it builds on was generated for a demo, so the papers it cites are not real.",

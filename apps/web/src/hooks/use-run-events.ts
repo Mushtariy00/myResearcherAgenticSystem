@@ -9,6 +9,13 @@ export type StreamState = "connecting" | "live" | "reconnecting" | "ended" | "er
 const DETAIL_REFRESH_DELAY_MS = 300;
 
 /**
+ * Events are batched per animation frame, but a page the browser keeps hidden (a background tab,
+ * an embedded pane) runs no frames: this timer flushes the batch then, so the page is current
+ * when it is shown again.
+ */
+const FLUSH_FALLBACK_MS = 250;
+
+/**
  * The waits before each new connection after the browser gave up on the stream. It gives up on
  * any answer other than 200, such as Caddy's 502 while the API restarts; after the last wait
  * the hook stops trying (the Reconnect button starts over).
@@ -48,6 +55,7 @@ export function useRunEvents(runId: string, onDetailChange: () => void, canResum
   useEffect(() => {
     let pending: RunEvent[] = [];
     let frame: number | null = null;
+    let fallback: ReturnType<typeof setTimeout> | null = null;
     let detailTimer: ReturnType<typeof setTimeout> | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let disposed = false;
@@ -59,7 +67,15 @@ export function useRunEvents(runId: string, onDetailChange: () => void, canResum
       }, DETAIL_REFRESH_DELAY_MS);
     };
     const flush = () => {
-      frame = null;
+      // Whichever comes first, the frame or the fallback timer, cancels the other.
+      if (frame !== null) {
+        cancelAnimationFrame(frame);
+        frame = null;
+      }
+      if (fallback !== null) {
+        clearTimeout(fallback);
+        fallback = null;
+      }
       const batch = pending;
       pending = [];
       setEvents((current) => mergeEvents(current, batch));
@@ -106,6 +122,7 @@ export function useRunEvents(runId: string, onDetailChange: () => void, canResum
       latestSeq.current = Math.max(latestSeq.current, event.seq);
       pending.push(event);
       frame ??= requestAnimationFrame(flush);
+      fallback ??= setTimeout(flush, FLUSH_FALLBACK_MS);
       if (affectsRunDetail(event.type)) {
         refreshDetail();
       }
@@ -130,6 +147,9 @@ export function useRunEvents(runId: string, onDetailChange: () => void, canResum
       source.close();
       if (frame !== null) {
         cancelAnimationFrame(frame);
+      }
+      if (fallback !== null) {
+        clearTimeout(fallback);
       }
       if (pending.length > 0) {
         const batch = pending;

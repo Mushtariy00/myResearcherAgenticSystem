@@ -78,9 +78,64 @@ export function lastSeq(events: readonly RunEvent[]): number {
 /**
  * Events after which the run detail must be fetched again: stage and status events change the
  * timeline and the output waiting for review, and every model call changes the run's spend.
+ * An `experiment.epoch` event changes neither (the live curves are drawn from the events).
  */
 export function affectsRunDetail(type: string): boolean {
   return type === "run.status" || type === "llm.call" || type.startsWith("stage.");
+}
+
+/** A GPU job's kind: a coding stage's smoke test, or an experiment's training. */
+export type GpuJobKind = "smoke" | "train";
+
+/** A split's metrics after one epoch, by name: null where the harness did not measure one. */
+export type EpochMetrics = Readonly<Record<string, number | null>>;
+
+/** One finished epoch of a GPU job (an `experiment.epoch` event), as the executor reports it. */
+export type EpochRecord = {
+  /** The stage whose job it is: "coding" for a smoke test, "experiment" for training. */
+  stage: string;
+  jobId: string;
+  /** Null when the event does not say (it always does since the real GPU stages). */
+  kind: GpuJobKind | null;
+  /** The job's number among its attempt's jobs of that kind: smoke test 1, 2 or 3. */
+  ordinal: number;
+  /** From 0, as the harness counts (and as the stored series do). */
+  epoch: number;
+  train: EpochMetrics;
+  val: EpochMetrics;
+};
+
+function metricValues(value: unknown): EpochMetrics {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([name, metric]) => [
+      name,
+      typeof metric === "number" && Number.isFinite(metric) ? metric : null,
+    ]),
+  );
+}
+
+/**
+ * An `experiment.epoch` payload (agentic_executor `_report_epoch`: stage, job_id, kind, ordinal,
+ * epoch, train, val), or null without a whole epoch number. A metric that is not a finite number
+ * is null (not measured), never 0.
+ */
+export function epochRecord(payload: Record<string, unknown>): EpochRecord | null {
+  const { epoch, kind, ordinal } = payload;
+  if (typeof epoch !== "number" || !Number.isInteger(epoch) || epoch < 0) {
+    return null;
+  }
+  return {
+    stage: text(payload.stage) ?? "experiment",
+    jobId: text(payload.job_id) ?? "",
+    kind: kind === "smoke" || kind === "train" ? kind : null,
+    ordinal: typeof ordinal === "number" && Number.isInteger(ordinal) && ordinal > 0 ? ordinal : 1,
+    epoch,
+    train: metricValues(payload.train),
+    val: metricValues(payload.val),
+  };
 }
 
 /** Why a stage attempt waits before it runs again by itself (`stage.waiting`). */
@@ -281,6 +336,7 @@ export type EventSummary =
       /** A crash replay reused a response that was already paid for. */
       replayed: boolean;
     }
+  | { kind: "experimentEpoch"; record: EpochRecord }
   | { kind: "log"; message: string }
   | { kind: "raw"; text: string };
 
@@ -364,6 +420,13 @@ export function summarizeEvent(event: RunEvent): EventSummary {
         switchedToFree: p.switched_to_free === true,
         replayed: p.replayed === true,
       };
+    case "experiment.epoch": {
+      const record = epochRecord(p);
+      if (record) {
+        return { kind: "experimentEpoch", record };
+      }
+      break;
+    }
     case "log":
       if (text(p.message)) {
         return { kind: "log", message: text(p.message) ?? "" };

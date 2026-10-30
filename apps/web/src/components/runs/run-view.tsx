@@ -9,6 +9,7 @@ import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { useErrorMessage } from "@/hooks/use-error-message";
 import { useRunView } from "@/hooks/use-run-view";
+import { TRAINING_STAGE } from "@/lib/training-curves";
 import { EventLog } from "./event-log";
 import { defaultStage, literatureOf } from "./run-data";
 import { RunHeader } from "./run-header";
@@ -121,6 +122,7 @@ export function RunView({ runId }: { runId: string }) {
             entry={entry}
             literature={literature}
             wait={view.waits[entry.stage]}
+            training={entry.stage === TRAINING_STAGE ? view.training : undefined}
           />
         )}
       </StageTabs>

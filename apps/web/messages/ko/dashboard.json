@@ -58,6 +58,17 @@
       "temperature": "온도",
       "power": "전력",
       "powerValue": "{draw} / {limit} W",
+      "powerDraw": "{draw} W",
+      "notReported": "측정값 없음",
+      "noReadings": "GPU가 아직 측정값을 보내지 않았습니다.",
+      "offline": {
+        "title": "GPU 실행기가 실행 중이 아닙니다",
+        "description": "대기 중인 작업은 실행기가 다시 켜질 때까지 기다립니다."
+      },
+      "kinds": {
+        "smoke": "스모크 테스트",
+        "train": "학습"
+      },
       "running": "GPU에서 실행 중",
       "idle": "실행 중인 작업이 없습니다.",
       "waiting": "대기 중 ({count})",
@@ -75,7 +86,7 @@
         "none": "GPU에 올린 내 작업이 없습니다.",
         "running": "내 작업이 지금 GPU에서 실행 중입니다.",
         "queued": "내 작업은 대기열에서 {position}번째입니다.",
-        "limit": "한 사람당 최대 {limit}개의 작업을 대기열에 올릴 수 있으며, 지금 {count}개를 올렸습니다."
+        "limit": "한 사람당 최대 {limit}개의 작업이 대기할 수 있으며, 지금 GPU에서 실행 중이거나 대기 중인 작업이 {count}개입니다."
       }
     },
     "spend": {

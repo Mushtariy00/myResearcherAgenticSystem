@@ -195,7 +195,17 @@
       "noLogs": "The training left no log.",
       "downloadLog": "Training log",
       "downloadMetrics": "Metrics (CSV)",
-      "provenance": "Provenance"
+      "downloadCheckpoint": "Checkpoint (.pt)",
+      "provenance": "Provenance",
+      "live": {
+        "title": "Live training curves",
+        "titleAttempt": "Live training curves of attempt {attempt}",
+        "badge": "Live",
+        "waiting": "The curves appear here after the first epoch.",
+        "epochs": "{count, plural, one {# epoch} other {# epochs}} so far",
+        "latest": "Latest: {line}",
+        "notMeasured": "Not measured yet."
+      }
     },
     "writing": {
       "format": "Format: {format}",
@@ -217,6 +227,7 @@
         "code_file": "Code file",
         "experiment_log": "Training log (.log)",
         "metrics": "Metrics (.csv)",
+        "checkpoint": "Model checkpoint (.pt)",
         "draft": "Draft (.md)",
         "references": "References (.bib)"
       }
@@ -279,6 +290,9 @@
         },
         "llm": {
           "call": "LLM call"
+        },
+        "experiment": {
+          "epoch": "Epoch"
         },
         "log": "Progress"
       },
@@ -438,6 +452,70 @@
         "drafted": "Drafted {section} ({index}/{sections})",
         "cited": "Cited {citations, plural, one {# paper} other {# papers}}",
         "citedRemoved": "Cited {citations, plural, one {# paper} other {# papers}}; removed {removed, plural, one {# citation} other {# citations}} of papers that are not in the review"
+      },
+      "gpu": {
+        "jobs": {
+          "smoke": "Smoke test {ordinal}",
+          "smokeAny": "The smoke test",
+          "train": "Training"
+        },
+        "queueFull": "{job} waits: you already have {limit, plural, one {# GPU job} other {# GPU jobs}} queued, the most allowed",
+        "queued": "{job} queued for the GPU",
+        "executorDown": "The GPU executor is not running; the job waits for it",
+        "started": "{job} running on the GPU"
+      },
+      "coding": {
+        "written": "Try {try}: wrote {files, plural, one {# file} other {# files}} ({lines, plural, one {# line} other {# lines}})",
+        "refused": "Try {try}: the checks refused the code ({findings, plural, one {# finding} other {# findings}}), so it did not run",
+        "smokeFailed": "Try {try}: the smoke test failed: {reason}",
+        "smokePassed": "Try {try}: the smoke test passed in {seconds} s"
+      },
+      "experiment": {
+        "planned": "Training plan: {epochs, plural, one {# epoch} other {# epochs}} of up to {steps, plural, one {# step} other {# steps}} at batch size {batchSize}",
+        "finished": {
+          "succeeded": "Training succeeded: {epochs, plural, one {# epoch} other {# epochs}} completed",
+          "failed": "Training failed after {epochs, plural, one {# epoch} other {# epochs}}",
+          "timeout": "Training stopped at its time limit after {epochs, plural, one {# epoch} other {# epochs}}",
+          "cancelled": "Training was cancelled after {epochs, plural, one {# epoch} other {# epochs}}"
+        },
+        "epoch": "Epoch {epoch}: {reading}",
+        "smokeEpoch": "Smoke test {ordinal}, epoch {epoch}: {reading}",
+        "reading": "{split} {metric} {value}",
+        "trainValue": "train {value}",
+        "nothingMeasured": "nothing measured",
+        "notMeasured": "not measured",
+        "splits": {
+          "val": "val",
+          "train": "train"
+        },
+        "metrics": {
+          "loss": "loss",
+          "rmse": "RMSE",
+          "mae": "MAE",
+          "abs_rel": "AbsRel"
+        }
+      },
+      "jobErrors": {
+        "code": {
+          "refused": "the code checks refused it",
+          "shape_mismatch": "the model's output has the wrong shape",
+          "import_failed": "the code could not be loaded",
+          "too_large": "the code or the model is too large"
+        },
+        "train": {
+          "oom": "the GPU ran out of memory",
+          "non_finite": "the loss became NaN or infinite",
+          "error": "the training raised an error"
+        },
+        "job": {
+          "timeout": "it ran out of time",
+          "oom_killed": "the container went over its memory limit",
+          "no_result": "it ended without a result",
+          "lost": "the GPU host lost the job",
+          "start_failed": "its container could not start",
+          "bad_input": "its code, config or dataset could not be used"
+        },
+        "unknown": "an unexpected error ({code})"
       }
     },
     "demo": {

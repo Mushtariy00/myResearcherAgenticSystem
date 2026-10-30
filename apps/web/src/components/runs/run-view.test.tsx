@@ -14,6 +14,7 @@ import {
 } from "@/hooks/run-hooks.fixtures";
 import {
   attemptOut,
+  DEMO_EXPERIMENT,
   DEMO_LITERATURE,
   DEMO_METHOD,
   runDetailOut,
@@ -25,6 +26,12 @@ import {
 import { STAGE_ORDER } from "@/lib/timeline";
 import { enMessages as messages } from "@/test/messages";
 import { RunView } from "./run-view";
+
+// ECharts draws on canvas, which jsdom lacks (the chart is covered by its own tests). Its core
+// is mocked: charts that mount together import the chart runtime at the same time, and a mock
+// of that module reaches only the first of them.
+const chart = vi.hoisted(() => ({ setOption: vi.fn(), resize: vi.fn(), dispose: vi.fn() }));
+vi.mock("echarts/core", () => ({ init: () => chart, use: () => {} }));
 
 const toast = vi.hoisted(() => ({
   success: vi.fn(),
@@ -151,16 +158,21 @@ function artifact(
 
 let currentRun: RunDetail = awaitingRun;
 let currentArtifacts: ArtifactOut[] = [];
+/** Stage details a test sets, over DETAILS. */
+let stageDetails: Record<string, StageDetail> = {};
 /** Set to make GET /runs/<id> fail (a proxy error while the API restarts, say). */
 let runFailure: (() => Response) | null = null;
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
+  HTMLCanvasElement.prototype.getContext = (() =>
+    null) as typeof HTMLCanvasElement.prototype.getContext;
 });
 
 beforeEach(() => {
   currentRun = awaitingRun;
   currentArtifacts = [];
+  stageDetails = {};
   runFailure = null;
   window.history.replaceState(null, "", `/runs/${RUN_ID}`);
   installEventSource();
@@ -183,7 +195,7 @@ beforeEach(() => {
     }
     const stage = path.match(/\/stages\/([a-z]+)$/)?.[1];
     if (stage) {
-      return json(200, DETAILS[stage] ?? stageDetailOut(RUN_ID, stage, []));
+      return json(200, stageDetails[stage] ?? DETAILS[stage] ?? stageDetailOut(RUN_ID, stage, []));
     }
     return json(404, { detail: "run.not_found" });
   });
@@ -207,6 +219,42 @@ function renderRun() {
 
 const tab = (name: RegExp) => screen.getByRole("tab", { name });
 const stageParam = () => new URLSearchParams(window.location.search).get("stage");
+
+/** An experiment.epoch event of the training job, as the executor writes it. */
+function epochEvent(epoch: number, rmse: number | null) {
+  return runEvent("experiment.epoch", {
+    stage: "experiment",
+    job_id: "job-1",
+    kind: "train",
+    ordinal: 1,
+    epoch,
+    train: { loss: 0.5, rmse: 0.6, mae: 0.4, abs_rel: 0.2 },
+    val: { loss: 0.45, rmse, mae: 0.38, abs_rel: 0.18 },
+  });
+}
+
+/** A run that has reached the experiment stage, with the stage as given. */
+function experimentRun(experiment: RunDetail["stages"][number], status: RunDetail["status"]) {
+  return runDetailOut({
+    id: RUN_ID,
+    project_id: PROJECT.id,
+    status,
+    stages: [
+      stageRunOut("literature", "approved", { outputs: [literatureV1] }),
+      stageRunOut("method", "approved"),
+      stageRunOut("coding", "approved"),
+      experiment,
+    ],
+  });
+}
+
+/** The values of a chart's data table, by row. */
+function chartRows(name: string): string[][] {
+  const table = screen.getByRole("table", { name: `${name}: values per epoch` });
+  return [...table.querySelectorAll("tbody tr")].map((row) =>
+    [...row.children].map((cell) => cell.textContent ?? ""),
+  );
+}
 
 describe("RunView", () => {
   it("shows the header with live spend and opens the stage that waits for review", async () => {
@@ -348,6 +396,160 @@ describe("RunView", () => {
       expect.stringContaining("Metrics (.csv)"),
     ]);
     expect(menu.textContent).toContain("Demo data:");
+  });
+
+  it("lists the training checkpoint with its size, as a download", async () => {
+    currentArtifacts = [
+      artifact("experiment_log", "experiment", "run-experiment.log"),
+      { ...artifact("checkpoint", "experiment", "best.pt"), size_bytes: 48_234_496 },
+      artifact("metrics", "experiment", "run-metrics.csv"),
+    ];
+    renderRun();
+    fireEvent.click(await screen.findByRole("button", { name: /Downloads/ }));
+    const checkpoint = await screen.findByRole("menuitem", { name: /Model checkpoint \(\.pt\)/ });
+    expect(checkpoint.getAttribute("download")).toBe("best.pt");
+    expect(checkpoint.getAttribute("href")).toMatch(/\/api\/v1\/artifacts\/.+\.best\.pt$/);
+    expect(checkpoint.textContent).toContain("46 MB");
+    expect(
+      within(screen.getByRole("menu"))
+        .getAllByRole("menuitem")
+        .map((item) => item.textContent),
+    ).toEqual([
+      expect.stringContaining("Training log"),
+      expect.stringContaining("Metrics"),
+      expect.stringContaining("Model checkpoint"),
+    ]);
+  });
+
+  it("draws the experiment's live training curves while it trains, then its stored series", async () => {
+    currentRun = experimentRun(stageRunOut("experiment", "running"), "running");
+    stageDetails.experiment = stageDetailOut(RUN_ID, "experiment", [
+      attemptOut(1, [], { status: "running" }),
+    ]);
+    window.history.replaceState(null, "", `/runs/${RUN_ID}?stage=experiment`);
+    renderRun();
+    expect(await screen.findByText("Attempt 1 is working")).toBeTruthy();
+    const live = screen.getByRole("region", { name: "Live training curves" });
+    expect(within(live).getByText("The curves appear here after the first epoch.")).toBeTruthy();
+
+    act(() => {
+      FakeEventSource.latest().open();
+      FakeEventSource.latest().send(
+        runEvent("stage.started", { stage: "experiment", attempt: 1 }),
+        epochEvent(0, 0.91),
+      );
+    });
+    expect(await within(live).findByText("1 epoch so far")).toBeTruthy();
+    expect(
+      within(live)
+        .getAllByRole("figure")
+        .map((figure) => figure.querySelector("figcaption")?.textContent),
+    ).toEqual(["loss per epoch", "rmse per epoch", "mae per epoch", "abs_rel per epoch"]);
+
+    // Each epoch extends the curves as it arrives; one not measured is a gap, never 0.
+    act(() => {
+      FakeEventSource.latest().send(epochEvent(1, null), epochEvent(2, 0.62));
+    });
+    expect(await within(live).findByText("3 epochs so far")).toBeTruthy();
+    expect(within(live).getByText("Latest: Epoch 2: val RMSE 0.62")).toBeTruthy();
+    expect(chartRows("rmse per epoch")).toEqual([
+      ["0", "0.91", "0.6"],
+      ["1", "No value", "0.6"],
+      ["2", "0.62", "0.6"],
+    ]);
+    // The live charts extend their lines instead of drawing them again.
+    await waitFor(() =>
+      expect(chart.setOption).toHaveBeenLastCalledWith(expect.anything(), {
+        replaceMerge: ["series"],
+      }),
+    );
+    expect(screen.getByText("Experiment: Epoch 2: val RMSE 0.62 · train 0.6")).toBeTruthy();
+
+    // The output is ready (and approved by itself): the stored series take over.
+    const version = versionOut(DEMO_EXPERIMENT, {
+      degraded: false,
+      degraded_reason: null,
+      approval: {
+        decision: "approve",
+        comment: "",
+        actor_id: "system:auto-approve",
+        actor_name: null,
+        at: "2026-10-31T01:00:00Z",
+      },
+    });
+    stageDetails.experiment = stageDetailOut(RUN_ID, "experiment", [
+      attemptOut(1, [version], { status: "approved" }),
+    ]);
+    currentRun = experimentRun(stageRunOut("experiment", "approved"), "running");
+    act(() => {
+      FakeEventSource.latest().send(
+        runEvent("stage.output_ready", { stage: "experiment", attempt: 1 }),
+      );
+    });
+    expect(await screen.findByRole("region", { name: "Training curves" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Live training curves" })).toBeNull();
+    expect(screen.getByText("Succeeded")).toBeTruthy();
+  });
+
+  it("draws a newer attempt's live curves above the earlier output on screen", async () => {
+    const earlier = versionOut(DEMO_EXPERIMENT, {
+      approval: {
+        decision: "request_changes",
+        comment: "Train longer",
+        actor_id: "alice",
+        actor_name: "Alice",
+        at: "2026-10-31T01:00:00Z",
+      },
+    });
+    stageDetails.experiment = stageDetailOut(RUN_ID, "experiment", [
+      attemptOut(1, [earlier], { status: "changes_requested" }),
+      attemptOut(2, [], { status: "running", feedback: "Train longer" }),
+    ]);
+    currentRun = experimentRun(stageRunOut("experiment", "running", { attempt: 2 }), "running");
+    window.history.replaceState(null, "", `/runs/${RUN_ID}?stage=experiment`);
+    renderRun();
+    expect(await screen.findByText("Showing the output of attempt 1.")).toBeTruthy();
+    act(() => {
+      FakeEventSource.latest().send(
+        runEvent("stage.started", { stage: "experiment", attempt: 1 }),
+        epochEvent(0, 0.95),
+        runEvent("stage.started", { stage: "experiment", attempt: 2 }),
+      );
+    });
+    // Attempt 1's epochs are not attempt 2's curves.
+    const live = await screen.findByRole("region", { name: "Live training curves of attempt 2" });
+    expect(within(live).getByText("The curves appear here after the first epoch.")).toBeTruthy();
+    act(() => {
+      FakeEventSource.latest().send(epochEvent(0, 0.88));
+    });
+    expect(await within(live).findByText("1 epoch so far")).toBeTruthy();
+    // The earlier output keeps its own curves.
+    expect(screen.getByRole("region", { name: "Training curves" })).toBeTruthy();
+  });
+
+  it("says why the coding stage failed on the GPU, in words", async () => {
+    currentRun = runDetailOut({
+      id: RUN_ID,
+      project_id: PROJECT.id,
+      status: "failed",
+      error: "coding.smoke_failed",
+      stages: [
+        stageRunOut("literature", "approved", { outputs: [literatureV1] }),
+        stageRunOut("method", "approved"),
+        stageRunOut("coding", "failed", { error: "coding.smoke_failed" }),
+      ],
+    });
+    stageDetails.coding = stageDetailOut(RUN_ID, "coding", [
+      attemptOut(1, [], { status: "failed", error: "coding.smoke_failed" }),
+    ]);
+    window.history.replaceState(null, "", `/runs/${RUN_ID}?stage=coding`);
+    renderRun();
+    const message =
+      "The generated code failed its smoke test on the GPU in every try (at most 3). The event log says why each try failed.";
+    expect(await screen.findByText("Attempt 1 failed before it produced an output")).toBeTruthy();
+    // On the run, in the timeline and on the stage.
+    expect(screen.getAllByText(message)).toHaveLength(3);
+    expect(screen.queryByText("coding.smoke_failed")).toBeNull();
   });
 
   it("says when the run has no files yet", async () => {

@@ -796,7 +796,9 @@ class Executor:
         results: dict[str, Any] | None,
         report: ExtractReport | None,
     ) -> dict[str, Any]:
-        """What ran: the image, the exact inputs as mounted, the dataset, the seed and the GPU."""
+        """What ran: the image, the exact inputs as mounted, the dataset, the seed and the GPU;
+        and what came out: each output copied, with its size and sha256 (the API lists the
+        outputs with these, without reading them again)."""
         dataset = None
         try:
             async with self._sessions() as session:
@@ -828,6 +830,7 @@ class Executor:
         }
         if report is not None and report.copied:
             provenance["outputs"] = report.copied
+            provenance["outputs_sha256"] = report.sha256
         if report is not None and report.skipped:
             provenance["outputs_skipped"] = report.skipped
         return provenance

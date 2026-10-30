@@ -3,7 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback } from "react";
 import type { PaperRef } from "@/client";
-import { useStageLogLine } from "@/components/shared/stage-log";
+import { useEpochLine, useStageLogLine } from "@/components/shared/stage-log";
 import { useWaitLabels } from "@/components/shared/wait-text";
 import { USD } from "@/lib/format";
 import { isRunStatus } from "@/lib/labels";
@@ -24,6 +24,7 @@ export type EventKind =
   | "invalidated"
   | "retried"
   | "llm"
+  | "epoch"
   | "log"
   | "raw";
 
@@ -77,7 +78,8 @@ function count(value: unknown): number | null {
  * here; a code this interface does not know, or params of the wrong type, fall back to the
  * event's English `message`. `llm.call` lines name the model, its tier and the cost of paid
  * calls; `stage.invalidated` and `run.retried` explain a retry; `stage.waiting` says why a
- * stage waits and when it tries again.
+ * stage waits and when it tries again; `experiment.epoch` gives an epoch's headline metric,
+ * with its training value as the detail.
  */
 export function useEventDescriber(): (event: RunEvent) => EventLine {
   const t = useTranslations("studioRun.log");
@@ -87,6 +89,7 @@ export function useEventDescriber(): (event: RunEvent) => EventLine {
   const labels = useRunLabels();
   const waitLabels = useWaitLabels();
   const stageLine = useStageLogLine();
+  const epochLine = useEpochLine();
 
   return useCallback(
     (event: RunEvent): EventLine => {
@@ -343,6 +346,17 @@ export function useEventDescriber(): (event: RunEvent) => EventLine {
             "llm",
           );
         }
+        case "experimentEpoch": {
+          const epoch = epochLine(summary.record);
+          return {
+            kind: "epoch",
+            tone: "info",
+            stage: summary.record.stage,
+            text: epoch.text,
+            detail: epoch.detail,
+            group: "stages",
+          };
+        }
         case "log":
           return line("log", "neutral", summary.message);
         case "raw":
@@ -353,6 +367,6 @@ export function useEventDescriber(): (event: RunEvent) => EventLine {
           );
       }
     },
-    [t, tEvents, tSources, format, labels, waitLabels, stageLine],
+    [t, tEvents, tSources, format, labels, waitLabels, stageLine, epochLine],
   );
 }

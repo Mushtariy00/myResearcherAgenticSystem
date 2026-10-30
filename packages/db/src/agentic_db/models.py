@@ -496,7 +496,8 @@ class GpuJob(Base):
     result: Mapped[dict[str, Any] | None] = mapped_column(
         nullable=True
     )  # the harness's results.json
-    # image and image_id, code and config sha256, dataset name, version and checksum, seed, GPU.
+    # image and image_id, code and config sha256, dataset name, version and checksum, seed, GPU,
+    # and the outputs copied out of the container with their sizes and sha256 (outputs_sha256).
     provenance: Mapped[dict[str, Any] | None] = mapped_column(nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)

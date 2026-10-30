@@ -1,23 +1,36 @@
-"""Downloadable files derived from a run's stage outputs (artifact storage comes later).
+"""Downloadable files of a run's stage outputs.
 
-Each artifact is computed from one stage output: every file of a coding output and all of them
-as a zip, an experiment's log and metrics, and a writing output's draft and references. An
-artifact id is ``<stage_output_id>.<item>``. The server derives the item again from that output,
-and access follows the run that owns the output, so a made-up id cannot reach another run's
-data, and an item the output does not have is simply not found.
+Each artifact belongs to one stage output: every file of a coding output and all of them as a
+zip, an experiment's log, metrics and best checkpoint, and a writing output's draft and
+references. An experiment's files come from its training job's folder on the GPU host
+(agentic_core.gpu_jobs) when the API can read it, as on one machine: the job's whole log.txt,
+its metrics.jsonl as CSV, and checkpoints/best.pt, streamed from disk. Without the folder (the
+API on another host, or the files removed) the log and the metrics are derived from the output
+itself, its log tail and its metric series, and there is no checkpoint.
+
+An artifact id is ``<stage_output_id>.<item>``. The server derives the item again from that
+output, and access follows the run that owns the output, so a made-up id cannot reach another
+run's data, and an item the output does not have is simply not found.
 """
 
 import csv
 import hashlib
 import io
+import json
+import logging
+import math
 import re
+import stat
 import uuid
 import zipfile
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
+from typing import Any
 
 from agentic_api.schemas import ArtifactKind
+from agentic_core.gpu_jobs import CHECKPOINT_FILE, LOG_FILE, METRICS_FILE, job_dir
 from agentic_core.schemas import (
     CodingOutput,
     ExperimentOutput,
@@ -27,11 +40,24 @@ from agentic_core.schemas import (
 )
 from agentic_core.stages import Stage
 
+log = logging.getLogger(__name__)
+
 ARTIFACT_STAGES = (Stage.CODING, Stage.EXPERIMENT, Stage.WRITING)
 _ID = re.compile(
     r"^(?P<output>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"
-    r"\.(?P<item>code\.(?:0|[1-9][0-9]{0,5}|zip)|log|metrics|draft|bib)$"
+    r"\.(?P<item>code\.(?:0|[1-9][0-9]{0,5}|zip)|log|metrics|checkpoint|draft|bib)$"
 )
+_SHA256 = re.compile(r"[0-9a-f]{64}")
+READ_CHUNK = 1024 * 1024
+# metrics.jsonl comes out of the job's container, so it is untrusted: a CSV of it keeps the
+# records' kind, epoch and step and at most this many metric columns (the harness writes 9),
+# named in at most this many characters, and at most this many rows (50 epochs of 100,000 steps,
+# the most a run may plan, log 250,000 step records).
+MAX_METRIC_COLUMNS = 32
+MAX_METRIC_NAME = 64
+MAX_METRIC_ROWS = 300_000
+_METRIC_KINDS = frozenset({"train_step", "epoch"})
+_RECORD_FIELDS = frozenset({"kind", "epoch", "step", "ts"})
 _TEXT = "; charset=utf-8"
 _MEDIA_TYPES = {
     ".py": "text/x-python" + _TEXT,
@@ -64,6 +90,15 @@ _FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
 
 
 @dataclass(frozen=True)
+class StoredFile:
+    """A file on disk, streamed when it is downloaded; its size and sha256 as listed."""
+
+    path: Path
+    size_bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True)
 class Artifact:
     id: str
     stage: Stage
@@ -71,11 +106,32 @@ class Artifact:
     filename: str
     path: str | None
     media_type: str
-    content: bytes
+    content: bytes | StoredFile  # derived in memory, or a job's file on disk
+
+    @property
+    def size_bytes(self) -> int:
+        if isinstance(self.content, StoredFile):
+            return self.content.size_bytes
+        return len(self.content)
 
     @property
     def sha256(self) -> str:
+        if isinstance(self.content, StoredFile):
+            return self.content.sha256
         return hashlib.sha256(self.content).hexdigest()
+
+
+@dataclass(frozen=True)
+class JobFiles:
+    """What an experiment's training job left in its folder on the GPU host, as artifacts serve
+    it; each None when it is not there."""
+
+    log: StoredFile | None  # log.txt: the container's whole output
+    metrics_csv: bytes | None  # out/metrics.jsonl as CSV
+    checkpoint: StoredFile | None  # out/checkpoints/best.pt
+
+
+NO_JOB_FILES = JobFiles(log=None, metrics_csv=None, checkpoint=None)
 
 
 def artifact_id(output_id: uuid.UUID, item: str) -> str:
@@ -148,9 +204,15 @@ def _text_file(text: str) -> bytes:
 
 
 def experiment_artifacts(
-    output_id: uuid.UUID, experiment: ExperimentOutput, *, prefix: str
+    output_id: uuid.UUID,
+    experiment: ExperimentOutput,
+    *,
+    prefix: str,
+    files: JobFiles = NO_JOB_FILES,
 ) -> list[Artifact]:
-    return [
+    """The log and the metrics, from the training job's ``files`` where they are, else derived
+    from the output; and the best checkpoint when the job left one."""
+    artifacts = [
         Artifact(
             id=artifact_id(output_id, "log"),
             stage=Stage.EXPERIMENT,
@@ -158,7 +220,7 @@ def experiment_artifacts(
             filename=f"{prefix}-experiment.log",
             path=None,
             media_type="text/plain" + _TEXT,
-            content=_text_file(experiment.logs_tail),
+            content=files.log if files.log is not None else _text_file(experiment.logs_tail),
         ),
         Artifact(
             id=artifact_id(output_id, "metrics"),
@@ -167,9 +229,177 @@ def experiment_artifacts(
             filename=f"{prefix}-metrics.csv",
             path=None,
             media_type="text/csv" + _TEXT,
-            content=_metrics_csv(experiment),
+            content=files.metrics_csv
+            if files.metrics_csv is not None
+            else _metrics_csv(experiment),
         ),
     ]
+    if files.checkpoint is not None:
+        artifacts.append(
+            Artifact(
+                id=artifact_id(output_id, "checkpoint"),
+                stage=Stage.EXPERIMENT,
+                kind="checkpoint",
+                filename=f"{prefix}-best.pt",
+                path=None,
+                media_type="application/octet-stream",
+                content=files.checkpoint,
+            )
+        )
+    return artifacts
+
+
+def job_files(data_dir: Path, job_id: uuid.UUID, provenance: object) -> JobFiles:
+    """The training job's files under ``data_dir``, as the executor left them (blocking: run it
+    in a thread). log.txt (at most 32 MB) is hashed here and metrics.jsonl becomes CSV. The
+    checkpoint, up to 200 MB, is never read: it is listed with the sha256 the executor recorded
+    as it copied it (the job's provenance), so one without a recorded sha256, or no longer of
+    the recorded size, is left out."""
+    root = job_dir(data_dir, job_id)
+    out = root / "out"  # the outputs copied out of the container
+    return JobFiles(
+        log=_hashed(root / LOG_FILE),
+        metrics_csv=_metrics_jsonl_csv(out / METRICS_FILE),
+        checkpoint=_recorded(out / CHECKPOINT_FILE, CHECKPOINT_FILE, provenance),
+    )
+
+
+def _hashed(path: Path) -> StoredFile | None:
+    digest = hashlib.sha256()
+    size = 0
+    try:
+        with path.open("rb") as file:
+            while chunk := file.read(READ_CHUNK):
+                size += len(chunk)
+                digest.update(chunk)
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        log.warning("cannot read %s: %s", path, exc)
+        return None
+    return StoredFile(path=path, size_bytes=size, sha256=digest.hexdigest())
+
+
+def _mapping(value: object) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _recorded(path: Path, name: str, provenance: object) -> StoredFile | None:
+    """The output ``name`` with the size and sha256 its job's provenance recorded for it."""
+    record = _mapping(provenance)
+    sha256 = _mapping(record.get("outputs_sha256")).get(name)
+    size = _mapping(record.get("outputs")).get(name)
+    if not isinstance(sha256, str) or not _SHA256.fullmatch(sha256) or not isinstance(size, int):
+        return None
+    try:
+        info = path.stat()
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        log.warning("cannot read %s: %s", path, exc)
+        return None
+    if not stat.S_ISREG(info.st_mode) or info.st_size != size:
+        log.warning("%s is not the file its job recorded; it is not listed", path)
+        return None
+    return StoredFile(path=path, size_bytes=size, sha256=sha256)
+
+
+@dataclass(frozen=True)
+class _MetricRecord:
+    kind: str  # train_step or epoch
+    epoch: int | None
+    step: int | None
+    metrics: dict[str, object]  # column name to a number or None
+
+
+def _is_measure(value: object) -> bool:
+    """A number, or null for "not measured" (booleans are not numbers here)."""
+    return value is None or (isinstance(value, int | float) and not isinstance(value, bool))
+
+
+def _measure_cell(value: object) -> str:
+    """Empty when not measured: null, and NaN or an infinity, which no measurement gives."""
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        return ""
+    if isinstance(value, float) and not math.isfinite(value):
+        return ""
+    return repr(value)
+
+
+def _index(value: object) -> int | None:
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    return None
+
+
+def _record_metrics(record: Mapping[str, Any]) -> dict[str, object]:
+    """A record's measurements by column: a number at the top under its own name (a step's
+    loss), and one in an object under <object>_<name> (an epoch's train and val metrics)."""
+    metrics: dict[str, object] = {}
+    for key, value in record.items():
+        if key in _RECORD_FIELDS:
+            continue
+        items = value.items() if isinstance(value, Mapping) else [(None, value)]
+        for name, item in items:
+            column = key if name is None else f"{key}_{name}"
+            if _is_measure(item) and len(column) <= MAX_METRIC_NAME:
+                metrics[column] = item
+    return metrics
+
+
+def _metric_records(path: Path) -> Iterator[_MetricRecord]:
+    """The first MAX_METRIC_ROWS step and epoch records of metrics.jsonl, in order. Other lines
+    (not JSON, other kinds, a last line cut short) are skipped."""
+    found = 0
+    with path.open(encoding="utf-8", errors="replace") as lines:
+        for line in lines:
+            try:
+                record = json.loads(line)
+            except (ValueError, RecursionError):
+                continue
+            kind = record.get("kind") if isinstance(record, dict) else None
+            if not isinstance(kind, str) or kind not in _METRIC_KINDS:
+                continue
+            yield _MetricRecord(
+                kind=kind,
+                epoch=_index(record.get("epoch")),
+                step=_index(record.get("step")),
+                metrics=_record_metrics(record),
+            )
+            found += 1
+            if found >= MAX_METRIC_ROWS:
+                return
+
+
+def _metrics_jsonl_csv(path: Path) -> bytes | None:
+    """metrics.jsonl as CSV: one row per step and epoch record, in the file's order, with its
+    kind, epoch and step, then a column per metric (a step's loss; an epoch's train_* and val_*),
+    empty where the record has none or it was not measured. The file is read twice, for the
+    columns and then for the rows, so its records never all sit in memory."""
+    try:
+        columns: dict[str, None] = {}  # in the order they first appear
+        for record in _metric_records(path):
+            for name in record.metrics:
+                if name not in columns and len(columns) < MAX_METRIC_COLUMNS:
+                    columns[name] = None
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(["kind", "epoch", "step", *(_cell(name) for name in columns)])
+        for record in _metric_records(path):
+            writer.writerow(
+                [
+                    record.kind,
+                    "" if record.epoch is None else record.epoch,
+                    "" if record.step is None else record.step,
+                    *(_measure_cell(record.metrics.get(name)) for name in columns),
+                ]
+            )
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        log.warning("cannot read %s: %s", path, exc)
+        return None
+    return buffer.getvalue().encode()
 
 
 def _cell(text: str) -> str:

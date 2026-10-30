@@ -4,6 +4,7 @@ import {
   ActivityIcon,
   ArrowDownIcon,
   BracesIcon,
+  ChartLineIcon,
   ChevronRightIcon,
   CircleCheckIcon,
   CircleSlashIcon,
@@ -52,6 +53,7 @@ const KIND_ICONS: Record<EventKind, LucideIcon> = {
   invalidated: CircleSlashIcon,
   retried: RotateCcwIcon,
   llm: CpuIcon,
+  epoch: ChartLineIcon,
   log: ChevronRightIcon,
   raw: BracesIcon,
 };

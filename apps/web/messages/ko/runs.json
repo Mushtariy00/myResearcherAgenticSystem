@@ -195,7 +195,17 @@
       "noLogs": "학습 로그가 없습니다.",
       "downloadLog": "학습 로그",
       "downloadMetrics": "지표 (CSV)",
-      "provenance": "출처 정보"
+      "downloadCheckpoint": "체크포인트 (.pt)",
+      "provenance": "출처 정보",
+      "live": {
+        "title": "실시간 학습 곡선",
+        "titleAttempt": "{attempt}번째 시도의 실시간 학습 곡선",
+        "badge": "실시간",
+        "waiting": "첫 에포크가 끝나면 여기에 곡선이 나타납니다.",
+        "epochs": "지금까지 {count}에포크",
+        "latest": "최근: {line}",
+        "notMeasured": "아직 측정되지 않았습니다."
+      }
     },
     "writing": {
       "format": "형식: {format}",
@@ -217,6 +227,7 @@
         "code_file": "코드 파일",
         "experiment_log": "학습 로그 (.log)",
         "metrics": "지표 (.csv)",
+        "checkpoint": "모델 체크포인트 (.pt)",
         "draft": "초안 (.md)",
         "references": "참고문헌 (.bib)"
       }
@@ -279,6 +290,9 @@
         },
         "llm": {
           "call": "LLM 호출"
+        },
+        "experiment": {
+          "epoch": "에포크"
         },
         "log": "진행"
       },
@@ -438,6 +452,70 @@
         "drafted": "{section} 초안을 작성했습니다 ({index}/{sections})",
         "cited": "논문 {citations}편을 인용했습니다",
         "citedRemoved": "논문 {citations}편을 인용했습니다. 문헌 검토에 없는 논문을 가리킨 인용 {removed}개는 삭제했습니다"
+      },
+      "gpu": {
+        "jobs": {
+          "smoke": "스모크 테스트 {ordinal}",
+          "smokeAny": "스모크 테스트",
+          "train": "학습"
+        },
+        "queueFull": "{job} 대기 중: 대기열에 올린 GPU 작업이 이미 최대치({limit}개)입니다",
+        "queued": "{job}: GPU 대기열에 올렸습니다",
+        "executorDown": "GPU 실행기가 꺼져 있어 작업이 실행기를 기다립니다",
+        "started": "{job}: GPU에서 실행 중"
+      },
+      "coding": {
+        "written": "{try}번째 시도: 파일 {files}개를 작성했습니다({lines, number}줄)",
+        "refused": "{try}번째 시도: 검사에서 코드를 거부해 실행하지 않았습니다(지적 {findings}건)",
+        "smokeFailed": "{try}번째 시도: 스모크 테스트 실패: {reason}",
+        "smokePassed": "{try}번째 시도: 스모크 테스트 통과({seconds}초)"
+      },
+      "experiment": {
+        "planned": "학습 계획: {epochs}에포크, 에포크당 최대 {steps, number}스텝, 배치 크기 {batchSize}",
+        "finished": {
+          "succeeded": "학습 성공: {epochs}에포크 완료",
+          "failed": "학습 실패: {epochs}에포크 후 중단",
+          "timeout": "학습 시간 한도 도달: {epochs}에포크 후 중단",
+          "cancelled": "학습 취소: {epochs}에포크 후 중단"
+        },
+        "epoch": "에포크 {epoch}: {reading}",
+        "smokeEpoch": "스모크 테스트 {ordinal}, 에포크 {epoch}: {reading}",
+        "reading": "{split} {metric} {value}",
+        "trainValue": "학습 {value}",
+        "nothingMeasured": "측정된 지표 없음",
+        "notMeasured": "측정되지 않음",
+        "splits": {
+          "val": "검증",
+          "train": "학습"
+        },
+        "metrics": {
+          "loss": "손실",
+          "rmse": "RMSE",
+          "mae": "MAE",
+          "abs_rel": "AbsRel"
+        }
+      },
+      "jobErrors": {
+        "code": {
+          "refused": "코드 검사에서 거부됨",
+          "shape_mismatch": "모델 출력의 형태가 맞지 않음",
+          "import_failed": "코드를 불러오지 못함",
+          "too_large": "코드나 모델이 너무 큼"
+        },
+        "train": {
+          "oom": "GPU 메모리 부족",
+          "non_finite": "손실이 NaN 또는 무한대가 됨",
+          "error": "학습 중 오류 발생"
+        },
+        "job": {
+          "timeout": "시간 한도 초과",
+          "oom_killed": "메모리 한도를 넘어 컨테이너가 종료됨",
+          "no_result": "결과 없이 끝남",
+          "lost": "GPU 호스트에서 작업이 사라짐",
+          "start_failed": "컨테이너를 시작하지 못함",
+          "bad_input": "코드·설정·데이터셋을 쓸 수 없음"
+        },
+        "unknown": "알 수 없는 오류({code})"
       }
     },
     "demo": {

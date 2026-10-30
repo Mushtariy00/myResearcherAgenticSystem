@@ -253,7 +253,11 @@ function DatasetDetails({ dataset }: { dataset: DatasetOut }) {
       <p className="text-muted-foreground">
         {t("facts", {
           samples: format.number(dataset.samples),
-          size: formatBytes(dataset.size_bytes, format),
+          // The executor measures it; until then it is unknown, not 0.
+          size:
+            dataset.size_bytes === null
+              ? t("sizeUnknown")
+              : formatBytes(dataset.size_bytes, format),
           modality: dataset.modality,
           license: dataset.license,
         })}

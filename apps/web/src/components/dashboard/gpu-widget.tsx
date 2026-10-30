@@ -1,13 +1,14 @@
 "use client";
 
-import { CpuIcon } from "lucide-react";
+import { CpuIcon, ServerOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useId } from "react";
-import type { GpuJobOut, GpuQueueOut } from "@/client";
+import type { GpuJobOut, GpuOut, GpuQueueOut } from "@/client";
 import { QueryError } from "@/components/app/query-state";
 import { DemoBadge } from "@/components/shared/demo-badge";
 import { formatDuration } from "@/components/shared/format";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardAction,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGpuQueue } from "@/hooks/use-gpu-queue";
+import { gpuReadings } from "@/lib/gpu";
 import { cn } from "@/lib/utils";
 import { Gauge, type GaugeTone, ProgressBar } from "./gauge";
 
@@ -28,12 +30,28 @@ function loadTone(share: number): GaugeTone {
   return share >= 0.95 ? "danger" : share >= 0.85 ? "warning" : "default";
 }
 
+/** A reading the GPU does not give: a dash (never 0), which screen readers hear as words. */
+function NotReported() {
+  const t = useTranslations("dashboard.gpu");
+  return (
+    <>
+      <span aria-hidden>—</span>
+      <span className="sr-only">{t("notReported")}</span>
+    </>
+  );
+}
+
 function JobItem({ job, position }: { job: GpuJobOut; position?: number }) {
   const t = useTranslations("dashboard.gpu");
   const format = useFormatter();
   const now = useNow({ updateInterval: 30_000 });
   const title = job.topic ?? t("otherProject");
-  const details = [job.owner_name ?? t("someone"), job.project_name, job.dataset].filter(Boolean);
+  const details = [
+    job.kind ? t(`kinds.${job.kind}`) : null,
+    job.owner_name ?? t("someone"),
+    job.project_name,
+    job.dataset,
+  ].filter(Boolean);
   const startsIn = Math.max(0, (Date.parse(job.estimated_start_at) - now.getTime()) / 1000);
 
   return (
@@ -114,54 +132,91 @@ function MyPlace({ data }: { data: GpuQueueOut }) {
   );
 }
 
-function GpuDetails({ data }: { data: GpuQueueOut }) {
+/** The GPU's latest readings; one it does not give (under WSL, say) shows a dash. */
+function Readings({ gpu }: { gpu: GpuOut }) {
   const t = useTranslations("dashboard.gpu");
   const format = useFormatter();
-  const { gpu } = data;
   const gigabytes = (mb: number) =>
     format.number(mb / 1024, { style: "unit", unit: "gigabyte", maximumFractionDigits: 1 });
-  const load = gpu.utilization_percent / 100;
   const memory = gpu.memory_total_mb > 0 ? gpu.memory_used_mb / gpu.memory_total_mb : 0;
+  const draw = gpu.power_draw_w;
+  const limit = gpu.power_limit_w;
+
+  return (
+    <div className="grid gap-3">
+      {gpu.utilization_percent === null ? (
+        <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-2 gap-y-1.5">
+          <span className="text-xs font-medium text-muted-foreground">{t("utilization")}</span>
+          <span className="text-xs tabular-nums">
+            <NotReported />
+          </span>
+          <span aria-hidden className="col-span-2 h-2 rounded-full bg-muted" />
+        </div>
+      ) : (
+        <Gauge
+          label={t("utilization")}
+          value={gpu.utilization_percent}
+          valueText={format.number(gpu.utilization_percent / 100, { style: "percent" })}
+          tone={loadTone(gpu.utilization_percent / 100)}
+        />
+      )}
+      <Gauge
+        label={t("memory")}
+        value={gpu.memory_used_mb}
+        max={Math.max(1, gpu.memory_total_mb)}
+        valueText={t("memoryValue", {
+          used: gigabytes(gpu.memory_used_mb),
+          total: gigabytes(gpu.memory_total_mb),
+        })}
+        tone={loadTone(memory)}
+      />
+      <dl className="grid grid-cols-2 gap-2">
+        <div>
+          <dt className="text-xs text-muted-foreground">{t("temperature")}</dt>
+          <dd className="text-sm font-medium tabular-nums">
+            {gpu.temperature_c === null ? (
+              <NotReported />
+            ) : (
+              format.number(gpu.temperature_c, { style: "unit", unit: "celsius" })
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">{t("power")}</dt>
+          <dd className="text-sm font-medium tabular-nums">
+            {draw === null ? (
+              <NotReported />
+            ) : limit === null ? (
+              t("powerDraw", { draw: format.number(draw) })
+            ) : (
+              t("powerValue", { draw: format.number(draw), limit: format.number(limit) })
+            )}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+function GpuDetails({ data }: { data: GpuQueueOut }) {
+  const t = useTranslations("dashboard.gpu");
+  const readings = gpuReadings(data);
   const waiting = data.queued.slice(0, QUEUE_SHOWN);
   const more = data.queued.length - waiting.length;
 
   return (
     <div className="grid gap-4">
-      <div className="grid gap-3">
-        <Gauge
-          label={t("utilization")}
-          value={gpu.utilization_percent}
-          valueText={format.number(load, { style: "percent" })}
-          tone={loadTone(load)}
-        />
-        <Gauge
-          label={t("memory")}
-          value={gpu.memory_used_mb}
-          max={Math.max(1, gpu.memory_total_mb)}
-          valueText={t("memoryValue", {
-            used: gigabytes(gpu.memory_used_mb),
-            total: gigabytes(gpu.memory_total_mb),
-          })}
-          tone={loadTone(memory)}
-        />
-        <dl className="grid grid-cols-2 gap-2">
-          <div>
-            <dt className="text-xs text-muted-foreground">{t("temperature")}</dt>
-            <dd className="text-sm font-medium tabular-nums">
-              {format.number(gpu.temperature_c, { style: "unit", unit: "celsius" })}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">{t("power")}</dt>
-            <dd className="text-sm font-medium tabular-nums">
-              {t("powerValue", {
-                draw: format.number(gpu.power_draw_w),
-                limit: format.number(gpu.power_limit_w),
-              })}
-            </dd>
-          </div>
-        </dl>
-      </div>
+      {readings === "offline" ? (
+        <Alert role="status" className="border-amber-500/40">
+          <ServerOffIcon aria-hidden />
+          <AlertTitle>{t("offline.title")}</AlertTitle>
+          <AlertDescription>{t("offline.description")}</AlertDescription>
+        </Alert>
+      ) : readings === "live" && data.gpu ? (
+        <Readings gpu={data.gpu} />
+      ) : (
+        <p className="text-sm text-muted-foreground">{t("noReadings")}</p>
+      )}
 
       <MyPlace data={data} />
 
@@ -196,7 +251,11 @@ function GpuDetails({ data }: { data: GpuQueueOut }) {
   );
 }
 
-/** The lab GPU: live load, memory and temperature, the job on it, the queue and the user's place. */
+/**
+ * The lab GPU: live load, memory and temperature, the jobs on it (smoke tests and trainings),
+ * the queue and the user's place. While the GPU executor is not running it says so, and that
+ * queued jobs wait for it, instead of showing readings.
+ */
 export function GpuWidget() {
   const t = useTranslations("dashboard.gpu");
   const headingId = useId();
@@ -210,7 +269,7 @@ export function GpuWidget() {
             <CpuIcon aria-hidden className="size-4 text-muted-foreground" />
             <h2 id={headingId}>{t("title")}</h2>
           </CardTitle>
-          <CardDescription>{queue.data ? queue.data.gpu.name : t("description")}</CardDescription>
+          <CardDescription>{queue.data?.gpu?.name ?? t("description")}</CardDescription>
           {queue.data?.demo && (
             <CardAction>
               <DemoBadge demo />

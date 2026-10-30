@@ -2,20 +2,31 @@ import copy
 import csv
 import hashlib
 import io
+import json
 import uuid
 import zipfile
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import httpx
+import pytest
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from agentic_core.enums import StageStatus
+from agentic_api import artifacts as artifacts_module
+from agentic_api.artifacts import MAX_METRIC_COLUMNS, job_files
+from agentic_api.routers import artifacts as artifacts_router
+from agentic_api.settings import Settings
+from agentic_core.enums import GpuJobKind, GpuJobStatus, StageStatus
+from agentic_core.gpu_jobs import CHECKPOINT_FILE, LOG_FILE, METRICS_FILE, RESULTS_FILE, job_dir
 from agentic_core.schemas import validate_stage_output
 from api_testkit import (
     CODING_OUTPUT,
     EXPERIMENT_OUTPUT,
+    ORIGIN,
     WRITING_OUTPUT,
+    add_gpu_job,
     add_output,
     add_stage_output,
     add_stage_run,
@@ -37,6 +48,12 @@ DEPTH_PAPER = paper(
     arxiv_id="2406.09414",
     url="https://arxiv.org/abs/2406.09414",
 )
+
+
+@pytest.fixture
+def settings(tmp_path: Path) -> Settings:
+    """Each test keeps its jobs' files in a data directory of its own."""
+    return Settings(environment="test", public_origin=ORIGIN, data_dir=tmp_path)
 
 
 def test_the_builders_make_valid_outputs() -> None:
@@ -240,7 +257,9 @@ async def test_artifact_ids_cannot_be_forged(client: httpx.AsyncClient, db: Fact
         f"{outputs['coding']}.log",
         f"{outputs['coding']}.code.3",
         f"{outputs['coding']}.code.01",
+        f"{outputs['coding']}.checkpoint",
         f"{outputs['experiment']}.code.0",
+        f"{outputs['experiment']}.checkpoint",  # its attempt has no training job
         f"{outputs['writing']}.metrics",
         f"{outputs['literature']}.draft",
         outputs["coding"].upper() + ".code.0",
@@ -301,3 +320,325 @@ async def test_references_from_generated_papers_are_demo(
         "references": True,
     }
     assert listing["demo"] is True
+
+
+# --- An experiment's training job files (agentic_core.gpu_jobs) ------------------------------
+
+# The container's whole output: far more than the output's tail.
+JOB_LOG = "".join(f"epoch {n // 100} step {n % 100} loss {1 / (n + 1):.4f}\n" for n in range(300))
+METRICS_JSONL = "".join(
+    json.dumps(record) + "\n"
+    for record in (
+        {
+            "ts": "2026-10-31T01:00:00+00:00",
+            "kind": "train_step",
+            "epoch": 0,
+            "step": 0,
+            "loss": 1.25,
+        },
+        {
+            "ts": "2026-10-31T01:00:05+00:00",
+            "kind": "train_step",
+            "epoch": 0,
+            "step": 20,
+            "loss": 0.75,
+        },
+        {
+            "ts": "2026-10-31T01:00:09+00:00",
+            "kind": "epoch",
+            "epoch": 0,
+            "train": {"loss": 0.9, "rmse": 1.1, "mae": 0.8, "abs_rel": 0.3},
+            "val": {"loss": 0.85, "rmse": None, "mae": 0.7, "abs_rel": 0.25},
+        },
+    )
+).encode()
+CHECKPOINT = bytes(range(256)) * 1025  # a little over 4 chunks of the 64 KiB streamed at a time
+OUTPUTS = {
+    RESULTS_FILE: b'{"status": "ok"}',
+    METRICS_FILE: METRICS_JSONL,
+    CHECKPOINT_FILE: CHECKPOINT,
+}
+
+
+def _sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _provenance(outputs: dict[str, bytes]) -> dict[str, Any]:
+    """A job's provenance as the executor records it: each output it copied, with its sha256."""
+    return {
+        "image": "arp-sandbox-pytorch:dev",
+        "outputs": {name: len(data) for name, data in outputs.items()},
+        "outputs_sha256": {name: _sha256(data) for name, data in outputs.items()},
+    }
+
+
+def _job_folder(outputs: dict[str, bytes]) -> dict[str, bytes]:
+    """A finished job's folder: its log, and its outputs as copied out of its container."""
+    return {LOG_FILE: JOB_LOG.encode(), **{f"out/{name}": data for name, data in outputs.items()}}
+
+
+async def _trained(
+    client: httpx.AsyncClient,
+    db: Factory,
+    data_dir: Path,
+    *,
+    files: dict[str, bytes],
+    provenance: dict[str, Any] | None,
+) -> tuple[str, str, Path]:
+    """bob's run with an experiment output whose training job left ``files`` (paths in its
+    folder) in the data directory: the run's id, the output's id and the job's folder."""
+    project = await team_project(client)
+    run_id = await start_run(client, project)
+    stage_run_id = await add_stage_run(db, run_id, "experiment", StageStatus.APPROVED)
+    output_id, _ = await add_output(db, stage_run_id, EXPERIMENT_OUTPUT, created_at=CREATED)
+    job_id = await add_gpu_job(
+        db, run_id, stage_run_id, status=GpuJobStatus.SUCCEEDED, provenance=provenance
+    )
+    root = job_dir(data_dir, job_id)
+    for name, data in files.items():
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_bytes(data)
+    return run_id, output_id, root
+
+
+async def test_an_experiment_serves_its_training_jobs_files(
+    client: httpx.AsyncClient, db: Factory, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_id, output_id, root = await _trained(
+        client, db, tmp_path, files=_job_folder(OUTPUTS), provenance=_provenance(OUTPUTS)
+    )
+    streamed: list[Path] = []
+    stream = artifacts_router.path_response
+
+    def spy(path: Path, **options: Any) -> StreamingResponse:
+        streamed.append(path)
+        return stream(path, **options)
+
+    monkeypatch.setattr(artifacts_router, "path_response", spy)
+    listing = await _list(client, run_id, user="vera")
+    prefix = f"run-{run_id[:8]}"
+    assert [
+        (item["id"], item["kind"], item["filename"], item["media_type"], item["path"])
+        for item in listing["items"]
+    ] == [
+        (
+            f"{output_id}.log",
+            "experiment_log",
+            f"{prefix}-experiment.log",
+            "text/plain; charset=utf-8",
+            None,
+        ),
+        (
+            f"{output_id}.metrics",
+            "metrics",
+            f"{prefix}-metrics.csv",
+            "text/csv; charset=utf-8",
+            None,
+        ),
+        (
+            f"{output_id}.checkpoint",
+            "checkpoint",
+            f"{prefix}-best.pt",
+            "application/octet-stream",
+            None,
+        ),
+    ]
+    assert listing["demo"] is False and not any(item["demo"] for item in listing["items"])
+    for item in listing["items"]:
+        response = await _download(client, item["id"], user="vera")  # viewers may download too
+        assert response.status_code == 200, item["id"]
+        assert (item["size_bytes"], item["sha256"]) == (
+            len(response.content),
+            _sha256(response.content),
+        )
+        assert response.headers["content-type"] == item["media_type"]
+        assert response.headers["content-disposition"] == (
+            f'attachment; filename="{item["filename"]}"'
+        )
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert response.headers["cache-control"] == "private"
+        assert response.headers["content-length"] == str(len(response.content))
+    # The log and the checkpoint stream from the job's folder, never read into memory whole.
+    assert streamed == [root / LOG_FILE, root / "out" / CHECKPOINT_FILE]
+
+    assert (await _download(client, f"{output_id}.log")).text == JOB_LOG  # all of it
+    assert (await _download(client, f"{output_id}.checkpoint")).content == CHECKPOINT
+    metrics = await _download(client, f"{output_id}.metrics")
+    empty = [""] * 8
+    assert list(csv.reader(io.StringIO(metrics.text))) == [
+        [
+            "kind",
+            "epoch",
+            "step",
+            "loss",
+            "train_loss",
+            "train_rmse",
+            "train_mae",
+            "train_abs_rel",
+            "val_loss",
+            "val_rmse",
+            "val_mae",
+            "val_abs_rel",
+        ],
+        ["train_step", "0", "0", "1.25", *empty],
+        ["train_step", "0", "20", "0.75", *empty],
+        # Not measured (null): empty, never 0.
+        ["epoch", "0", "", "", "0.9", "1.1", "0.8", "0.3", "0.85", "", "0.7", "0.25"],
+    ]
+
+
+async def test_a_checkpoint_is_listed_with_the_sha256_its_job_recorded(
+    client: httpx.AsyncClient, db: Factory, tmp_path: Path
+) -> None:
+    """The listing never reads a checkpoint of up to 200 MB to hash it: the executor hashed it
+    as it copied it out of the container."""
+    provenance = _provenance(OUTPUTS)
+    provenance["outputs_sha256"][CHECKPOINT_FILE] = "f" * 64  # not the file's own
+    run_id, _, _ = await _trained(
+        client, db, tmp_path, files=_job_folder(OUTPUTS), provenance=provenance
+    )
+    listing = await _list(client, run_id)
+    [checkpoint] = [item for item in listing["items"] if item["kind"] == "checkpoint"]
+    assert (checkpoint["size_bytes"], checkpoint["sha256"]) == (len(CHECKPOINT), "f" * 64)
+
+
+@pytest.mark.parametrize(
+    "provenance",
+    [
+        None,
+        {"outputs": {CHECKPOINT_FILE: len(CHECKPOINT)}},
+        {
+            "outputs": {CHECKPOINT_FILE: len(CHECKPOINT) - 1},
+            "outputs_sha256": {CHECKPOINT_FILE: _sha256(CHECKPOINT)},
+        },
+        {
+            "outputs": {CHECKPOINT_FILE: len(CHECKPOINT)},
+            "outputs_sha256": {CHECKPOINT_FILE: "F" * 64},
+        },
+    ],
+    ids=["no provenance", "no sha256 recorded", "not the file copied", "malformed sha256"],
+)
+async def test_a_checkpoint_without_its_record_is_not_served(
+    client: httpx.AsyncClient, db: Factory, tmp_path: Path, provenance: dict[str, Any] | None
+) -> None:
+    run_id, output_id, _ = await _trained(
+        client, db, tmp_path, files=_job_folder(OUTPUTS), provenance=provenance
+    )
+    listing = await _list(client, run_id)
+    assert [item["kind"] for item in listing["items"]] == ["experiment_log", "metrics"]
+    assert (await _download(client, f"{output_id}.log")).text == JOB_LOG
+    assert (await _download(client, f"{output_id}.checkpoint")).status_code == 404
+
+
+async def test_without_its_jobs_files_an_experiment_keeps_its_derived_artifacts(
+    client: httpx.AsyncClient, db: Factory, tmp_path: Path
+) -> None:
+    """As on an API on another machine than the GPU: the output's log tail and series."""
+    run_id, output_id, _ = await _trained(
+        client, db, tmp_path, files={}, provenance=_provenance(OUTPUTS)
+    )
+    listing = await _list(client, run_id)
+    assert [item["id"] for item in listing["items"]] == [f"{output_id}.log", f"{output_id}.metrics"]
+    log = await _download(client, f"{output_id}.log")
+    assert log.text == EXPERIMENT_OUTPUT["logs_tail"] + "\n"
+    metrics = await _download(client, f"{output_id}.metrics")
+    assert metrics.text.splitlines()[0] == "metric,split,epoch,value,higher_is_better"
+    assert (await _download(client, f"{output_id}.checkpoint")).status_code == 404
+
+
+async def test_each_attempt_serves_its_own_training_jobs_files(
+    client: httpx.AsyncClient, db: Factory, tmp_path: Path
+) -> None:
+    run_id, first, _ = await _trained(
+        client, db, tmp_path, files=_job_folder(OUTPUTS), provenance=_provenance(OUTPUTS)
+    )
+    retry = await add_stage_run(db, run_id, "experiment", StageStatus.OUTPUT_READY, attempt=2)
+    second, _ = await add_output(db, retry, EXPERIMENT_OUTPUT)
+    # Only training jobs count: not a (made-up) smoke job of the attempt, with files of its own.
+    smoke = await add_gpu_job(
+        db, run_id, retry, kind=GpuJobKind.SMOKE, provenance=_provenance(OUTPUTS)
+    )
+    for name, data in _job_folder(OUTPUTS).items():
+        (job_dir(tmp_path, smoke) / name).parent.mkdir(parents=True, exist_ok=True)
+        (job_dir(tmp_path, smoke) / name).write_bytes(data)
+
+    listing = await _list(client, run_id)
+    assert [item["id"] for item in listing["items"]] == [f"{second}.log", f"{second}.metrics"]
+    tail = await _download(client, f"{second}.log")
+    assert tail.text == EXPERIMENT_OUTPUT["logs_tail"] + "\n"
+    # The first attempt's output, by its id, still has its own job's files.
+    assert (await _download(client, f"{first}.log")).text == JOB_LOG
+    assert (await _download(client, f"{first}.checkpoint")).content == CHECKPOINT
+
+
+async def test_a_jobs_files_are_for_those_who_can_open_the_run(
+    client: httpx.AsyncClient, db: Factory, tmp_path: Path
+) -> None:
+    run_id, output_id, root = await _trained(
+        client, db, tmp_path, files=_job_folder(OUTPUTS), provenance=_provenance(OUTPUTS)
+    )
+    for item in ("log", "metrics", "checkpoint"):
+        artifact_id = f"{output_id}.{item}"
+        hidden = await _download(client, artifact_id, user="carol")
+        assert (hidden.status_code, hidden.json()) == (404, {"detail": "artifact.not_found"})
+        assert (await client.get(f"/api/v1/artifacts/{artifact_id}")).status_code == 401
+        assert (await _download(client, artifact_id, user="vera")).status_code == 200
+    hidden_list = await client.get(f"/api/v1/runs/{run_id}/artifacts", headers=as_user("carol"))
+    assert hidden_list.status_code == 404
+    # A file gone from the job's folder is no longer served.
+    (root / "out" / CHECKPOINT_FILE).unlink()
+    assert (await _download(client, f"{output_id}.checkpoint")).status_code == 404
+    assert [item["kind"] for item in (await _list(client, run_id))["items"]] == [
+        "experiment_log",
+        "metrics",
+    ]
+
+
+def test_a_jobs_metrics_become_csv_rows_of_its_step_and_epoch_records(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """metrics.jsonl comes out of the job's container: only its step and epoch records count,
+    their numbers become cells and anything else is left out."""
+    job_id = uuid.uuid4()
+    out = job_dir(tmp_path, job_id) / "out"
+    out.mkdir(parents=True)
+    long_name = "x" * 65
+    lines = [
+        '{"kind": "train_step", "epoch": 0, "step": 0, "loss": 1.5, "lr": 0.001, "ts": "t"}',
+        "not json",
+        "[1, 2]",
+        '{"kind": ["train_step"], "epoch": 0}',
+        '{"kind": "summary", "epoch": 0, "loss": 9}',
+        '{"kind": "epoch", "epoch": 0, "train": {"loss": 0.9, "note": "x", "flag": true, '
+        '"deep": {"a": 1}}, "val": {"loss": NaN, "rmse": Infinity}, "=cmd": 2, '
+        f'"{long_name}": 1}}',
+        '{"kind": "train_step", "epoch": -1, "step": "3", "loss": "=HYPERLINK(1)"}',
+        '{"kind": "train_step", "epoch": 0, "step": 4, "lo',  # cut short
+    ]
+    (out / METRICS_FILE).write_text("\n".join(lines))
+    files = job_files(tmp_path, job_id, None)
+    assert (files.log, files.checkpoint) == (None, None)
+    assert files.metrics_csv is not None
+    assert list(csv.reader(io.StringIO(files.metrics_csv.decode()))) == [
+        ["kind", "epoch", "step", "loss", "lr", "train_loss", "val_loss", "val_rmse", "'=cmd"],
+        ["train_step", "0", "0", "1.5", "0.001", "", "", "", ""],
+        ["epoch", "0", "", "", "", "0.9", "", "", "2"],
+        ["train_step", "", "", "", "", "", "", "", ""],
+    ]
+
+    # However many metrics and records it holds, the CSV stays bounded.
+    wide = {"kind": "epoch", "epoch": 0, **{f"m{n}": n for n in range(MAX_METRIC_COLUMNS + 5)}}
+    (out / METRICS_FILE).write_text(json.dumps(wide) + "\n")
+    wide_csv = job_files(tmp_path, job_id, None).metrics_csv
+    assert wide_csv is not None
+    assert len(next(csv.reader(io.StringIO(wide_csv.decode())))) == 3 + MAX_METRIC_COLUMNS
+    monkeypatch.setattr(artifacts_module, "MAX_METRIC_ROWS", 2)
+    (out / METRICS_FILE).write_bytes(METRICS_JSONL)
+    long_csv = job_files(tmp_path, job_id, None).metrics_csv
+    assert long_csv is not None
+    assert [row[0] for row in csv.reader(io.StringIO(long_csv.decode()))] == [
+        "kind",
+        "train_step",
+        "train_step",
+    ]

@@ -4,18 +4,24 @@ The tar comes from the job's container, so it is untrusted. Only the regular fil
 agentic_core.gpu_jobs.OUTPUT_FILES are written, each within its size cap. Every other member is
 ignored, so nothing in the tar can write outside the job's out/ folder: no links, devices,
 absolute paths or "..".
+
+Each file is hashed as it is copied. The job's provenance keeps the hashes, so the API lists the
+outputs with their sha256 without reading a checkpoint of up to 200 MB again on every request.
 """
 
 from __future__ import annotations
 
+import hashlib
 import os
-import shutil
 import tarfile
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
+from typing import IO
 
 from agentic_core.gpu_jobs import OUTPUT_FILES
+
+CHUNK_BYTES = 1024 * 1024
 
 
 class ArchiveError(Exception):
@@ -25,6 +31,7 @@ class ArchiveError(Exception):
 @dataclass
 class ExtractReport:
     copied: dict[str, int] = field(default_factory=dict)  # path under out/ to bytes written
+    sha256: dict[str, str] = field(default_factory=dict)  # path under out/ to its sha256
     skipped: dict[str, str] = field(default_factory=dict)  # output file left behind, and why
 
 
@@ -54,7 +61,9 @@ def extract_outputs(
                 if source is None:
                     report.skipped[relative] = "unreadable"
                     continue
-                report.copied[relative] = _write(source, out_dir / relative, cap)
+                written, sha256 = _write(source, out_dir / relative, cap)
+                report.copied[relative] = written
+                report.sha256[relative] = sha256
     except (tarfile.TarError, EOFError) as exc:
         raise ArchiveError(f"Cannot read the output archive: {exc}") from exc
     return report
@@ -72,13 +81,20 @@ def _relative(name: str) -> str | None:
     return "/".join(parts[1:])
 
 
-def _write(source: object, target: Path, cap: int) -> int:
+def _write(source: IO[bytes], target: Path, cap: int) -> tuple[int, str]:
+    """Copy ``source`` to ``target``: the bytes written and their sha256."""
     target.parent.mkdir(parents=True, exist_ok=True)
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW
+    digest = hashlib.sha256()
+    written = 0
     with os.fdopen(os.open(target, flags, 0o644), "wb") as sink:
-        shutil.copyfileobj(source, sink, length=1024 * 1024)  # type: ignore[arg-type]
-        written = sink.tell()
+        while chunk := source.read(CHUNK_BYTES):
+            written += len(chunk)
+            if written > cap:
+                break
+            digest.update(chunk)
+            sink.write(chunk)
     if written > cap:  # a member larger than its header said
         target.unlink()
         raise ArchiveError(f"{target.name} is larger than its {cap}-byte cap")
-    return written
+    return written, digest.hexdigest()

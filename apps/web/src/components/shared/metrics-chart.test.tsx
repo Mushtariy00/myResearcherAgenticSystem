@@ -97,4 +97,51 @@ describe("MetricsChart", () => {
     expect(screen.queryByRole("table")).toBeNull();
     expect(init).not.toHaveBeenCalled();
   });
+
+  it("says what the caller wants while a live chart has no value yet", () => {
+    renderWithIntl(
+      <MetricsChart
+        live
+        series={[{ name: "rmse", split: "val", higher_is_better: false, points: [] }]}
+        title="rmse per epoch"
+        emptyText="Not measured yet."
+      />,
+    );
+    expect(screen.getByText("Not measured yet.")).toBeTruthy();
+    expect(init).not.toHaveBeenCalled();
+  });
+
+  it("extends a live chart's lines as epochs arrive instead of drawing them again", async () => {
+    const first: MetricSeries[] = [
+      { name: "rmse", split: "val", higher_is_better: false, points: [{ epoch: 0, value: 0.9 }] },
+    ];
+    const view = renderWithIntl(<MetricsChart live series={first} title="rmse per epoch" />);
+    await waitFor(() => expect(chart.setOption).toHaveBeenCalledTimes(1));
+    expect(chart.setOption.mock.calls[0]?.[1]).toEqual({ replaceMerge: ["series"] });
+
+    const next: MetricSeries[] = [
+      {
+        ...(first[0] as MetricSeries),
+        points: [
+          { epoch: 0, value: 0.9 },
+          { epoch: 1, value: 0.7 },
+        ],
+      },
+    ];
+    view.rerender(<MetricsChart live series={next} title="rmse per epoch" />);
+    await waitFor(() => expect(chart.setOption).toHaveBeenCalledTimes(2));
+    const [option, settings] = chart.setOption.mock.calls[1] ?? [];
+    expect(settings).toEqual({ replaceMerge: ["series"] });
+    expect((option as { series: { id: string; data: unknown }[] }).series).toMatchObject([
+      {
+        id: "rmse:val",
+        data: [
+          [0, 0.9],
+          [1, 0.7],
+        ],
+      },
+    ]);
+    // The chart stays: no second runtime is made for the new epoch.
+    expect(init).toHaveBeenCalledTimes(1);
+  });
 });

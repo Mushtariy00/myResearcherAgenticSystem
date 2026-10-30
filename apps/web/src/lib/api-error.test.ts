@@ -69,6 +69,22 @@ describe("runErrorKey", () => {
     expect(runErrorKey("db.error")).toBe("db.error");
   });
 
+  it("translates the failures of the coding and experiment stages on the GPU", () => {
+    for (const code of [
+      "coding.no_dataset",
+      "coding.smoke_failed",
+      "coding.job_cancelled",
+      "experiment.no_dataset",
+      "experiment.demo_code",
+      "experiment.invalid_code_config",
+    ]) {
+      expect(runErrorKey(code), code).toBe(code);
+    }
+    // A failure the worker reports per stage keeps its shared message.
+    expect(runErrorKey("experiment.invalid_output")).toBe("stage.invalid_output");
+    expect(runErrorKey("coding.job_gone")).toBe("stage.error");
+  });
+
   it("shows the generic stage error for codes it does not know and for raw exception text", () => {
     expect(runErrorKey("crewai.kickoff_returned_coroutine")).toBe("stage.error");
     expect(runErrorKey("<script>.invalid_output")).toBe("stage.error");
@@ -104,6 +120,11 @@ describe("isKnownDegradedReason", () => {
     expect(isKnownDegradedReason("stage.placeholder")).toBe(true);
     expect(isKnownDegradedReason("literature.search_pending")).toBe(true);
     expect(isKnownDegradedReason("model said so")).toBe(false);
+  });
+
+  it("knows code that builds on a generated literature review", () => {
+    expect(isKnownDegradedReason("coding.demo_literature")).toBe(true);
+    expect(isKnownDegradedReason("experiment.dataset_warning")).toBe(true);
   });
 });
 

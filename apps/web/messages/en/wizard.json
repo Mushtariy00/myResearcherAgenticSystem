@@ -78,6 +78,7 @@
       "notUsed": "This run stops before the experiment, so it does not use a dataset.",
       "option": "{name} ({version})",
       "facts": "{samples} samples · {size} · {modality} · {license}",
+      "sizeUnknown": "size unknown",
       "splits": "Splits: {splits}"
     },
     "budget": {

@@ -208,6 +208,78 @@ describe("useRunView", () => {
     expect(count(method)).toBe(3);
   });
 
+  it("draws the experiment's live curves from its epochs, without refetching anything", async () => {
+    const { result } = renderWithQuery(() => ({
+      view: useRunView(RUN_ID),
+      experiment: useStage(RUN_ID, "experiment"),
+      artifacts: useRunArtifacts(RUN_ID),
+    }));
+    await waitFor(() => expect(result.current.experiment.detail).toBeDefined());
+    await waitFor(() => expect(result.current.artifacts.query.isSuccess).toBe(true));
+    expect(result.current.view.training).toBeNull();
+    const before = requestsOf(fetchMock).length;
+
+    const epoch = (number: number, rmse: number | null) =>
+      runEvent("experiment.epoch", {
+        stage: "experiment",
+        job_id: "job-1",
+        kind: "train",
+        ordinal: 1,
+        epoch: number,
+        train: { loss: 0.5, rmse: 0.6, mae: 0.4, abs_rel: 0.2 },
+        val: { loss: 0.45, rmse, mae: 0.38, abs_rel: 0.18 },
+      });
+    act(() => {
+      FakeEventSource.latest().send(epoch(0, 0.71), epoch(1, null));
+    });
+    await waitFor(() => expect(result.current.view.training?.epochs).toBe(2));
+    const rmse = result.current.view.training?.series.find(
+      (series) => series.name === "rmse" && series.split === "val",
+    );
+    expect(rmse?.points).toEqual([
+      { epoch: 0, value: 0.71 },
+      { epoch: 1, value: null },
+    ]);
+
+    act(() => {
+      FakeEventSource.latest().send(epoch(2, 0.52));
+    });
+    await waitFor(() => expect(result.current.view.training?.latest.epoch).toBe(2));
+    // Epochs change neither the run, a stage detail nor the artifacts.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(requestsOf(fetchMock)).toHaveLength(before);
+  });
+
+  it("keeps the epochs the event log has already dropped", async () => {
+    const { result } = renderWithQuery(() => useRunView(RUN_ID));
+    const source = FakeEventSource.latest();
+    act(() => {
+      source.send(
+        runEvent("stage.started", { stage: "experiment", attempt: 1 }),
+        runEvent("experiment.epoch", {
+          stage: "experiment",
+          job_id: "job-1",
+          kind: "train",
+          ordinal: 1,
+          epoch: 0,
+          train: {},
+          val: { loss: 0.9 },
+        }),
+      );
+    });
+    await waitFor(() => expect(result.current.training?.epochs).toBe(1));
+    act(() => {
+      source.send(
+        ...Array.from({ length: MAX_EVENTS }, (_, index) =>
+          runEvent("log", { stage: "experiment", message: `step ${index}` }),
+        ),
+      );
+    });
+    await waitFor(() => expect(result.current.events.at(-1)?.payload.message).toBe("step 1999"));
+    expect(result.current.events.some((event) => event.type === "experiment.epoch")).toBe(false);
+    expect(result.current.training).toMatchObject({ jobId: "job-1", epochs: 1 });
+  });
+
   it("shows the run detail's spend, which counts failed and cancelled attempts too", async () => {
     currentRun = { ...awaitingRun, spend_usd: "0.0125" };
     const { result } = renderWithQuery(() => useRunView(RUN_ID));

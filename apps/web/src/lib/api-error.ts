@@ -43,6 +43,13 @@ export const KNOWN_ERROR_CODES = [
   "free_models.disabled",
   "free_quota.exhausted",
   "literature.no_papers",
+  // The coding and experiment stages on the GPU (apps/worker workflows.py `_FAILURE_CODES`).
+  "coding.no_dataset",
+  "coding.smoke_failed",
+  "coding.job_cancelled",
+  "experiment.no_dataset",
+  "experiment.demo_code",
+  "experiment.invalid_code_config",
   "gateway.error",
   "db.error",
   "validation.failed",
@@ -135,9 +142,13 @@ export const KNOWN_DEGRADED_REASONS = [
   // Real literature searches that came back incomplete (docs/design/literature.md).
   "literature.partial_search",
   "literature.no_full_text",
-  // Real method and writing stages built on generated or simulated inputs, or whose citations
-  // pointed outside the review.
+  // Real method, coding and writing stages built on generated or simulated inputs, or whose
+  // citations pointed outside the review.
   "method.demo_literature",
+  "coding.demo_literature",
+  // A real experiment whose harness warned about the dataset (depth units that differ between
+  // the splits, say): its metrics can't be trusted until the dataset is checked.
+  "experiment.dataset_warning",
   "writing.demo_literature",
   "writing.simulated_results",
   "writing.citations_removed",

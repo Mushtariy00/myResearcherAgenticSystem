@@ -62,6 +62,11 @@ const ARTIFACTS: ArtifactList = {
     artifact("code_archive", "coding", "run-code.zip"),
     artifact("experiment_log", "experiment", "run-experiment.log"),
     artifact("metrics", "experiment", "run-metrics.csv"),
+    {
+      ...artifact("checkpoint", "experiment", "best.pt"),
+      media_type: "application/octet-stream",
+      size_bytes: 48_234_496,
+    },
     artifact("draft", "writing", "run-draft.md"),
     artifact("references", "writing", "run-references.bib"),
   ],
@@ -247,6 +252,11 @@ describe("experiment view", () => {
     expect(screen.getByRole("link", { name: /Metrics \(CSV\)/ }).getAttribute("href")).toBe(
       `/api/v1/artifacts/${OUTPUT_ID}.metrics`,
     );
+    // The model checkpoint is a binary download, with its size.
+    const checkpoint = screen.getByRole("link", { name: /Checkpoint \(\.pt\)/ });
+    expect(checkpoint.getAttribute("href")).toBe(`/api/v1/artifacts/${OUTPUT_ID}.checkpoint`);
+    expect(checkpoint.getAttribute("download")).toBe("best.pt");
+    expect(checkpoint.textContent).toBe("Checkpoint (.pt)(46 MB)");
   });
 });
 

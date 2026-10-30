@@ -135,6 +135,8 @@ const GPU: GpuQueueOut = {
     sampled_at: "2026-10-30T00:00:00Z",
     demo: true,
   },
+  // The API's demo queue has no executor behind it; its readings are generated.
+  executor_alive: false,
   concurrency: 1,
   running: [job({ id: "job-1", status: "running", progress: 0.4, epoch: 8, total_epochs: 20 })],
   queued: [
@@ -146,6 +148,30 @@ const GPU: GpuQueueOut = {
   per_user_limit: 2,
   demo: true,
 };
+
+/** The real queue: an executor reports the readings, and the jobs are real. */
+const REAL_GPU: GpuQueueOut = {
+  ...GPU,
+  gpu: GPU.gpu && { ...GPU.gpu, demo: false },
+  executor_alive: true,
+  running: [
+    job({
+      id: "job-train",
+      status: "running",
+      kind: "train",
+      progress: 0.5,
+      epoch: 2,
+      total_epochs: 3,
+      demo: false,
+    }),
+  ],
+  queued: [job({ id: "job-smoke", status: "queued", kind: "smoke", demo: false })],
+  my_position: null,
+  my_jobs: 0,
+  demo: false,
+};
+
+let gpuQueue: GpuQueueOut = GPU;
 
 const DAYS = Array.from({ length: 30 }, (_, index) => ({
   day: `2026-10-${String(index + 1).padStart(2, "0")}`,
@@ -181,6 +207,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+  gpuQueue = GPU;
   mockApi((request, path) => {
     const url = new URL(request.url);
     if (path === "/api/v1/projects") {
@@ -204,7 +231,7 @@ beforeEach(() => {
         : json(404, { detail: "run.not_found" });
     }
     if (path === "/api/v1/gpu/queue") {
-      return json(200, GPU);
+      return json(200, gpuQueue);
     }
     if (path === "/api/v1/usage") {
       return json(200, USAGE);
@@ -257,6 +284,58 @@ describe("Dashboard", () => {
     );
     expect(within(gpu).getByRole("progressbar", { name: "Epoch 8 of 20" })).toBeTruthy();
     expect(within(gpu).getByText("Demo")).toBeTruthy();
+  });
+
+  it("labels each GPU job a smoke test or a training", async () => {
+    gpuQueue = REAL_GPU;
+    renderDashboard();
+    const gpu = await screen.findByRole("region", { name: "GPU" });
+    expect(await within(gpu).findByText("Training · Hedy Lamarr · nyu2")).toBeTruthy();
+    expect(within(gpu).getByText("Smoke test · Hedy Lamarr · nyu2")).toBeTruthy();
+    expect(within(gpu).queryByText("Demo")).toBeNull();
+  });
+
+  it("shows a dash for a reading the GPU does not give, never 0", async () => {
+    const gpuReading = REAL_GPU.gpu;
+    if (!gpuReading) {
+      throw new Error("fixture changed");
+    }
+    gpuQueue = {
+      ...REAL_GPU,
+      gpu: {
+        ...gpuReading,
+        utilization_percent: null,
+        temperature_c: null,
+        power_draw_w: null,
+        power_limit_w: null,
+        fan_percent: null,
+      },
+    };
+    renderDashboard();
+    const gpu = await screen.findByRole("region", { name: "GPU" });
+    expect(await within(gpu).findByRole("meter", { name: "Memory" })).toBeTruthy();
+    // No meter without a value: the load is a dash, and screen readers hear "not reported".
+    expect(within(gpu).queryByRole("meter", { name: "Load" })).toBeNull();
+    expect(within(gpu).getByText("Load")).toBeTruthy();
+    expect(within(gpu).getAllByText("not reported")).toHaveLength(3);
+    for (const term of ["Temperature", "Power"]) {
+      const value = within(gpu).getByText(term).nextElementSibling;
+      expect(value?.textContent).toBe("—not reported");
+    }
+    expect(gpu.textContent).not.toContain("°C");
+  });
+
+  it("says the GPU executor is not running, and that queued jobs wait for it", async () => {
+    gpuQueue = { ...REAL_GPU, gpu: null, executor_alive: false, running: [] };
+    renderDashboard();
+    const gpu = await screen.findByRole("region", { name: "GPU" });
+    expect(await within(gpu).findByText("The GPU executor is not running")).toBeTruthy();
+    expect(within(gpu).getByText("Queued jobs wait until it is back.")).toBeTruthy();
+    expect(within(gpu).queryByRole("meter")).toBeNull();
+    expect(within(gpu).getByText("The lab GPU and its job queue.")).toBeTruthy();
+    // The queue is still there.
+    expect(within(gpu).getByText("Smoke test · Hedy Lamarr · nyu2")).toBeTruthy();
+    expect(within(gpu).getByText("Nothing is running.")).toBeTruthy();
   });
 
   it("shows paid against free spend and the budget left", async () => {

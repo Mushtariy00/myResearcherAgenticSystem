@@ -869,7 +869,8 @@ export const listRunArtifactsQueryKey = (options: Options<ListRunArtifactsData>)
  * List Run Artifacts
  *
  * Every file the run's latest coding, experiment and writing outputs make; anyone who can
- * open the run may download them.
+ * open the run may download them. An experiment's log, metrics and checkpoint are its training
+ * job's files where this machine has them.
  */
 export const listRunArtifactsOptions = (options: Options<ListRunArtifactsData>) => queryOptions<ListRunArtifactsResponse, ListRunArtifactsError, ListRunArtifactsResponse, ReturnType<typeof listRunArtifactsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -890,7 +891,8 @@ export const getArtifactQueryKey = (options: Options<GetArtifactData>) => create
  * Get Artifact
  *
  * Download one artifact. The id names a stage output and an item of it; both are checked
- * again here, and the caller must be able to open the run the output belongs to.
+ * again here, and the caller must be able to open the run the output belongs to. A job's
+ * file is streamed from disk.
  */
 export const getArtifactOptions = (options: Options<GetArtifactData>) => queryOptions<GetArtifactResponse, GetArtifactError, GetArtifactResponse, ReturnType<typeof getArtifactQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -910,7 +912,8 @@ export const listDatasetsQueryKey = (options?: Options<ListDatasetsData>) => cre
 /**
  * List Datasets
  *
- * Datasets experiments can mount (read-only), with their data contracts.
+ * Datasets experiments can mount (read-only), with their data contracts: the enabled
+ * registered datasets.
  */
 export const listDatasetsOptions = (options?: Options<ListDatasetsData>) => queryOptions<ListDatasetsResponse, DefaultError, ListDatasetsResponse, ReturnType<typeof listDatasetsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -930,10 +933,11 @@ export const getGpuQueueQueryKey = (options?: Options<GetGpuQueueData>) => creat
 /**
  * Get Gpu Queue
  *
- * The GPU's live readings, the job on it and the jobs waiting, with the caller's place.
+ * The GPU's live readings, the jobs on it and the jobs waiting, with the caller's place.
  *
- * Real experiment stages that are running come from the database, oldest first; runs in
- * projects the caller can't open show no topic. Telemetry and the other jobs are demo data.
+ * The jobs are the executor's (gpu_jobs), queued ones in the order it will run them; runs in
+ * projects the caller can't open show no run, topic or project. The readings come from the
+ * executor's heartbeat, and are null while it is not running.
  */
 export const getGpuQueueOptions = (options?: Options<GetGpuQueueData>) => queryOptions<GetGpuQueueResponse, DefaultError, GetGpuQueueResponse, ReturnType<typeof getGpuQueueQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

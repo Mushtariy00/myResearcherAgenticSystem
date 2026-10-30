@@ -15,6 +15,7 @@ import {
 } from "@/lib/stage-output.fixtures";
 import {
   api,
+  approvedBy,
   artifact,
   outputPair,
   PROJECT,
@@ -54,6 +55,12 @@ vi.mock("@/components/shared/pdf-viewer", () => ({
 vi.mock("@/components/shared/metrics-chart-echarts", () => ({
   init: vi.fn(() => ({ setOption: vi.fn(), resize: vi.fn(), dispose: vi.fn() })),
 }));
+// Charts that mount together import the chart runtime at the same time, and the mock above
+// reaches only the first of them: the others get a stand-in core.
+vi.mock("echarts/core", () => ({
+  init: () => ({ setOption: vi.fn(), resize: vi.fn(), dispose: vi.fn() }),
+  use: () => {},
+}));
 
 beforeEach(() => {
   navigation.search = "";
@@ -75,6 +82,37 @@ function send(...events: ReturnType<typeof runEvent>[]) {
     FakeEventSource.latest().send(...events);
   });
 }
+
+/** An experiment.epoch event of the training job, as the executor writes it. */
+function epochEvent(epoch: number, rmse: number | null) {
+  return runEvent("experiment.epoch", {
+    stage: "experiment",
+    job_id: "job-1",
+    kind: "train",
+    ordinal: 1,
+    epoch,
+    train: { loss: 0.5, rmse: 0.6, mae: 0.4, abs_rel: 0.2 },
+    val: { loss: 0.45, rmse, mae: 0.38, abs_rel: 0.18 },
+  });
+}
+
+/** A run up to the experiment stage, with the experiment as given. */
+function experimentRun(experiment: ReturnType<typeof stageRunOut>) {
+  return runDetailOut({
+    status: "running",
+    stages: [
+      stageRunOut("literature", "approved"),
+      stageRunOut("method", "approved"),
+      stageRunOut("coding", "approved"),
+      experiment,
+    ],
+  });
+}
+
+const chartTitles = (scope: HTMLElement) =>
+  within(scope)
+    .getAllByRole("figure")
+    .map((figure) => figure.querySelector("figcaption")?.textContent);
 
 describe("StudioRunPage header", () => {
   it("shows the topic, a live status, the run's facts, its project and the live spend", async () => {
@@ -285,6 +323,123 @@ describe("StudioRunPage stage views", () => {
     expect(screen.getByRole("region", { name: "Last lines of the training log" })).toBeTruthy();
   });
 
+  it("draws the experiment's live training curves while it trains, then its stored series", async () => {
+    api.run = experimentRun(stageRunOut("experiment", "running"));
+    api.stages.experiment = stageDetailOut(RUN_ID, "experiment", [
+      attemptOut(1, [], { status: "running" }),
+    ]);
+    navigation.search = "stage=experiment";
+    renderRunPage();
+    await waitForRun();
+    const running = await screen.findByRole("heading", { level: 4, name: "Experiment is running" });
+    const live = screen.getByRole("region", { name: "Live training curves" });
+    expect(within(live).getByText("The curves appear here after the first epoch.")).toBeTruthy();
+
+    send(runEvent("stage.started", { stage: "experiment", attempt: 1 }), epochEvent(0, 0.91));
+    expect(await within(live).findByText("1 epoch so far")).toBeTruthy();
+    expect(chartTitles(live)).toEqual([
+      "loss per epoch",
+      "rmse per epoch",
+      "mae per epoch",
+      "abs_rel per epoch",
+    ]);
+
+    // Each epoch extends the curves; one not measured is a gap, never 0.
+    send(epochEvent(1, null), epochEvent(2, 0.62));
+    expect(await within(live).findByText("3 epochs so far")).toBeTruthy();
+    expect(within(live).getByText("Latest: Epoch 2: val RMSE 0.62")).toBeTruthy();
+    const table = within(live).getByRole("table", { name: "rmse per epoch: values per epoch" });
+    expect(
+      [...table.querySelectorAll("tbody tr")].map((row) =>
+        [...row.children].map((cell) => cell.textContent),
+      ),
+    ).toEqual([
+      ["0", "0.91", "0.6"],
+      ["1", "No value", "0.6"],
+      ["2", "0.62", "0.6"],
+    ]);
+    // The running card's newest step is the epoch.
+    const card = running.closest("[aria-busy]") as HTMLElement;
+    expect(card.textContent).toContain("Latest stepEpoch 2: val RMSE 0.62");
+
+    // The output is ready (and approved by itself): the stored series take over.
+    const { version, output } = outputPair(DEMO_EXPERIMENT, {
+      degraded: false,
+      degraded_reason: null,
+      approval: approvedBy("Alice"),
+    });
+    api.stages.experiment = stageDetailOut(RUN_ID, "experiment", [
+      attemptOut(1, [version], { status: "approved" }),
+    ]);
+    api.run = experimentRun(stageRunOut("experiment", "approved", { outputs: [output] }));
+    send(runEvent("stage.output_ready", { stage: "experiment", attempt: 1 }));
+    expect(await screen.findByRole("region", { name: "Final metrics" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Live training curves" })).toBeNull();
+    expect(chartTitles(screen.getByRole("region", { name: "Training curves" }))).toEqual([
+      "loss per epoch",
+      "abs_rel per epoch",
+      "rmse per epoch",
+    ]);
+  });
+
+  it("draws a newer attempt's live curves above the earlier output on screen", async () => {
+    const earlier = versionOut(DEMO_EXPERIMENT, {
+      approval: {
+        decision: "request_changes",
+        comment: "Train longer",
+        actor_id: "alice",
+        actor_name: "Alice",
+        at: "2026-10-31T01:00:00Z",
+      },
+    });
+    api.stages.experiment = stageDetailOut(RUN_ID, "experiment", [
+      attemptOut(1, [earlier], { status: "changes_requested" }),
+      attemptOut(2, [], { status: "running", feedback: "Train longer" }),
+    ]);
+    api.run = experimentRun(stageRunOut("experiment", "running", { attempt: 2 }));
+    navigation.search = "stage=experiment";
+    renderRunPage();
+    await waitForRun();
+    expect(
+      await screen.findByText("Attempt 2 is running. You are looking at an earlier output."),
+    ).toBeTruthy();
+    const live = screen.getByRole("region", { name: "Live training curves of attempt 2" });
+    send(runEvent("stage.started", { stage: "experiment", attempt: 2 }), epochEvent(0, 0.88));
+    expect(await within(live).findByText("1 epoch so far")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Training curves" })).toBeTruthy();
+  });
+
+  it("offers the training checkpoint with its size, next to the log and in the downloads", async () => {
+    seedCompletedRun();
+    const experimentId = api.stages.experiment?.attempts[0]?.outputs[0]?.id ?? "";
+    api.artifacts = {
+      run_id: RUN_ID,
+      items: [
+        artifact("experiment", "experiment_log", "experiment.log", experimentId),
+        {
+          ...artifact("experiment", "checkpoint", "best.pt", experimentId),
+          media_type: "application/octet-stream",
+          size_bytes: 48_234_496,
+        },
+      ],
+      demo: false,
+    };
+    navigation.search = "stage=experiment";
+    renderRunPage();
+    await waitForRun();
+
+    const download = await screen.findByRole("link", { name: /Download the checkpoint/ });
+    expect(download.getAttribute("download")).toBe("best.pt");
+    expect(download.getAttribute("href")).toMatch(
+      new RegExp(`/api/v1/artifacts/${experimentId}\\.checkpoint\\.best\\.pt$`),
+    );
+    expect(download.textContent).toBe("Download the checkpoint46 MB");
+
+    fireEvent.click(screen.getByRole("button", { name: /^Downloads/ }));
+    const item = await screen.findByRole("menuitem", { name: /best\.pt/ });
+    expect(item.textContent).toBe("best.ptModel checkpoint · 46 MB");
+  });
+
   it("renders the writing output: draft with contents and citations, outline and downloads", async () => {
     seedCompletedRun();
     const writingId = api.stages.writing?.attempts[0]?.outputs[0]?.id ?? "";
@@ -320,6 +475,31 @@ describe("StudioRunPage stage views", () => {
           .getAttribute("download"),
       ).toBe("draft.md"),
     );
+  });
+
+  it("says why the experiment failed, in words", async () => {
+    api.run = runDetailOut({
+      status: "failed",
+      error: "experiment.invalid_code_config",
+      stages: [
+        stageRunOut("literature", "approved"),
+        stageRunOut("method", "approved"),
+        stageRunOut("coding", "approved"),
+        stageRunOut("experiment", "failed", { error: "experiment.invalid_code_config" }),
+      ],
+    });
+    api.stages.experiment = stageDetailOut(RUN_ID, "experiment", [
+      attemptOut(1, [], { status: "failed", error: "experiment.invalid_code_config" }),
+    ]);
+    navigation.search = "stage=experiment";
+    renderRunPage();
+    await waitForRun();
+    const message =
+      "The approved code's config.json cannot be trained (an edit on approval may have broken it). Retry the run from the coding stage.";
+    expect(
+      await screen.findByRole("heading", { level: 4, name: "Experiment failed" }),
+    ).toBeTruthy();
+    expect(screen.getAllByText(message).length).toBeGreaterThanOrEqual(2);
   });
 
   it("explains stages the run has not reached", async () => {

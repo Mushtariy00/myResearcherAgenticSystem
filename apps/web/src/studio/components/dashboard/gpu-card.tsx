@@ -1,11 +1,12 @@
 "use client";
 
-import { CpuIcon } from "lucide-react";
+import { CpuIcon, ServerOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useNow, useTranslations } from "next-intl";
-import type { GpuJobOut } from "@/client";
+import type { GpuJobOut, GpuOut } from "@/client";
 import { DemoBadge } from "@/components/shared/demo-badge";
 import { useGpuQueue } from "@/hooks/use-gpu-queue";
+import { gpuReadings } from "@/lib/gpu";
 import { NumberTicker } from "@/studio/components/effects/number-ticker";
 import { PulseDot } from "@/studio/components/effects/pulse-dot";
 import { RingGauge } from "@/studio/components/effects/ring-gauge";
@@ -37,10 +38,117 @@ function ownerOf(job: GpuJobOut, you: string): string {
   return job.is_mine ? you : (job.owner_name ?? "");
 }
 
+/** A reading the GPU does not give: a dash (never 0), which screen readers hear as words. */
+function NotReported() {
+  const t = useTranslations("studioWork.dashboard.gpu");
+  return (
+    <>
+      <span aria-hidden>—</span>
+      <span className="sr-only">{t("notReported")}</span>
+    </>
+  );
+}
+
+/** The utilisation ring, memory, temperature and power; a reading the GPU does not give is a dash. */
+function Readings({ gpu }: { gpu: GpuOut }) {
+  const t = useTranslations("studioWork.dashboard.gpu");
+  const format = useFormatter();
+  const utilisation = gpu.utilization_percent;
+  const draw = gpu.power_draw_w;
+  const limit = gpu.power_limit_w;
+  const watts = (value: number) => format.number(value, { maximumFractionDigits: 0 });
+
+  return (
+    <div className="flex flex-wrap items-center gap-5">
+      <div data-stage="experiment">
+        {utilisation === null ? (
+          // No meter without a value: an empty ring with a dash.
+          <div className="grid size-32 shrink-0 place-items-center rounded-full border-[10px] border-[color-mix(in_oklch,var(--foreground)_10%,transparent)] text-center">
+            <span className="grid place-items-center">
+              <span className="font-mono text-2xl font-semibold tracking-tight text-muted-foreground">
+                <NotReported />
+              </span>
+              <span className="text-[0.7rem] text-muted-foreground">{t("utilisation")}</span>
+            </span>
+          </div>
+        ) : (
+          <RingGauge
+            value={utilisation}
+            label={t("utilisation")}
+            valueText={format.number(utilisation / 100, { style: "percent" })}
+          >
+            <span className="font-mono text-2xl font-semibold tracking-tight text-foreground">
+              <NumberTicker
+                value={utilisation / 100}
+                format={{ style: "percent", maximumFractionDigits: 0 }}
+              />
+            </span>
+            <span aria-hidden className="text-[0.7rem] text-muted-foreground">
+              {t("utilisation")}
+            </span>
+          </RingGauge>
+        )}
+      </div>
+      {/* At least 12rem wide: in a narrow card the readings wrap below the ring instead of
+          squeezing into a sliver beside it. */}
+      <dl className="grid min-w-48 flex-1 basis-48 grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        <div className="col-span-2 grid min-w-0 gap-0.5">
+          <dt className="text-xs text-muted-foreground">{t("device")}</dt>
+          <dd className="truncate font-medium text-foreground" title={gpu.name}>
+            <CpuIcon aria-hidden className="mr-1.5 inline size-3.5 align-[-2px]" />
+            {gpu.name}
+          </dd>
+        </div>
+        <div className="grid min-w-0 gap-0.5">
+          <dt className="text-xs text-muted-foreground">{t("memory")}</dt>
+          <dd className="font-medium text-foreground tabular-nums">
+            {t("memoryValue", {
+              used: format.number(gpu.memory_used_mb / 1024, {
+                style: "unit",
+                unit: "gigabyte",
+                maximumFractionDigits: 1,
+              }),
+              total: format.number(gpu.memory_total_mb / 1024, {
+                style: "unit",
+                unit: "gigabyte",
+                maximumFractionDigits: 0,
+              }),
+            })}
+          </dd>
+        </div>
+        <div className="grid min-w-0 gap-0.5">
+          <dt className="text-xs text-muted-foreground">{t("temperature")}</dt>
+          <dd className="font-medium text-foreground tabular-nums">
+            {gpu.temperature_c === null ? (
+              <NotReported />
+            ) : (
+              format.number(gpu.temperature_c, { style: "unit", unit: "celsius" })
+            )}
+          </dd>
+        </div>
+        <div className="col-span-2 grid min-w-0 gap-0.5">
+          <dt className="text-xs text-muted-foreground">{t("power")}</dt>
+          <dd className="font-medium text-foreground tabular-nums">
+            {draw === null ? (
+              <NotReported />
+            ) : limit === null ? (
+              t("powerDraw", { draw: watts(draw) })
+            ) : (
+              t("powerValue", { draw: watts(draw), limit: watts(limit) })
+            )}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
 /**
- * The lab GPU: a live utilisation ring, memory, temperature and power, the running experiment
- * with its progress, and the queue (the caller's place in it). Refreshes every 5 seconds while
- * the page is visible (useGpuQueue); readings and jobs the API generates carry the Demo badge.
+ * The lab GPU: a live utilisation ring, memory, temperature and power, the running jobs (smoke
+ * tests and trainings) with their progress, and the queue (the caller's place in it). While the
+ * GPU executor is not running it says so, and that queued jobs wait for it, instead of showing
+ * readings. Refreshes every 5 seconds while the page is visible (useGpuQueue); readings and jobs
+ * the API generates carry the Demo badge.
  */
 export function GpuCard({ className }: { className?: string }) {
   const t = useTranslations("studioWork.dashboard.gpu");
@@ -49,7 +157,9 @@ export function GpuCard({ className }: { className?: string }) {
   const now = useNow({ updateInterval: 15_000 });
   const query = useGpuQueue();
   const data = query.data;
+  const readings = data ? gpuReadings(data) : null;
   const you = t("you");
+  const kindOf = (job: GpuJobOut) => (job.kind ? t(`kinds.${job.kind}`) : null);
 
   return (
     <StudioPanel
@@ -58,9 +168,14 @@ export function GpuCard({ className }: { className?: string }) {
       description={t("description")}
       busy={query.isPending}
       className={className}
-      badge={data ? <DemoBadge demo={data.demo || data.gpu.demo} /> : null}
+      badge={data ? <DemoBadge demo={data.demo || data.gpu?.demo === true} /> : null}
       action={
-        data ? (
+        readings === "offline" ? (
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <PulseDot tone="danger" />
+            {t("notRunning")}
+          </span>
+        ) : readings === "live" && data?.gpu ? (
           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             <PulseDot tone="success" live={data.running.length > 0} />
             {t("sampled", { time: format.relativeTime(new Date(data.gpu.sampled_at), now) })}
@@ -81,68 +196,23 @@ export function GpuCard({ className }: { className?: string }) {
         <StudioInlineError error={query.error} onRetry={() => query.refetch()} />
       ) : data ? (
         <div className="grid gap-5">
-          <div className="flex flex-wrap items-center gap-5">
-            <div data-stage="experiment">
-              <RingGauge
-                value={data.gpu.utilization_percent}
-                label={t("utilisation")}
-                valueText={format.number(data.gpu.utilization_percent / 100, { style: "percent" })}
-              >
-                <span className="font-mono text-2xl font-semibold tracking-tight text-foreground">
-                  <NumberTicker
-                    value={data.gpu.utilization_percent / 100}
-                    format={{ style: "percent", maximumFractionDigits: 0 }}
-                  />
-                </span>
-                <span aria-hidden className="text-[0.7rem] text-muted-foreground">
-                  {t("utilisation")}
-                </span>
-              </RingGauge>
+          {readings === "offline" ? (
+            <div
+              role="status"
+              data-tone="warning"
+              className="flex items-start gap-3 rounded-xl border border-(--tone)/25 bg-(--tone)/10 px-3 py-2.5 text-sm"
+            >
+              <ServerOffIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-(--tone-fg)" />
+              <span className="grid gap-0.5">
+                <span className="font-medium text-foreground">{t("offline")}</span>
+                <span className="text-muted-foreground">{t("offlineDescription")}</span>
+              </span>
             </div>
-            {/* At least 12rem wide: in a narrow card the readings wrap below the ring instead of
-                squeezing into a sliver beside it. */}
-            <dl className="grid min-w-48 flex-1 basis-48 grid-cols-2 gap-x-4 gap-y-3 text-sm">
-              <div className="col-span-2 grid min-w-0 gap-0.5">
-                <dt className="text-xs text-muted-foreground">{t("device")}</dt>
-                <dd className="truncate font-medium text-foreground" title={data.gpu.name}>
-                  <CpuIcon aria-hidden className="mr-1.5 inline size-3.5 align-[-2px]" />
-                  {data.gpu.name}
-                </dd>
-              </div>
-              <div className="grid min-w-0 gap-0.5">
-                <dt className="text-xs text-muted-foreground">{t("memory")}</dt>
-                <dd className="font-medium text-foreground tabular-nums">
-                  {t("memoryValue", {
-                    used: format.number(data.gpu.memory_used_mb / 1024, {
-                      style: "unit",
-                      unit: "gigabyte",
-                      maximumFractionDigits: 1,
-                    }),
-                    total: format.number(data.gpu.memory_total_mb / 1024, {
-                      style: "unit",
-                      unit: "gigabyte",
-                      maximumFractionDigits: 0,
-                    }),
-                  })}
-                </dd>
-              </div>
-              <div className="grid min-w-0 gap-0.5">
-                <dt className="text-xs text-muted-foreground">{t("temperature")}</dt>
-                <dd className="font-medium text-foreground tabular-nums">
-                  {format.number(data.gpu.temperature_c, { style: "unit", unit: "celsius" })}
-                </dd>
-              </div>
-              <div className="col-span-2 grid min-w-0 gap-0.5">
-                <dt className="text-xs text-muted-foreground">{t("power")}</dt>
-                <dd className="font-medium text-foreground tabular-nums">
-                  {t("powerValue", {
-                    draw: format.number(data.gpu.power_draw_w, { maximumFractionDigits: 0 }),
-                    limit: format.number(data.gpu.power_limit_w, { maximumFractionDigits: 0 }),
-                  })}
-                </dd>
-              </div>
-            </dl>
-          </div>
+          ) : readings === "live" && data.gpu ? (
+            <Readings gpu={data.gpu} />
+          ) : (
+            <p className="text-sm text-muted-foreground">{t("noReadings")}</p>
+          )}
 
           {data.my_position !== null && (
             <p
@@ -186,6 +256,7 @@ export function GpuCard({ className }: { className?: string }) {
                       </div>
                       <p className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                         {[
+                          kindOf(job),
                           ownerOf(job, you),
                           t("progress", { percent }),
                           job.epoch !== null && job.total_epochs !== null
@@ -230,6 +301,7 @@ export function GpuCard({ className }: { className?: string }) {
                       <JobTitle job={job} />
                       <p className="text-xs text-muted-foreground">
                         {[
+                          kindOf(job),
                           ownerOf(job, you),
                           t("starts", {
                             time: format.relativeTime(new Date(job.estimated_start_at), now),

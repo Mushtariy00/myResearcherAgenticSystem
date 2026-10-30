@@ -26,9 +26,10 @@ import {
   type StageOverview,
   type VersionRef,
 } from "@/lib/stage-output";
+import { TRAINING_STAGE } from "@/lib/training-curves";
 import { stageAttr } from "@/studio/lib/stages";
 import { type CodingBase, CodingView } from "./coding-view";
-import { ExperimentView } from "./experiment-view";
+import { ExperimentView, LiveTrainingCard } from "./experiment-view";
 import { LiteratureView } from "./literature-view";
 import { MethodView } from "./method-view";
 import { useRunPage } from "./run-context";
@@ -313,6 +314,9 @@ function StageBody({
           role="status"
           title={t("attemptRunning", { attempt: attempt.attempt })}
         />
+      )}
+      {newer && working && stage === TRAINING_STAGE && (
+        <LiveTrainingCard attempt={attempt.attempt} />
       )}
       {newer && failed && (
         <Callout

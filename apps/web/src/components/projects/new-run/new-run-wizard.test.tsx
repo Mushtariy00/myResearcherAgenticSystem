@@ -110,6 +110,7 @@ const RUN: RunOut = {
 let estimates: unknown[];
 let created: unknown[];
 let createResponse: () => Response;
+let datasets: DatasetList = DATASETS;
 
 beforeAll(() => {
   installBrowserStubs();
@@ -119,13 +120,14 @@ beforeEach(() => {
   estimates = [];
   created = [];
   createResponse = () => json(201, RUN);
+  datasets = DATASETS;
   mockApi(async (request, path) => {
     if (path === "/api/v1/runs/estimate") {
       estimates.push(await request.json());
       return json(200, ESTIMATE);
     }
     if (path === "/api/v1/datasets") {
-      return json(200, DATASETS);
+      return json(200, datasets);
     }
     if (path === `/api/v1/projects/${PROJECT}/runs` && request.method === "POST") {
       created.push(await request.json());
@@ -192,6 +194,27 @@ describe("NewRunWizard steps", () => {
     });
     fireEvent.click(button("Next"));
     await expectStep("Stages");
+  });
+
+  it("shows the chosen dataset's facts, its size unknown until it is measured (never 0)", async () => {
+    renderWizard();
+    await fillTopicAndContinue();
+    fireEvent.click(button("Next"));
+    await expectStep("Stages");
+    expect(await screen.findByText("1,449 samples · 2.6 GB · RGB-D · CC BY 4.0")).toBeTruthy();
+    cleanup();
+
+    datasets = {
+      ...DATASETS,
+      items: DATASETS.items.map((item) => ({ ...item, size_bytes: null, checksum_sha256: null })),
+    };
+    renderWizard();
+    await fillTopicAndContinue();
+    fireEvent.click(button("Next"));
+    await expectStep("Stages");
+    expect(
+      await screen.findByText("1,449 samples · size unknown · RGB-D · CC BY 4.0"),
+    ).toBeTruthy();
   });
 
   it("asks for at least one source", async () => {

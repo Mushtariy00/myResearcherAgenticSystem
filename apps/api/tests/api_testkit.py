@@ -25,8 +25,18 @@ from agentic_api.orchestrator import (
     WorkflowStillRunningError,
 )
 from agentic_core.contracts import DecisionInput
-from agentic_core.enums import RunStatus, StageStatus
-from agentic_db.models import Paper, PaperText, Run, RunPaper, StageOutput, StageRun
+from agentic_core.enums import GpuJobKind, GpuJobStatus, RunStatus, StageStatus
+from agentic_core.gpu_jobs import SMOKE_TIMEOUT_SECONDS
+from agentic_db.models import (
+    Dataset,
+    GpuJob,
+    Paper,
+    PaperText,
+    Run,
+    RunPaper,
+    StageOutput,
+    StageRun,
+)
 
 ORIGIN = "http://localhost:8080"
 Factory = async_sessionmaker[AsyncSession]
@@ -557,6 +567,111 @@ WRITING_OUTPUT: dict[str, Any] = {
     "output_format": "Markdown draft",
     "review_focus": "Check the citations.",
 }
+
+
+# --- Datasets and GPU jobs (agentic_db.models: Dataset, GpuJob) ------------------------------
+
+# nyu2 as its migration registers it (a92a312bd5d3). Every table is emptied after each test, the
+# migration's own row with them, so tests that need it register it again.
+NYU2_DATASET: dict[str, Any] = {
+    "name": "nyu2",
+    "version": "2026.05",
+    "title": "NYU Depth V2",
+    "contract": {
+        "inputs": "RGB uint8, 3x480x640",
+        "targets": "Depth map float32, 1x480x640",
+        "units": "metres",
+        "valid_range": "above 0.001 m",
+        "missing_values": "0 where the sensor returned no depth",
+        "evaluation": "Every valid pixel of the full frame: RMSE, MAE and AbsRel",
+    },
+    "details": {
+        "description": "Indoor scenes recorded with a Microsoft Kinect.",
+        "tasks": ["monocular_depth"],
+        "modality": "RGB-D (Microsoft Kinect)",
+        "scenes": "indoor",
+        "width": 640,
+        "height": 480,
+        "splits": {"train": 50688, "val": 654, "test": 0},
+        "size_bytes": None,
+        "license": "Non-commercial research use (NYU Depth V2 terms)",
+        "homepage": "https://cs.nyu.edu/~fergus/datasets/nyu_depth_v2.html",
+    },
+}
+
+
+async def add_dataset(db: Factory, **fields: Any) -> None:
+    """A registered dataset: nyu2, with ``fields`` changed (a new name registers another)."""
+    async with db() as session:
+        await session.merge(Dataset(**{**NYU2_DATASET, **fields}))
+        await session.commit()
+
+
+def harness_config(
+    *, epochs: int = 3, max_train_steps: int | None = 1000, batch_size: int = 8
+) -> dict[str, Any]:
+    """A job's config as the worker submits it (agentic_worker.gpu.harness_config)."""
+    return {
+        "task": "nyu2_depth",
+        "seed": 42,
+        "require_gpu": True,
+        "model": {"architecture": "generated", "kwargs": {"base_channels": 16}},
+        "data": {
+            "dataset": "nyu2",
+            "batch_size": batch_size,
+            "num_workers": 2,
+            "split_file_template": "{root}/splits/nyu/{split}.txt",
+        },
+        "training": {
+            "learning_rate": 0.001,
+            "optimizer": "adam",
+            "loss": "l1",
+            "epochs": epochs,
+            "max_train_steps": max_train_steps,
+            "max_val_steps": None,
+        },
+    }
+
+
+SMOKE_CONFIG = harness_config(epochs=1, max_train_steps=2, batch_size=2)
+
+
+async def add_gpu_job(
+    db: Factory,
+    run_id: str,
+    stage_run_id: str,
+    *,
+    kind: GpuJobKind = GpuJobKind.TRAIN,
+    status: GpuJobStatus = GpuJobStatus.QUEUED,
+    user_id: str = "bob",
+    ordinal: int = 1,
+    **fields: Any,
+) -> uuid.UUID:
+    """A job of the stage attempt as the worker submits it (on nyu2, registered if it isn't),
+    with ``fields`` as the executor would have moved it along (status, progress, provenance)."""
+    values: dict[str, Any] = {
+        "config": SMOKE_CONFIG if kind is GpuJobKind.SMOKE else harness_config(),
+        "timeout_seconds": SMOKE_TIMEOUT_SECONDS if kind is GpuJobKind.SMOKE else 6 * 3600,
+        **fields,
+    }
+    async with db() as session:
+        if await session.get(Dataset, "nyu2") is None:
+            session.add(Dataset(**NYU2_DATASET))
+            await session.flush()
+        job = GpuJob(
+            stage_run_id=uuid.UUID(stage_run_id),
+            run_id=uuid.UUID(run_id),
+            user_id=user_id,
+            kind=kind,
+            ordinal=ordinal,
+            status=status,
+            dataset="nyu2",
+            code={"model.py": "class Model: ...\n"},
+            **values,
+        )
+        session.add(job)
+        await session.commit()
+        return job.id
 
 
 # --- Reading the PDFs the API writes --------------------------------------------------------

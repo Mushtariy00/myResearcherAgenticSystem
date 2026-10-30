@@ -104,7 +104,10 @@ export function DatasetCards({
                     dataset.tasks.join(", "),
                     dataset.modality,
                     t("samples", { count: dataset.samples }),
-                    formatBytes(dataset.size_bytes, format),
+                    // The executor measures it; until then it is unknown, not 0.
+                    dataset.size_bytes === null
+                      ? t("sizeUnknown")
+                      : formatBytes(dataset.size_bytes, format),
                   ]
                     .filter(Boolean)
                     .join(" · ")}

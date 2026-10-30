@@ -4,7 +4,7 @@ import { RotateCwIcon } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import type { PaperRef } from "@/client";
-import { useStageLogLine } from "@/components/shared/stage-log";
+import { useEpochLine, useStageLogLine } from "@/components/shared/stage-log";
 import { useWaitLabels } from "@/components/shared/wait-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +34,7 @@ const EVENT_TYPES = [
   "stage.invalidated",
   "stage.waiting",
   "llm.call",
+  "experiment.epoch",
   "log",
 ] as const;
 type EventType = (typeof EVENT_TYPES)[number];
@@ -190,6 +191,7 @@ function useSummary() {
   const labels = useLabels();
   const logLine = useLogLine();
   const stageLine = useStageLogLine();
+  const epochLine = useEpochLine();
   const waitLabels = useWaitLabels();
   /** Prefixes a line with its stage, when the event names one. */
   const inStage = (stage: unknown, line: string) => {
@@ -287,6 +289,13 @@ function useSummary() {
           parts.push(t("replayed"));
         }
         return inStage(p.stage, parts.join(" · "));
+      }
+      case "experimentEpoch": {
+        const line = epochLine(summary.record);
+        return inStage(
+          summary.record.stage,
+          line.detail ? `${line.text} · ${line.detail}` : line.text,
+        );
       }
       case "log":
         return summary.message;
