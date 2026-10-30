@@ -1,0 +1,83 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 3,
+    "items": [
+      {
+        "DOI": "10.1109/CVPR.2016.90",
+        "type": "proceedings-article",
+        "title": ["Deep Residual Learning for Image Recognition"],
+        "author": [
+          {"given": "Kaiming", "family": "He", "sequence": "first", "affiliation": []},
+          {"given": "Xiangyu", "family": "Zhang", "sequence": "additional", "affiliation": []}
+        ],
+        "issued": {"date-parts": [[2016, 6]]},
+        "container-title": ["2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)"],
+        "is-referenced-by-count": 151002,
+        "relation": {
+          "has-preprint": [
+            {"id-type": "doi", "id": "10.48550/arXiv.1512.03385", "asserted-by": "subject"}
+          ]
+        },
+        "score": 61.2
+      },
+      {
+        "DOI": "10.1177/1758835920922055",
+        "type": "journal-article",
+        "title": ["RETRACTED: <i>Myc</i> is a prognostic biomarker and potential therapeutic target in osteosarcoma"],
+        "author": [
+          {"given": "Yu", "family": "Chen", "sequence": "first", "affiliation": []},
+          {"name": "Osteosarcoma Study Group", "sequence": "additional", "affiliation": []}
+        ],
+        "issued": {"date-parts": [[2020, 1]]},
+        "container-title": ["Therapeutic Advances in Medical Oncology"],
+        "abstract": "<jats:title>Abstract</jats:title><jats:sec><jats:title>Background:</jats:title><jats:p>Myc is a proto-oncogene &amp; a transcription factor.</jats:p></jats:sec>",
+        "is-referenced-by-count": 27,
+        "relation": {},
+        "updated-by": [
+          {
+            "DOI": "10.1177/17588359231172420",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "retraction-watch",
+            "updated": {"date-parts": [[2023, 4, 22]], "date-time": "2023-04-22T00:00:00Z", "timestamp": 1682121600000},
+            "record-id": "44124"
+          },
+          {
+            "DOI": "10.1177/17588359231172420",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "publisher",
+            "updated": {"date-parts": [[2023, 4, 22]], "date-time": "2023-04-22T00:00:00Z", "timestamp": 1682121600000}
+          }
+        ],
+        "score": 40.5
+      },
+      {
+        "DOI": "10.1177/17588359231172420",
+        "type": "journal-article",
+        "title": ["Retraction to 10.1177/1758835920922055"],
+        "issued": {"date-parts": [[2023, 1]]},
+        "container-title": ["Therapeutic Advances in Medical Oncology"],
+        "is-referenced-by-count": 0,
+        "relation": {},
+        "update-to": [
+          {
+            "DOI": "10.1177/1758835920922055",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "retraction-watch",
+            "updated": {"date-parts": [[2023, 4, 22]], "date-time": "2023-04-22T00:00:00Z", "timestamp": 1682121600000},
+            "record-id": "44124"
+          }
+        ],
+        "score": 39.9
+      }
+    ],
+    "items-per-page": 3,
+    "query": {"start-index": 0, "search-terms": "deep learning"}
+  }
+}

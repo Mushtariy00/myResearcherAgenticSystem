@@ -1,0 +1,60 @@
+{
+  "totalHits": 2,
+  "limit": 5,
+  "offset": 0,
+  "scrollId": null,
+  "results": [
+    {
+      "acceptedDate": null,
+      "arxivId": null,
+      "authors": [{"name": "Miotto, Riccardo"}, {"name": "Wang, Fei"}],
+      "citationCount": null,
+      "contributors": [],
+      "outputs": ["https://api.core.ac.uk/v3/outputs/158905312"],
+      "createdDate": "2018-05-11T05:31:20",
+      "dataProviders": [
+        {"id": 144, "name": "", "url": "https://api.core.ac.uk/v3/data-providers/144", "logo": "https://api.core.ac.uk/data-providers/144/logo"}
+      ],
+      "depositedDate": null,
+      "abstract": "Gaining knowledge and actionable insights from complex, high-dimensional and heterogeneous biomedical data remains a key challenge.",
+      "documentType": "research",
+      "doi": "10.1093/bib/bbx044",
+      "downloadUrl": "https://core.ac.uk/download/158905312.pdf",
+      "fieldOfStudy": null,
+      "fullText": "Deep learning for healthcare ...",
+      "id": 158905312,
+      "identifiers": [
+        {"identifier": "oai:pubmedcentral.nih.gov:6455466", "type": "OAI_ID"},
+        {"identifier": "10.1093/bib/bbx044", "type": "DOI"}
+      ],
+      "title": "Deep learning for healthcare: review, opportunities and challenges",
+      "language": {"code": "en", "name": "English"},
+      "magId": null,
+      "oaiIds": ["oai:pubmedcentral.nih.gov:6455466"],
+      "publishedDate": "2017-05-06T00:00:00",
+      "publisher": "Oxford University Press",
+      "pubmedId": null,
+      "references": [],
+      "sourceFulltextUrls": ["https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6455466/pdf/bbx044.pdf"],
+      "updatedDate": "2026-02-03T11:02:09",
+      "yearPublished": 2017,
+      "journals": [],
+      "links": [
+        {"type": "download", "url": "https://core.ac.uk/download/158905312.pdf"},
+        {"type": "reader", "url": "https://core.ac.uk/reader/158905312"},
+        {"type": "thumbnail_m", "url": "https://core.ac.uk/image/158905312/large"},
+        {"type": "display", "url": "https://core.ac.uk/works/7321587"}
+      ]
+    },
+    {
+      "arxivId": null,
+      "authors": [{"name": "Kim, Jiwon"}],
+      "doi": null,
+      "downloadUrl": "https://core.ac.uk/download/412345678.pdf",
+      "id": 412345678,
+      "title": "Deep learning for healthcare: a hospital case study",
+      "yearPublished": 2021,
+      "links": [{"type": "download", "url": "https://core.ac.uk/download/412345678.pdf"}]
+    }
+  ]
+}

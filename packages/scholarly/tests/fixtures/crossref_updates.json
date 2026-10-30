@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 1,
+    "items": [
+      {
+        "DOI": "10.1177/17588359231172420",
+        "update-to": [
+          {
+            "DOI": "10.1177/1758835920922055",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "retraction-watch",
+            "updated": {"date-parts": [[2023, 4, 22]], "date-time": "2023-04-22T00:00:00Z", "timestamp": 1682121600000},
+            "record-id": "44124"
+          },
+          {
+            "DOI": "10.1177/1758835920922055",
+            "type": "retraction",
+            "label": "Retraction",
+            "source": "publisher",
+            "updated": {"date-parts": [[2023, 4, 22]], "date-time": "2023-04-22T00:00:00Z", "timestamp": 1682121600000}
+          }
+        ]
+      }
+    ],
+    "items-per-page": 50,
+    "query": {"start-index": 0, "search-terms": null}
+  }
+}

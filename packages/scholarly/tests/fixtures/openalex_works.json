@@ -1,0 +1,243 @@
+{
+  "meta": {
+    "count": 3,
+    "db_response_time_ms": 38,
+    "page": 1,
+    "per_page": 25,
+    "groups_count": null
+  },
+  "results": [
+    {
+      "id": "https://openalex.org/W2963403868",
+      "doi": "https://doi.org/10.48550/arxiv.1706.03762",
+      "title": "Attention Is All You Need",
+      "display_name": "Attention Is All You Need",
+      "publication_year": 2017,
+      "type": "preprint",
+      "ids": {
+        "openalex": "https://openalex.org/W2963403868",
+        "doi": "https://doi.org/10.48550/arxiv.1706.03762",
+        "mag": "2963403868"
+      },
+      "primary_location": {
+        "is_oa": true,
+        "landing_page_url": "http://arxiv.org/abs/1706.03762",
+        "pdf_url": "http://arxiv.org/pdf/1706.03762",
+        "source": {
+          "id": "https://openalex.org/S4306400194",
+          "display_name": "arXiv (Cornell University)",
+          "issn_l": null,
+          "type": "repository"
+        },
+        "license": "other-oa",
+        "version": "submittedVersion",
+        "is_accepted": false,
+        "is_published": false
+      },
+      "best_oa_location": {
+        "is_oa": true,
+        "landing_page_url": "http://arxiv.org/abs/1706.03762",
+        "pdf_url": "http://arxiv.org/pdf/1706.03762",
+        "source": {
+          "id": "https://openalex.org/S4306400194",
+          "display_name": "arXiv (Cornell University)",
+          "issn_l": null,
+          "type": "repository"
+        },
+        "license": "other-oa",
+        "version": "submittedVersion",
+        "is_accepted": false,
+        "is_published": false
+      },
+      "locations": [
+        {
+          "is_oa": true,
+          "landing_page_url": "http://arxiv.org/abs/1706.03762",
+          "pdf_url": "http://arxiv.org/pdf/1706.03762",
+          "source": {
+            "id": "https://openalex.org/S4306400194",
+            "display_name": "arXiv (Cornell University)",
+            "issn_l": null,
+            "type": "repository"
+          },
+          "license": "other-oa",
+          "version": "submittedVersion",
+          "is_accepted": false,
+          "is_published": false
+        }
+      ],
+      "authorships": [
+        {
+          "author_position": "first",
+          "author": {
+            "id": "https://openalex.org/A5034823167",
+            "display_name": "Ashish Vaswani",
+            "orcid": null
+          },
+          "institutions": [],
+          "countries": [],
+          "is_corresponding": false,
+          "raw_author_name": "Vaswani, Ashish"
+        },
+        {
+          "author_position": "middle",
+          "author": {
+            "id": "https://openalex.org/A5025447467",
+            "display_name": "Noam Shazeer",
+            "orcid": null
+          },
+          "institutions": [],
+          "countries": [],
+          "is_corresponding": false,
+          "raw_author_name": "Shazeer, Noam"
+        }
+      ],
+      "abstract_inverted_index": {
+        "The": [0],
+        "dominant": [1],
+        "sequence": [2],
+        "transduction": [3],
+        "models": [4],
+        "are": [5],
+        "based": [6],
+        "on": [7],
+        "complex": [8],
+        "recurrent": [9],
+        "or": [10],
+        "convolutional": [11],
+        "neural": [12],
+        "networks.": [13]
+      },
+      "cited_by_count": 6147,
+      "is_retracted": false
+    },
+    {
+      "id": "https://openalex.org/W2612613542",
+      "doi": "https://doi.org/10.1093/bib/bbx044",
+      "title": "Deep learning for healthcare: review, opportunities and challenges",
+      "display_name": "Deep learning for healthcare: review, opportunities and challenges",
+      "publication_year": 2017,
+      "type": "review",
+      "ids": {
+        "openalex": "https://openalex.org/W2612613542",
+        "doi": "https://doi.org/10.1093/bib/bbx044",
+        "mag": "2612613542",
+        "pmid": "https://pubmed.ncbi.nlm.nih.gov/28481991",
+        "pmcid": "https://www.ncbi.nlm.nih.gov/pmc/articles/6455466"
+      },
+      "primary_location": {
+        "is_oa": false,
+        "landing_page_url": "https://doi.org/10.1093/bib/bbx044",
+        "pdf_url": null,
+        "source": {
+          "id": "https://openalex.org/S91767247",
+          "display_name": "Briefings in Bioinformatics",
+          "issn_l": "1467-5463",
+          "type": "journal"
+        },
+        "license": null,
+        "version": null,
+        "is_accepted": false,
+        "is_published": false
+      },
+      "best_oa_location": {
+        "is_oa": true,
+        "landing_page_url": "https://europepmc.org/articles/pmc6455466",
+        "pdf_url": "https://europepmc.org/articles/pmc6455466?pdf=render",
+        "source": {
+          "id": "https://openalex.org/S4306400806",
+          "display_name": "Europe PMC (PubMed Central)",
+          "issn_l": null,
+          "type": "repository"
+        },
+        "license": null,
+        "version": "acceptedVersion",
+        "is_accepted": true,
+        "is_published": false
+      },
+      "locations": [
+        {
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1093/bib/bbx044",
+          "pdf_url": "https://academic.oup.com/bib/article-pdf/19/6/1236/27119184/bbx044.pdf",
+          "source": {
+            "id": "https://openalex.org/S91767247",
+            "display_name": "Briefings in Bioinformatics",
+            "issn_l": "1467-5463",
+            "type": "journal"
+          },
+          "license": null,
+          "version": null,
+          "is_accepted": false,
+          "is_published": false
+        },
+        {
+          "is_oa": true,
+          "landing_page_url": "https://europepmc.org/articles/pmc6455466",
+          "pdf_url": "https://europepmc.org/articles/pmc6455466?pdf=render",
+          "source": {
+            "id": "https://openalex.org/S4306400806",
+            "display_name": "Europe PMC (PubMed Central)",
+            "issn_l": null,
+            "type": "repository"
+          },
+          "license": null,
+          "version": "acceptedVersion",
+          "is_accepted": true,
+          "is_published": false
+        },
+        {
+          "is_oa": true,
+          "landing_page_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/6455466",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S2764455111",
+            "display_name": "PubMed Central",
+            "issn_l": null,
+            "type": "repository"
+          },
+          "license": null,
+          "version": "acceptedVersion",
+          "is_accepted": true,
+          "is_published": false
+        }
+      ],
+      "authorships": [
+        {
+          "author_position": "first",
+          "author": {
+            "id": "https://openalex.org/A5011312093",
+            "display_name": "Riccardo Miotto",
+            "orcid": "https://orcid.org/0000-0002-7358-8846"
+          },
+          "institutions": [],
+          "countries": ["US"],
+          "is_corresponding": true,
+          "raw_author_name": "Riccardo Miotto"
+        }
+      ],
+      "abstract_inverted_index": null,
+      "cited_by_count": 2210,
+      "is_retracted": false
+    },
+    {
+      "id": "https://openalex.org/W4211234567",
+      "doi": null,
+      "title": "Front Matter",
+      "display_name": "Front Matter",
+      "publication_year": 2021,
+      "type": "paratext",
+      "ids": {
+        "openalex": "https://openalex.org/W4211234567"
+      },
+      "primary_location": null,
+      "best_oa_location": null,
+      "locations": [],
+      "authorships": [],
+      "abstract_inverted_index": null,
+      "cited_by_count": 0,
+      "is_retracted": false
+    }
+  ],
+  "group_by": []
+}

@@ -81,6 +81,21 @@ services:
       - "127.0.0.1:1025:1025"  # SMTP
     mem_limit: 64m
 
+  grobid:
+    <<: *defaults
+    # PDF parsing for the literature stage: header, sections and references as TEI XML. The CRF
+    # image has no deep-learning models and runs on CPU. Full-text parsing wants about 4 GiB, so
+    # it is started on demand (`--profile parse`) and does not restart by itself.
+    profiles: ["parse"]
+    image: grobid/grobid:0.9.1-crf
+    init: true
+    restart: "no"
+    ulimits:
+      core: 0
+    ports:
+      - "127.0.0.1:8070:8070"
+    mem_limit: 4g
+
   proxy:
     <<: *defaults
     profiles: ["dev"]

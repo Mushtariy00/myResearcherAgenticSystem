@@ -1,0 +1,72 @@
+{
+  "total": 2861,
+  "offset": 0,
+  "next": 2,
+  "data": [
+    {
+      "paperId": "204e3073870fae3d05bcbc2f6a8e263d9b72e776",
+      "externalIds": {
+        "DBLP": "journals/corr/VaswaniSPUJGKP17",
+        "MAG": "2963403868",
+        "ArXiv": "1706.03762",
+        "CorpusId": 13756489
+      },
+      "url": "https://www.semanticscholar.org/paper/204e3073870fae3d05bcbc2f6a8e263d9b72e776",
+      "title": "Attention is All you Need",
+      "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks in an encoder-decoder configuration.",
+      "venue": "Neural Information Processing Systems",
+      "publicationVenue": {
+        "id": "d9720b90-d60b-48bc-9df8-87a30b9a60dd",
+        "name": "Neural Information Processing Systems",
+        "type": "conference",
+        "alternate_names": ["Neural Inf Process Syst", "NeurIPS", "NIPS"],
+        "url": "http://neurips.cc/"
+      },
+      "year": 2017,
+      "citationCount": 151234,
+      "openAccessPdf": {
+        "url": "",
+        "status": null,
+        "license": null,
+        "disclaimer": "Notice: Paper or abstract available at https://arxiv.org/abs/1706.03762, which is subject to the license by the author or copyright owner provided with this content. Please go to the source to verify the license and copyright information for your use."
+      },
+      "authors": [
+        {"authorId": "40348417", "name": "Ashish Vaswani"},
+        {"authorId": "1846258", "name": "Noam M. Shazeer"}
+      ]
+    },
+    {
+      "paperId": "5ea0e3b0dc3b2d6e7a1bf9d16c08c2a1f2b0cf33",
+      "externalIds": {
+        "MAG": "2612613542",
+        "DOI": "10.1093/bib/bbx044",
+        "PubMedCentral": "6455466",
+        "PubMed": "28481991",
+        "CorpusId": 3906830
+      },
+      "url": "https://www.semanticscholar.org/paper/5ea0e3b0dc3b2d6e7a1bf9d16c08c2a1f2b0cf33",
+      "title": "Deep learning for healthcare: review, opportunities and challenges",
+      "abstract": null,
+      "venue": "",
+      "publicationVenue": {
+        "id": "f8e3d6a1-2c1b-4d4f-9b6e-0c0e6f3e2a11",
+        "name": "Briefings in Bioinformatics",
+        "type": "journal",
+        "issn": "1467-5463",
+        "url": "https://academic.oup.com/bib"
+      },
+      "year": 2018,
+      "citationCount": 2501,
+      "openAccessPdf": {
+        "url": "https://academic.oup.com/bib/article-pdf/19/6/1236/27119184/bbx044.pdf",
+        "status": "BRONZE",
+        "license": null,
+        "disclaimer": "Notice: Paper or abstract available at https://pmc.ncbi.nlm.nih.gov/articles/PMC6455466, which is subject to the license by the author or copyright owner provided with this content."
+      },
+      "authors": [
+        {"authorId": "2251498", "name": "Riccardo Miotto"},
+        {"authorId": "2108102", "name": "Fei Wang"}
+      ]
+    }
+  ]
+}

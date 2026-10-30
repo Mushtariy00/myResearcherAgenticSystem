@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Attention Is All You Need</title>
+				<funder ref="#_kQxSfWm">
+					<orgName type="full">Google</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+				<date type="published" when="2017-06-12">12 Jun 2017</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Ashish</forename><surname>Vaswani</surname></persName>
+							<email>avaswani@google.com</email>
+							<affiliation key="aff0">
+								<orgName type="department">Google Brain</orgName>
+								<orgName type="institution">Google</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Noam</forename><surname>Shazeer</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="department">Google Brain</orgName>
+								<orgName type="institution">Google</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Aidan</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="institution">University of Toronto</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Attention Is All You Need</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2017-06-12">12 Jun 2017</date>
+						</imprint>
+					</monogr>
+					<idno type="arXiv">arXiv:1706.03762v5[cs.CL]</idno>
+					<idno type="DOI">10.48550/arXiv.1706.03762</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.9.1" ident="GROBID" when="2026-10-30T10:12:44+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>The dominant sequence transduction models are based on complex recurrent or convolutional neural networks in an encoder-decoder configuration. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Recurrent neural networks, long short-term memory <ref type="bibr" target="#b12">[13]</ref> and gated recurrent <ref type="bibr" target="#b6">[7]</ref> neural networks in particular, have been firmly established as state of the art approaches in sequence modeling.</p><p>In this work we propose the Transformer, a model architecture eschewing recurrence and instead relying entirely on an attention mechanism.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.1">Scaled Dot-Product Attention</head><p>We call our particular attention "Scaled Dot-Product Attention" (Figure <ref type="figure" target="#fig_0">2</ref>).</p><formula xml:id="formula_0">Attention(Q, K, V ) = softmax( QK T √ d k )V<label>(1)</label></formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Why Self-Attention</head></div>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: The Transformer -model architecture.</figDesc><graphic url="image-1.png" coords="3,163.80,72.00,284.40,415.58" type="bitmap" /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head>Table 1 :</head><label>1</label><figDesc>Maximum path lengths, per-layer complexity and minimum number of sequential operations.</figDesc><table><row><cell>Layer Type</cell><cell>Complexity per Layer</cell></row></table></figure>
+		</body>
+		<back>
+
+<div type="acknowledgement">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Acknowledgements</head><p>We are grateful to Nal Kalchbrenner and Stephan Gouws for their fruitful comments.</p></div>
+</div>
+
+<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A Attention Visualizations</head><p>Many of the attention heads exhibit behaviour that seems related to the structure of the sentence.</p></div>
+</div>
+
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Layer normalization</title>
+		<author>
+			<persName><forename type="first">Jimmy</forename><forename type="middle">Lei</forename><surname>Ba</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jamie</forename><forename type="middle">Ryan</forename><surname>Kiros</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Geoffrey</forename><forename type="middle">E</forename><surname>Hinton</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1607.06450</idno>
+	</analytic>
+	<monogr>
+		<title level="j">arXiv preprint</title>
+		<imprint>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Long short-term memory</title>
+		<author>
+			<persName><forename type="first">Sepp</forename><surname>Hochreiter</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jürgen</forename><surname>Schmidhuber</surname></persName>
+		</author>
+		<idno type="DOI">10.1162/NECO.1997.9.8.1735</idno>
+	</analytic>
+	<monogr>
+		<title level="j">Neural computation</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page" from="1735" to="1780" />
+			<date type="published" when="1997">1997</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title level="m" type="main">Deep Learning</title>
+		<author>
+			<persName><forename type="first">Ian</forename><surname>Goodfellow</surname></persName>
+		</author>
+		<imprint>
+			<publisher>MIT Press</publisher>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

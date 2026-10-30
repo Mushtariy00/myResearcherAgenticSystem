@@ -1,7 +1,14 @@
 # uv workspace root (virtual: no package of its own).
 # Members are listed explicitly because apps/web is a pnpm package, not a Python one.
 [tool.uv.workspace]
-members = ["apps/api", "apps/gateway", "apps/worker", "packages/core", "packages/db"]
+members = [
+    "apps/api",
+    "apps/gateway",
+    "apps/worker",
+    "packages/core",
+    "packages/db",
+    "packages/scholarly",
+]
 
 [tool.uv]
 required-version = ">=0.13"
@@ -12,6 +19,7 @@ dev = [
     "pyright>=1.1.414",
     "pytest>=9.2,<10",
     "pytest-asyncio>=1.0,<2",
+    "respx>=0.23.1,<0.24",
     "ruff>=0.17,<0.18",
 ]
 
@@ -34,12 +42,26 @@ known-first-party = ["agentic_*", "api_testkit", "gateway_testkit", "worker_test
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
-include = ["apps/api", "apps/gateway", "apps/worker", "packages/core", "packages/db"]
+include = [
+    "apps/api",
+    "apps/gateway",
+    "apps/worker",
+    "packages/core",
+    "packages/db",
+    "packages/scholarly",
+]
 exclude = ["**/.venv", "**/node_modules", "legacy", "sandbox"]
 extraPaths = ["apps/api/tests", "apps/gateway/tests", "apps/worker/tests"]
 
 [tool.pytest.ini_options]
-testpaths = ["apps/api/tests", "apps/gateway/tests", "apps/worker/tests", "packages/core/tests", "packages/db/tests"]
+testpaths = [
+    "apps/api/tests",
+    "apps/gateway/tests",
+    "apps/worker/tests",
+    "packages/core/tests",
+    "packages/db/tests",
+    "packages/scholarly/tests",
+]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "--import-mode=importlib"
