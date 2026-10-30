@@ -39,7 +39,6 @@ from agentic_worker.types import (
     FinishIn,
     RunPlan,
     RunPrepareIn,
-    RunResumeIn,
     StageExecIn,
     StageResult,
     StageStarted,
@@ -209,7 +208,6 @@ class StageActivities:
             self.start_stage,
             self.execute_stage,
             self.stage_waiting,
-            self.resume_run,
             self.record_decision,
             self.finish_run,
         ]
@@ -422,6 +420,12 @@ class StageActivities:
             session.add(output)
             stage_run = _require(await session.get(StageRun, stage_run_id), "stage_run")
             stage_run.status = StageStatus.OUTPUT_READY
+            if run.status == RunStatus.PAUSED_BUDGET:
+                # This try got past the lab balance: the pause is over.
+                run.error = None
+                if auto_approve:
+                    run.status = RunStatus.RUNNING
+                    await append_event(session, run_id, *events.run_status(RunStatus.RUNNING))
             if not auto_approve:  # an automatic approval follows at once; the run keeps running
                 run.status = RunStatus.AWAITING_APPROVAL
             await session.flush()
@@ -464,7 +468,9 @@ class StageActivities:
 
     @activity.defn(name="stage_waiting")
     async def stage_waiting(self, inp: StageWaitIn) -> None:
-        """The attempt waits until ``retry_at``; for an exhausted lab balance the run pauses."""
+        """The attempt waits until ``retry_at``. For an exhausted lab balance the run pauses (once:
+        later tries that fail the same way only record their wait); a wait for anything else
+        means the try got past the balance, so a pause is over."""
         run_id = uuid.UUID(inp.run_id)
         waiting = events.stage_waiting(inp.stage, inp.attempt, inp.reason, inp.retry_at)
         async with self._sessions() as session:
@@ -483,20 +489,10 @@ class StageActivities:
                 await append_event(
                     session, run_id, *events.run_finished(RunStatus.PAUSED_BUDGET, inp.reason)
                 )
+            elif not inp.pause and run.status == RunStatus.PAUSED_BUDGET:
+                run.status, run.error = RunStatus.RUNNING, None
+                await append_event(session, run_id, *events.run_status(RunStatus.RUNNING))
             await append_event(session, run_id, *waiting)
-            await session.commit()
-        await self._wake(run_id)
-
-    @activity.defn(name="resume_run")
-    async def resume_run(self, inp: RunResumeIn) -> None:
-        """A paused run is running again while its stage retries the gateway."""
-        run_id = uuid.UUID(inp.run_id)
-        async with self._sessions() as session:
-            run = await _lock_open_run(session, run_id)
-            if run.status != RunStatus.PAUSED_BUDGET:
-                return  # activity retry after the commit below
-            run.status, run.error = RunStatus.RUNNING, None
-            await append_event(session, run_id, *events.run_status(RunStatus.RUNNING))
             await session.commit()
         await self._wake(run_id)
 

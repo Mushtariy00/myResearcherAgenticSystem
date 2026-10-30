@@ -367,22 +367,18 @@ async def test_an_exhausted_lab_balance_pauses_the_run_until_calls_work_again(
 ) -> None:
     runner.errors["literature"] = [LabBalanceExhaustedError(), LabBalanceExhaustedError()]
     run_id, handle = await start(client, db)
-    await env.sleep(timedelta(hours=1))  # two 15-minute pauses
+    await env.sleep(timedelta(hours=1))  # tries after 15, then 30 more minutes
     await awaiting(handle, db, "literature")
+    # One pause, however many tries fail the same way: no running/paused flapping, so the
+    # event log and the run_paused notification don't repeat every check.
     changes = await run_events(db, run_id, "run.status")
-    assert [e["status"] for e in changes] == [
-        "running",
-        "paused_budget",
-        "running",
-        "paused_budget",
-        "running",
-        "awaiting_approval",
-    ]
-    assert {e.get("error") for e in changes if e["status"] == "paused_budget"} == {
-        "lab_balance.exhausted"
-    }
+    assert [e["status"] for e in changes] == ["running", "paused_budget", "awaiting_approval"]
+    assert changes[1].get("error") == "lab_balance.exhausted"
+    assert (await run_status(db, run_id)) == (RunStatus.AWAITING_APPROVAL, None)
     waits = await run_events(db, run_id, "stage.waiting")
     assert [w["reason"] for w in waits] == ["lab_balance.exhausted"] * 2
+    first, second = (datetime.fromisoformat(w["retry_at"]) for w in waits)
+    assert second - first >= timedelta(minutes=30)  # the second try waited twice as long
     assert len({ctx.stage_run_id for ctx in runner.seen}) == 1
     await handle.cancel()
     with pytest.raises(WorkflowFailureError):
@@ -411,8 +407,8 @@ async def test_cancel_while_paused(client: Client, db: Factory, runner: FakeRunn
 async def test_a_pause_fails_the_run_once_it_has_lasted_too_long(
     env: WorkflowEnvironment, db: Factory, runner: FakeRunner, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Seven days of checks every 15 minutes, scaled down to an hour: unsandboxed, the workflow
-    # sees the patched limit.
+    # Seven days of checks, scaled down to an hour: unsandboxed, the workflow sees the patched
+    # limit. Checks after 15, 30 and 60 minutes pass it, and the fourth failure ends the run.
     monkeypatch.setattr("agentic_worker.workflows.MAX_STAGE_WAIT", timedelta(hours=1))
     runner.errors["literature"] = [LabBalanceExhaustedError() for _ in range(9)]
     activities = StageActivities(db, FakeValkey(), runner)
@@ -426,7 +422,36 @@ async def test_a_pause_fails_the_run_once_it_has_lasted_too_long(
         run_id, handle = await start(env.client, db)
         assert await handle.result() == "failed"
     assert await run_status(db, run_id) == (RunStatus.FAILED, "lab_balance.exhausted")
-    assert len(await run_events(db, run_id, "stage.waiting")) == 4
+    assert len(await run_events(db, run_id, "stage.waiting")) == 3
+    changes = await run_events(db, run_id, "run.status")
+    assert [e["status"] for e in changes] == ["running", "paused_budget", "failed"]
+
+
+async def test_a_wait_for_quota_after_a_pause_ends_the_pause(
+    env: WorkflowEnvironment, client: Client, db: Factory, runner: FakeRunner
+) -> None:
+    """A try that gets past the lab balance and then waits for the free quota is no longer
+    paused: the run is running (and waiting), not paused_budget."""
+    runner.errors["literature"] = [
+        LabBalanceExhaustedError(),
+        GatewayRateLimitedError(60, "free_quota.exhausted"),
+    ]
+    run_id, handle = await start(client, db)
+    await env.sleep(timedelta(minutes=30))
+    await awaiting(handle, db, "literature")
+    changes = await run_events(db, run_id, "run.status")
+    assert [e["status"] for e in changes] == [
+        "running",
+        "paused_budget",
+        "running",
+        "awaiting_approval",
+    ]
+    waits = await run_events(db, run_id, "stage.waiting")
+    assert [w["reason"] for w in waits] == ["lab_balance.exhausted", "free_quota.exhausted"]
+    await handle.cancel()
+    with pytest.raises(WorkflowFailureError):
+        await handle.result()
+    await Replayer(workflows=[RunWorkflow]).replay_workflow(await handle.fetch_history())
 
 
 async def test_gateway_failures_fail_the_run_with_a_code(

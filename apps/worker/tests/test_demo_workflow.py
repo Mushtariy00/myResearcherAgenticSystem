@@ -45,7 +45,6 @@ from agentic_worker.types import (
     DecisionRecordIn,
     FinishIn,
     RunPrepareIn,
-    RunResumeIn,
     StageExecIn,
     StageStartIn,
     StageWaitIn,
@@ -557,8 +556,6 @@ async def test_a_closed_run_is_never_changed_again(
                 pause=True,
             )
         )
-    with pytest.raises(ApplicationError, match=r"run\.closed"):
-        await activities.resume_run(RunResumeIn(run_id=run_id))
     decision = DecisionInput(
         stage="method",
         stage_output_id=str(output.id),

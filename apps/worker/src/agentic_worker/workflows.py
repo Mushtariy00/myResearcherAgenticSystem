@@ -36,7 +36,6 @@ with workflow.unsafe.imports_passed_through():
         PendingDecision,
         RunPlan,
         RunPrepareIn,
-        RunResumeIn,
         StageExecIn,
         StageResult,
         StageStarted,
@@ -100,7 +99,10 @@ LEGACY_STAGE_RETRY = RetryPolicy(
 # An attempt waits up to this long for rate limits, and as long again while the lab's balance
 # is exhausted; then the run fails (free_quota.exhausted, lab_balance.exhausted).
 MAX_STAGE_WAIT = timedelta(days=7)
-BUDGET_RECHECK = timedelta(minutes=15)  # how often a paused run tries the gateway again
+# A paused run tries the gateway again after 15 minutes, then less often (doubling up to an
+# hour), so a long pause writes a few dozen events a day, not one every 15 minutes.
+BUDGET_RECHECK = timedelta(minutes=15)
+MAX_BUDGET_RECHECK = timedelta(hours=1)
 DEFAULT_RETRY_AFTER = timedelta(minutes=1)
 DECISIONS = frozenset(d.value for d in Decision)
 AUTO_APPROVE_ACTOR = "system:auto-approve"
@@ -301,6 +303,7 @@ class RunWorkflow:
                 result_type=StageResult,
             )
         rate_limited = paused = timedelta(0)
+        checks = 0  # tries of the gateway since the run paused
         while True:
             try:
                 result = await workflow.execute_activity(
@@ -322,16 +325,21 @@ class RunWorkflow:
                 if cause.type == "RateLimited" and rate_limited < MAX_STAGE_WAIT:
                     delay = cause.next_retry_delay or DEFAULT_RETRY_AFTER
                     rate_limited += delay
+                    checks = 0  # past the balance check: a pause is over (stage_waiting)
+                    self._status = RunStatus.RUNNING.value
                     await self._wait(inp, cause.message, delay)
                 elif cause.type == "LabBalanceExhausted" and paused < MAX_STAGE_WAIT:
-                    paused += BUDGET_RECHECK
-                    await self._pause(inp)
+                    delay = min(BUDGET_RECHECK * 2**checks, MAX_BUDGET_RECHECK)
+                    checks += 1
+                    paused += delay
+                    await self._pause(inp, delay)
                 else:
                     raise
             else:
                 if workflow.cancellation_reason() is not None:
                     # The stage finished as the cancel arrived; the run is cancelled all the same.
                     raise asyncio.CancelledError
+                self._status = RunStatus.RUNNING.value  # execute_stage ended a pause, if any
                 return result
 
     async def _wait(
@@ -354,17 +362,12 @@ class RunWorkflow:
         )
         await workflow.sleep(delay, summary=reason)
 
-    async def _pause(self, inp: StageExecIn) -> None:
-        """The lab's balance is exhausted: the run is paused_budget until the next try."""
+    async def _pause(self, inp: StageExecIn, delay: timedelta) -> None:
+        """The lab's balance is exhausted: the run stays paused_budget through the tries that
+        fail the same way, and execute_stage (or a wait for something else) resumes it once a
+        try gets past the balance. A try that fails again only says when the next one is."""
         self._status = RunStatus.PAUSED_BUDGET.value
-        await self._wait(inp, "lab_balance.exhausted", BUDGET_RECHECK, pause=True)
-        await workflow.execute_activity(
-            "resume_run",
-            RunResumeIn(run_id=inp.run_id),
-            start_to_close_timeout=DB_STEP,
-            retry_policy=DB_RETRY,
-        )
-        self._status = RunStatus.RUNNING.value
+        await self._wait(inp, "lab_balance.exhausted", delay, pause=True)
 
     async def _wait_for_decision(
         self, start: StageStartIn, result: StageResult, *, expires_after: timedelta

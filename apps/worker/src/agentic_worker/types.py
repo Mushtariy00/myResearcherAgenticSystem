@@ -88,11 +88,6 @@ class StageWaitIn:
 
 
 @dataclass(frozen=True)
-class RunResumeIn:
-    run_id: str
-
-
-@dataclass(frozen=True)
 class PendingDecision:
     stage: str
     stage_output_id: str
