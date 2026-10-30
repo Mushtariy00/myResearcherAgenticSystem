@@ -1,6 +1,7 @@
 """Request and response bodies (the OpenAPI the web client is generated from)."""
 
 import logging
+import re
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
@@ -8,6 +9,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import (
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     StringConstraints,
@@ -37,6 +39,21 @@ class _In(BaseModel):
 
 class _Out(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+
+_CONTROL_CHARACTERS = re.compile(r"[\x00-\x08\x0b-\x1f]")  # C0 controls but tab and newline
+
+
+def _without_control_characters(value: Any) -> Any:
+    """Postgres refuses NUL in text and JSONB, and pasted text can carry other controls."""
+    return _CONTROL_CHARACTERS.sub("", value) if isinstance(value, str) else value
+
+
+# Free text people type, stored and shown as it is: control characters are dropped before the
+# length limits apply.
+PlainText = Annotated[str, BeforeValidator(_without_control_characters)]
+# USD as the database stores it (agentic_db.models.Money): more decimals would be rounded away.
+Usd = Annotated[Decimal, Field(max_digits=12, decimal_places=6)]
 
 
 def stored_run_config(value: Any) -> RunConfig:
@@ -101,9 +118,9 @@ class MemberOut(BaseModel):
 
 
 class RunCreate(_In):
-    topic: str = Field(min_length=3, max_length=500)
+    topic: PlainText = Field(min_length=3, max_length=500)
     llm_policy: LlmPolicy = LlmPolicy.AUTO
-    budget_cap_usd: Decimal | None = Field(default=None, ge=0, le=1000)
+    budget_cap_usd: Usd | None = Field(default=None, ge=0, le=1000)
     config: RunConfig = Field(default_factory=RunConfig)
 
 
@@ -213,7 +230,7 @@ class DecisionIn(_In):
     stage_output_id: uuid.UUID
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     decision: Decision
-    comment: str = Field(default="", max_length=5000)
+    comment: PlainText = Field(default="", max_length=5000)  # required for request_changes
     # Approve with edits (decision "approve" only): the corrected output, checked against the
     # stage's output schema. The workflow stores it as a new version and approves that version.
     edited_data: dict[str, Any] | None = None
@@ -231,7 +248,7 @@ class EventOut(BaseModel):
 
 
 class BudgetIn(_In):
-    monthly_usd: Decimal = Field(ge=0, le=10_000)
+    monthly_usd: Usd = Field(ge=0, le=10_000)
 
 
 class BudgetOut(BaseModel):

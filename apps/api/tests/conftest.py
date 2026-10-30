@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 
 import httpx
 import pytest
+from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -38,18 +39,38 @@ def orchestrator() -> FakeOrchestrator:
 
 
 @pytest.fixture
-async def client(
-    db: async_sessionmaker[AsyncSession], orchestrator: FakeOrchestrator, auth_users: None
-) -> AsyncIterator[httpx.AsyncClient]:
-    app = create_app(
-        Settings(environment="test", public_origin=ORIGIN),
+def verifier() -> FakeVerifier:
+    return FakeVerifier()
+
+
+@pytest.fixture
+def valkey() -> FakeValkey:
+    return FakeValkey()
+
+
+@pytest.fixture
+def settings() -> Settings:
+    return Settings(environment="test", public_origin=ORIGIN)
+
+
+@pytest.fixture
+def app(
+    db: async_sessionmaker[AsyncSession],
+    orchestrator: FakeOrchestrator,
+    verifier: FakeVerifier,
+    valkey: FakeValkey,
+    settings: Settings,
+) -> FastAPI:
+    return create_app(
+        settings,
         state=AppState(
-            sessions=db,
-            session_verifier=FakeVerifier(),
-            valkey=FakeValkey(),
-            orchestrator=orchestrator,
+            sessions=db, session_verifier=verifier, valkey=valkey, orchestrator=orchestrator
         ),
     )
+
+
+@pytest.fixture
+async def client(app: FastAPI, auth_users: None) -> AsyncIterator[httpx.AsyncClient]:
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(
         transport=transport, base_url="http://test", headers={"origin": ORIGIN}

@@ -3,10 +3,18 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentic_api.auth import CurrentUser, current_user
-from agentic_api.authz import OWNERS, get_db, load_project, member_projects, require_role
+from agentic_api.authz import (
+    OWNERS,
+    get_db,
+    load_project,
+    member_projects,
+    require_admin,
+    require_role,
+)
 from agentic_api.schemas import (
     MemberAdd,
     MemberOut,
@@ -35,12 +43,14 @@ async def _keep_an_owner(
     """Refuse to demote or remove (``new_role`` None) the project's last owner.
 
     The owner rows stay locked until commit, so two owners demoting each other at the same
-    time can't both succeed.
+    time can't both succeed. They are locked in one order, so such requests queue up instead
+    of deadlocking.
     """
     owners = (
         await db.scalars(
             select(ProjectMember.user_id)
             .where(ProjectMember.project_id == project_id, ProjectMember.role == ProjectRole.OWNER)
+            .order_by(ProjectMember.user_id)
             .with_for_update()
         )
     ).all()
@@ -50,6 +60,8 @@ async def _keep_an_owner(
 
 @router.post("", status_code=status.HTTP_201_CREATED, operation_id="createProject")
 async def create_project(body: ProjectCreate, user: User, db: Db) -> ProjectOut:
+    """Create a project (lab admins only); its creator becomes its first owner."""
+    require_admin(user)
     project = Project(name=body.name, description=body.description, created_by=user.id)
     db.add(project)
     await db.flush()
@@ -131,18 +143,21 @@ async def list_members(project_id: uuid.UUID, user: User, db: Db) -> list[Member
 
 @router.post("/{project_id}/members", status_code=status.HTTP_201_CREATED, operation_id="addMember")
 async def add_member(project_id: uuid.UUID, body: MemberAdd, user: User, db: Db) -> MemberOut:
+    """Add a lab account to the project. Someone who is a member already is a 409
+    ``member.exists``: roles change through updateMember, which guards the last owner."""
     _, role = await load_project(db, project_id, user)
     require_role(user, role, OWNERS)
     found = await user_by_email(db, body.email)
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "user.not_found")
-    member = await db.get(ProjectMember, (project_id, found.id))
-    if member is None:
-        db.add(ProjectMember(project_id=project_id, user_id=found.id, role=body.role))
-    else:
-        if member.role != body.role:
-            await _keep_an_owner(db, project_id, found.id, body.role)
-        member.role = body.role
+    added = await db.execute(
+        insert(ProjectMember)
+        .values(project_id=project_id, user_id=found.id, role=body.role)
+        .on_conflict_do_nothing()
+        .returning(ProjectMember.user_id)
+    )
+    if added.scalar_one_or_none() is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "member.exists")
     db.add(
         AuditLog(
             actor_id=user.id,

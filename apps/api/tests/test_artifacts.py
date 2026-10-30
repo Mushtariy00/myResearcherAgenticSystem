@@ -20,6 +20,7 @@ from api_testkit import (
     add_stage_output,
     add_stage_run,
     as_user,
+    create_project,
     literature,
     paper,
     start_run,
@@ -217,8 +218,8 @@ async def test_text_from_outputs_cannot_inject_formulas_or_headers(
 
 async def test_artifact_ids_cannot_be_forged(client: httpx.AsyncClient, db: Factory) -> None:
     run_id, outputs = await _finished_run(client, db)
-    other = await client.post("/api/v1/projects", json={"name": "Other"}, headers=as_user("carol"))
-    carols_run = await start_run(client, other.json()["id"], user="carol")
+    other = await create_project(client, "Other", owner="carol")
+    carols_run = await start_run(client, other, user="carol")
     carols_code = await add_stage_output(db, carols_run, "coding", CODING_OUTPUT)
 
     async def not_found(artifact_id: str, user: str = "bob") -> None:

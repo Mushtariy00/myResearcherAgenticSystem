@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +24,7 @@ from agentic_db.spend import month_spend, monthly_budget
 router = APIRouter(prefix="/api/v1", tags=["admin"])
 User = Annotated[CurrentUser, Depends(current_user)]
 Db = Annotated[AsyncSession, Depends(get_db)]
+UserId = Annotated[str, Path(min_length=1, max_length=64)]  # Better Auth ids; columns are 64
 
 
 @router.get("/me", operation_id="getMe")
@@ -51,8 +52,12 @@ async def list_budgets(user: User, db: Db) -> list[BudgetOut]:
 
 
 @router.put("/admin/budgets/{user_id}", operation_id="setBudget")
-async def set_budget(user_id: str, body: BudgetIn, user: User, db: Db) -> BudgetOut:
+async def set_budget(user_id: UserId, body: BudgetIn, user: User, db: Db) -> BudgetOut:
+    """Set a lab account's monthly paid-model budget (404 ``user.not_found`` for an id that
+    names no account: a budget nobody can spend would hide the mistake)."""
     require_admin(user)
+    if not await users_by_id(db, [user_id]):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "user.not_found")
     budget = await db.get(Budget, user_id)
     if budget is None:
         db.add(Budget(user_id=user_id, monthly_usd=body.monthly_usd, updated_by=user.id))

@@ -1,10 +1,11 @@
-"""Pytest plugin: a migrated throwaway database (`<dev db>_test`) for tests that need Postgres.
+"""Pytest plugin: a migrated throwaway database for tests that need Postgres.
 
 Enabled from the repo-root conftest.py. Tests are skipped when no Postgres is configured.
 """
 
 import os
-from collections.abc import AsyncIterator
+import secrets
+from collections.abc import AsyncIterator, Iterator, Mapping
 from pathlib import Path
 
 import psycopg
@@ -22,17 +23,30 @@ from agentic_db.session import create_engine, session_factory
 ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
 
 
+def session_database(dev_database: str, environ: Mapping[str, str]) -> tuple[str, bool]:
+    """The database for one test session, and whether the session drops it when it ends.
+
+    Each session gets a database of its own (``<dev db>_test_<random>``), dropped at the end,
+    so sessions running side by side (several checkouts, agents or CI jobs on one Postgres)
+    never drop or empty each other's. ARP_TEST_DB_NAME names a fixed one instead, recreated
+    at the start and kept afterwards for a look.
+    """
+    fixed = environ.get("ARP_TEST_DB_NAME")
+    if fixed:
+        return fixed, False
+    return f"{dev_database}_test_{secrets.token_hex(4)}", True
+
+
 @pytest.fixture(scope="session")
-def database_url() -> str:
+def database_url() -> Iterator[str]:
     base = os.environ.get("ARP_TEST_DATABASE_URL") or os.environ.get("ARP_DATABASE_URL")
     if not base:
         pytest.skip("Set ARP_DATABASE_URL (the dev Postgres) to run database tests")
     url = make_url(base)
-    # ARP_TEST_DB_NAME lets parallel test sessions (several agents or CI jobs) use separate
-    # databases; each session drops and recreates its own.
-    test_url = url.set(database=os.environ.get("ARP_TEST_DB_NAME") or f"{url.database}_test")
+    database, throwaway = session_database(str(url.database), os.environ)
+    test_url = url.set(database=database)
     admin_dsn = url.set(drivername="postgresql").render_as_string(hide_password=False)
-    name = sql.Identifier(str(test_url.database))
+    name = sql.Identifier(database)
     try:
         with psycopg.connect(admin_dsn, autocommit=True) as conn:
             conn.execute(sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(name))
@@ -41,10 +55,15 @@ def database_url() -> str:
         pytest.skip(f"Postgres is not reachable ({exc}); run `make up`")
 
     rendered = test_url.render_as_string(hide_password=False)
-    config = Config(str(ALEMBIC_INI))
-    config.set_main_option("sqlalchemy.url", rendered)
-    command.upgrade(config, "head")
-    return rendered
+    try:
+        config = Config(str(ALEMBIC_INI))
+        config.set_main_option("sqlalchemy.url", rendered)
+        command.upgrade(config, "head")
+        yield rendered
+    finally:
+        if throwaway:  # FORCE: it is this session's own database, nobody else's
+            with psycopg.connect(admin_dsn, autocommit=True) as conn:
+                conn.execute(sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(name))
 
 
 @pytest.fixture

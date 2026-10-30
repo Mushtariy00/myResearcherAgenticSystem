@@ -6,7 +6,9 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from agentic_core.contracts import EventType
 from agentic_core.enums import Decision, LlmCallState, LlmTier, RunStatus, StageStatus
+from agentic_db import append_event
 from agentic_db.models import Approval, LlmCall, NotificationRead, Run
 from agentic_db.spend import month_start
 from api_testkit import (
@@ -16,6 +18,7 @@ from api_testkit import (
     add_stage_run,
     as_user,
     awaiting_output,
+    create_project,
     set_run_status,
     start_run,
     team_project,
@@ -63,7 +66,7 @@ async def _finished_run(
 
 async def test_approvals_notify_whoever_may_decide(client: httpx.AsyncClient, db: Factory) -> None:
     project_id = await team_project(client)
-    await client.post("/api/v1/projects", json={"name": "Other"}, headers=as_user("carol"))
+    await create_project(client, "Other", owner="carol")
     bobs_run = await start_run(client, project_id, user="bob")
     bobs_output, _ = await awaiting_output(db, bobs_run, "literature")
     alices_run = await start_run(client, project_id, user="alice")
@@ -182,6 +185,57 @@ async def test_finished_runs_notify_their_owner(client: httpx.AsyncClient, db: F
         "error": "stage.error",
     }
     assert await _keys(client, "alice") == {f"run.finished:{alices}"}
+
+    await client.delete(f"/api/v1/projects/{project_id}/members/bob", headers=as_user("alice"))
+    assert await _keys(client, "bob") == set()  # runs in projects bob left are not his news
+
+
+async def _status_event(db: Factory, run_id: str, status: RunStatus) -> int:
+    """The run moved to ``status``, as the worker records it."""
+    async with db() as session:
+        run = await session.get(Run, uuid.UUID(run_id))
+        assert run is not None
+        run.status = status
+        seq = await append_event(session, run.id, EventType.RUN_STATUS, {"status": status})
+        await session.commit()
+        return seq
+
+
+async def test_paused_runs_notify_their_owner_and_lab_admins(
+    client: httpx.AsyncClient, db: Factory
+) -> None:
+    project_id = await team_project(client)
+    bobs = await start_run(client, project_id, user="bob")
+    alices = await start_run(client, project_id, user="alice")
+    await _status_event(db, bobs, RunStatus.RUNNING)
+    paused_at = await _status_event(db, bobs, RunStatus.PAUSED_BUDGET)
+    await _status_event(db, bobs, RunStatus.PAUSED_BUDGET)  # still the same pause
+    await _status_event(db, alices, RunStatus.RUNNING)  # not paused
+
+    key = f"run.paused:{bobs}:{paused_at}"
+    [item] = (await _notifications(client, "bob"))["items"]
+    assert item == {
+        "key": key,
+        "kind": "run_paused",
+        "created_at": item["created_at"],
+        "read": False,
+        "run_id": bobs,
+        "project_id": project_id,
+        "stage": None,
+        "params": {"topic": "Monocular depth", "project": "Depth"},
+    }
+    assert await _keys(client, "root", "admin") == {key}  # admins can top the balance up
+    assert await _keys(client, "alice") == set()  # her project, not her run
+    assert await _keys(client, "vera") == set()
+
+    await client.post(f"{URL}/read", json={"keys": [key]}, headers=as_user("bob"))
+    assert (await _notifications(client, "bob"))["unread_count"] == 0
+    # It resumes after a top-up, and later the balance runs out again: that is news again.
+    await _status_event(db, bobs, RunStatus.RUNNING)
+    assert await _keys(client, "bob") == set()
+    again = await _status_event(db, bobs, RunStatus.PAUSED_BUDGET)
+    [item] = (await _notifications(client, "bob"))["items"]
+    assert (item["key"], item["read"]) == (f"run.paused:{bobs}:{again}", False)
 
     await client.delete(f"/api/v1/projects/{project_id}/members/bob", headers=as_user("alice"))
     assert await _keys(client, "bob") == set()  # runs in projects bob left are not his news

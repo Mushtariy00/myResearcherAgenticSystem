@@ -1,6 +1,8 @@
+import asyncio
 import json
 import logging
 import re
+import time
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any
@@ -17,6 +19,7 @@ from agentic_api.notifications import run_finished_key
 from agentic_api.orchestrator import (
     DecisionRejectedError,
     Orchestrator,
+    OrchestratorUnavailableError,
     WorkflowNotFoundError,
     WorkflowStillRunningError,
 )
@@ -51,6 +54,7 @@ from agentic_db.models import (
     StageOutput,
     StageRun,
 )
+from agentic_db.spend import run_spend
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["runs"])
@@ -64,6 +68,12 @@ OPEN_STAGE_STATUSES = (StageStatus.PENDING, StageStatus.RUNNING, StageStatus.OUT
 # Edits reach the workflow inside a Temporal Update; stay well below its 2 MB payload limit.
 MAX_EDIT_BYTES = 1_000_000
 _PLAIN_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
+# The database shows a new output a moment before the workflow waits for its decision (the
+# stage commits the output, then reports it to the workflow). A decision sent in that gap is
+# refused as decision.not_awaited, so it is sent again for this long while the output still
+# waits for a decision.
+NOT_AWAITED_RETRY_SECONDS = 5.0
+NOT_AWAITED_RETRY_INTERVAL = 0.25
 
 
 def _orchestrator(request: Request) -> Orchestrator:
@@ -184,7 +194,7 @@ async def get_run(run_id: uuid.UUID, user: User, db: Db) -> RunDetail:
 
     stages = []
     awaiting: StageOutputOut | None = None
-    awaiting_stage: str | None = None
+    awaiting_run: StageRun | None = None
     for stage_run in stage_runs:
         stage_outputs = [
             StageOutputOut.model_validate(o) for o in by_stage_run.get(stage_run.id, [])
@@ -193,15 +203,25 @@ async def get_run(run_id: uuid.UUID, user: User, db: Db) -> RunDetail:
             StageRunOut.model_validate(stage_run).model_copy(update={"outputs": stage_outputs})
         )
         if stage_run.status == StageStatus.OUTPUT_READY and stage_outputs:
-            awaiting, awaiting_stage = stage_outputs[-1], stage_run.stage
+            awaiting, awaiting_run = stage_outputs[-1], stage_run
 
     return RunDetail(
         **RunOut.model_validate(run).model_dump(),
         stages=stages,
         awaiting=awaiting,
-        awaiting_stage=awaiting_stage,
+        awaiting_stage=awaiting_run.stage if awaiting_run else None,
         can_steer=can_steer(user, role, run),
+        attempts_left=_attempts_left(awaiting_run) if awaiting_run else None,
+        spend_usd=await run_spend(db, run_id),
     )
+
+
+def _attempts_left(stage_run: StageRun) -> int | None:
+    """Change requests the stage still allows after this attempt; None when the attempt was
+    recorded before the worker stored the cap (``last_attempt``)."""
+    if stage_run.last_attempt is None:
+        return None
+    return max(0, stage_run.last_attempt - stage_run.attempt)
 
 
 def _normalized_output(stage: str, data: dict[str, Any]) -> dict[str, Any] | None:
@@ -330,6 +350,78 @@ def _checked_edit(
     return None if normalized == _normalized_output(stage, current) else normalized
 
 
+def _refused(code: str) -> HTTPException:
+    """The answer to a refusal by the workflow's validator (DecisionRejectedError.code)."""
+    if code == "decision.no_attempts_left":
+        return HTTPException(status.HTTP_409_CONFLICT, "decision.no_attempts_left")
+    if code == "decision.invalid_edit":  # the worker's schema refused an edit ours accepted
+        return ErrorWithFields(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "decision.invalid_edit",
+            loc=[],
+            type="value_error",
+        )
+    # decision.stale, decision.not_awaited and anything unexpected: the output under review is
+    # no longer the one the workflow waits for.
+    return HTTPException(status.HTTP_409_CONFLICT, "approval.rejected_by_workflow")
+
+
+async def _awaits_decision(db: AsyncSession, stage_run_id: uuid.UUID, output_id: uuid.UUID) -> bool:
+    """Whether the database still shows ``output_id`` as the undecided newest output of a stage
+    that waits for review."""
+    newest = (
+        select(StageOutput.id)
+        .where(StageOutput.stage_run_id == stage_run_id)
+        .order_by(StageOutput.version.desc())
+        .limit(1)
+        .scalar_subquery()
+    )
+    waiting = await db.scalar(
+        select(
+            exists().where(
+                StageRun.id == stage_run_id,
+                StageRun.status == StageStatus.OUTPUT_READY,
+                newest == output_id,
+                ~exists().where(Approval.stage_output_id == output_id),
+            )
+        )
+    )
+    await db.commit()  # don't hold a connection between attempts
+    return bool(waiting)
+
+
+async def _send_decision(
+    db: AsyncSession,
+    orch: Orchestrator,
+    run_id: uuid.UUID,
+    stage_run_id: uuid.UUID,
+    decision: DecisionInput,
+) -> None:
+    """Hand the decision to the workflow, which validates it again and records it."""
+    output_id = uuid.UUID(decision.stage_output_id)
+    give_up_at = time.monotonic() + NOT_AWAITED_RETRY_SECONDS
+    while True:
+        try:
+            await orch.decide(run_id, decision)
+            return
+        except DecisionRejectedError as exc:
+            if (
+                exc.code == "decision.not_awaited"
+                and time.monotonic() < give_up_at
+                and await _awaits_decision(db, stage_run_id, output_id)
+            ):
+                await asyncio.sleep(NOT_AWAITED_RETRY_INTERVAL)
+                continue
+            raise _refused(exc.code) from None
+        except WorkflowNotFoundError:  # the workflow is gone: nothing waits for a decision
+            raise HTTPException(status.HTTP_409_CONFLICT, "approval.rejected_by_workflow") from None
+        except OrchestratorUnavailableError:
+            log.warning("could not reach Temporal to decide on run %s", run_id, exc_info=True)
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, "orchestrator.unavailable"
+            ) from None
+
+
 @router.post(
     "/runs/{run_id}/approvals", status_code=status.HTTP_202_ACCEPTED, operation_id="decideStage"
 )
@@ -340,12 +432,17 @@ async def decide_stage(
 
     Approve with edits sends ``edited_data``: it must pass the stage's output schema (422
     ``decision.invalid_edit`` with ``loc`` and ``type`` of the first error otherwise).
+    Request changes needs a comment (422 ``decision.comment_required``) and an attempt left
+    (409 ``decision.no_attempts_left``; RunDetail.attempts_left says how many remain).
     """
     run, role = await load_run(db, run_id, user)
     if not can_steer(user, role, run):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "permission.denied")
     if body.edited_data is not None and body.decision != Decision.APPROVE:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "decision.edit_requires_approve")
+    if body.decision == Decision.REQUEST_CHANGES and not body.comment.strip():
+        # The comment is all the next attempt is told: without one it would only repeat this one.
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "decision.comment_required")
 
     output = await db.get(StageOutput, body.stage_output_id)
     stage_run = await db.get(StageRun, output.stage_run_id) if output else None
@@ -365,6 +462,8 @@ async def decide_stage(
         or output.sha256 != body.sha256
     ):
         raise HTTPException(status.HTTP_409_CONFLICT, "approval.stale")
+    if body.decision == Decision.REQUEST_CHANGES and _attempts_left(stage_run) == 0:
+        raise HTTPException(status.HTTP_409_CONFLICT, "decision.no_attempts_left")
     edited_data = (
         _checked_edit(stage_run.stage, body.edited_data, output.data)
         if body.edited_data is not None
@@ -381,10 +480,7 @@ async def decide_stage(
         edited_data=edited_data,
     )
     await db.commit()  # end the read transaction: don't hold a connection while Temporal works
-    try:
-        await orch.decide(run_id, decision)  # the workflow re-validates and records the decision
-    except DecisionRejectedError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, "approval.rejected_by_workflow") from exc
+    await _send_decision(db, orch, run_id, stage_run.id, decision)
     db.add(
         AuditLog(
             actor_id=user.id,
@@ -480,14 +576,42 @@ async def retry_run(
     return Accepted()
 
 
-async def _cancel_without_workflow(db: AsyncSession, run_id: uuid.UUID, user: CurrentUser) -> None:
-    """Cancel a run that has no workflow execution (it never started, or is a seeded demo row):
-    record what the workflow would have recorded on its way out."""
+async def _cancel_execution(orch: Orchestrator, run_id: uuid.UUID) -> bool:
+    """Ask the run's workflow to cancel; False when Temporal has no open execution for it."""
+    try:
+        await orch.cancel_run(run_id)
+    except WorkflowNotFoundError:
+        return False
+    except Exception:
+        log.exception("could not cancel workflow for run %s", run_id)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, "orchestrator.unavailable"
+        ) from None
+    return True
+
+
+async def _cancel_without_workflow(
+    db: AsyncSession,
+    orch: Orchestrator,
+    run_id: uuid.UUID,
+    user: CurrentUser,
+    seen_workflow_id: str | None,
+) -> bool:
+    """Cancel a run that has no workflow execution (it never started, its execution closed
+    without finishing it, or it is a seeded demo row): record what the workflow would have
+    recorded on its way out.
+
+    False when the reconciler started the run's workflow after ``seen_workflow_id`` was read;
+    that execution is then cancelled instead, and it records the cancel itself.
+    """
     run = await db.get(Run, run_id, with_for_update=True, populate_existing=True)
     if run is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "run.not_found")
     if RunStatus(run.status).is_terminal:
         raise HTTPException(status.HTTP_409_CONFLICT, "run.already_finished")
+    if run.workflow_id != seen_workflow_id and await _cancel_execution(orch, run_id):
+        await db.rollback()
+        return False
     now = datetime.now(UTC)
     for stage_run in await db.scalars(
         select(StageRun).where(StageRun.run_id == run_id, StageRun.status.in_(OPEN_STAGE_STATUSES))
@@ -508,6 +632,7 @@ async def _cancel_without_workflow(db: AsyncSession, run_id: uuid.UUID, user: Cu
         )
     )
     await db.commit()
+    return True
 
 
 @router.post(
@@ -519,17 +644,12 @@ async def cancel_run(run_id: uuid.UUID, user: User, db: Db, orch: Orch) -> Accep
         raise HTTPException(status.HTTP_403_FORBIDDEN, "permission.denied")
     if RunStatus(run.status).is_terminal:
         raise HTTPException(status.HTTP_409_CONFLICT, "run.already_finished")
+    seen_workflow_id = run.workflow_id
     await db.commit()  # end the read transaction: don't hold a connection while Temporal works
-    try:
-        await orch.cancel_run(run_id)
-    except WorkflowNotFoundError:
-        await _cancel_without_workflow(db, run_id, user)
+    if not await _cancel_execution(orch, run_id) and await _cancel_without_workflow(
+        db, orch, run_id, user, seen_workflow_id
+    ):
         return Accepted()
-    except Exception:
-        log.exception("could not cancel workflow for run %s", run_id)
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE, "orchestrator.unavailable"
-        ) from None
     db.add(
         AuditLog(actor_id=user.id, action="run.cancel", target_type="run", target_id=str(run_id))
     )

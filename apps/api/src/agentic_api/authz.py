@@ -49,7 +49,8 @@ def require_role(
 
 
 def require_admin(user: CurrentUser) -> None:
-    """Lab-wide views and settings (model routing, the lab balance, lab usage)."""
+    """Lab-wide views and settings (model routing, the lab balance, lab usage), and creating
+    projects."""
     if not user.is_admin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "permission.denied")
 
@@ -63,10 +64,12 @@ def membership_scope(user: CurrentUser) -> str | None:
 async def load_run(
     db: AsyncSession, run_id: uuid.UUID, user: CurrentUser
 ) -> tuple[Run, ProjectRole | None]:
+    """Return the run and the caller's role in its project. A run in a project the caller can't
+    open gets the same 404 as a run that doesn't exist."""
     run = await db.get(Run, run_id)
-    if run is None:
+    role = await project_role(db, run.project_id, user) if run else None
+    if run is None or (role is None and not user.is_admin):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "run.not_found")
-    _, role = await load_project(db, run.project_id, user)
     return run, role
 
 

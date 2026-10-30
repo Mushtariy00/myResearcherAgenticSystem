@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 import httpx
@@ -6,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from agentic_core.enums import Privacy
 from agentic_db.models import AuditLog, Project
-from api_testkit import ADMIN, as_user, team_project
+from api_testkit import ADMIN, as_user, create_project, team_project
 
 Factory = async_sessionmaker[AsyncSession]
 SETTINGS = {
@@ -18,9 +19,21 @@ SETTINGS = {
 
 
 async def _project(client: httpx.AsyncClient, owner: str = "alice") -> str:
-    response = await client.post("/api/v1/projects", json={"name": "Depth"}, headers=as_user(owner))
-    assert response.status_code == 201, response.text
-    return response.json()["id"]
+    return await create_project(client, "Depth", owner)
+
+
+async def test_lab_admins_create_projects_and_become_their_owner(
+    client: httpx.AsyncClient,
+) -> None:
+    for user in ("alice", "bob", "vera"):  # PLAN permissions: creating projects is admin work
+        denied = await client.post("/api/v1/projects", json={"name": "Mine"}, headers=as_user(user))
+        assert (denied.status_code, denied.json()["detail"]) == (403, "permission.denied")
+    assert (await client.get("/api/v1/projects", headers=ADMIN)).json() == []
+
+    created = await client.post("/api/v1/projects", json={"name": "Depth"}, headers=ADMIN)
+    assert created.status_code == 201, created.text
+    assert (created.json()["created_by"], created.json()["my_role"]) == ("root", "owner")
+    assert await _roles(client, created.json()["id"]) == {"root": "owner"}
 
 
 async def test_creator_becomes_owner_and_others_cannot_see_it(client: httpx.AsyncClient) -> None:
@@ -87,6 +100,26 @@ async def test_unknown_member_email_is_404(client: httpx.AsyncClient) -> None:
         headers=as_user("alice"),
     )
     assert response.status_code == 404
+
+
+async def test_adding_an_existing_member_is_a_conflict(client: httpx.AsyncClient) -> None:
+    """Roles change through updateMember (which guards the last owner), never through add."""
+    project_id = await team_project(client)
+    members = f"/api/v1/projects/{project_id}/members"
+    for email, role in (
+        ("bob@lab.test", "owner"),
+        ("BOB@lab.test", "researcher"),  # the same role, in other letters
+        ("alice@lab.test", "viewer"),  # the last owner "adding" herself as a viewer
+    ):
+        response = await client.post(
+            members, json={"email": email, "role": role}, headers=as_user("alice")
+        )
+        assert (response.status_code, response.json()["detail"]) == (409, "member.exists")
+    assert await _roles(client, project_id) == {
+        "alice": "owner",
+        "bob": "researcher",
+        "vera": "viewer",
+    }
 
 
 async def test_members_read_project_settings(client: httpx.AsyncClient) -> None:
@@ -222,6 +255,7 @@ async def test_owners_and_admins_remove_members(client: httpx.AsyncClient, db: F
             )
         ).all()
     assert [(a.actor_id, a.details) for a in audit] == [
+        ("root", {"user_id": "root", "role": "owner"}),  # the creating admin stepping down
         ("alice", {"user_id": "vera", "role": "viewer"}),
         ("root", {"user_id": "bob", "role": "researcher"}),
     ]
@@ -236,9 +270,6 @@ async def test_the_last_owner_cannot_be_demoted_or_removed(client: httpx.AsyncCl
         ),
         await client.delete(f"{members}/alice", headers=as_user("alice")),
         await client.delete(f"{members}/alice", headers=ADMIN),
-        await client.post(  # "adding" an existing member changes their role too
-            members, json={"email": "alice@lab.test", "role": "viewer"}, headers=as_user("alice")
-        ),
     ):
         assert (response.status_code, response.json()["detail"]) == (409, "member.last_owner")
     same = await client.patch(f"{members}/alice", json={"role": "owner"}, headers=as_user("alice"))
@@ -253,3 +284,20 @@ async def test_the_last_owner_cannot_be_demoted_or_removed(client: httpx.AsyncCl
     last = await client.delete(f"{members}/bob", headers=as_user("bob"))
     assert (last.status_code, last.json()["detail"]) == (409, "member.last_owner")
     assert await _roles(client, project_id) == {"alice": "viewer", "bob": "owner", "vera": "viewer"}
+
+
+async def test_two_owners_stepping_down_at_once_leave_one_owner(
+    client: httpx.AsyncClient,
+) -> None:
+    """The owner rows are locked while a change is checked: the second change waits for the
+    first and then sees it, so one of the two is refused."""
+    project_id = await team_project(client)
+    members = f"/api/v1/projects/{project_id}/members"
+    await client.patch(f"{members}/bob", json={"role": "owner"}, headers=as_user("alice"))
+
+    responses = await asyncio.gather(
+        client.patch(f"{members}/alice", json={"role": "viewer"}, headers=as_user("alice")),
+        client.patch(f"{members}/bob", json={"role": "viewer"}, headers=as_user("bob")),
+    )
+    assert sorted(response.status_code for response in responses) == [200, 409]
+    assert list((await _roles(client, project_id)).values()).count("owner") == 1

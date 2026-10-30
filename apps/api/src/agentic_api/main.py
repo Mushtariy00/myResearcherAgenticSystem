@@ -3,7 +3,7 @@
 import asyncio
 import uuid
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass
 from typing import Any
 
@@ -19,7 +19,14 @@ from temporalio.client import Client
 from agentic_api import __version__
 from agentic_api.auth import SessionVerifier
 from agentic_api.errors import ErrorWithFields, error_with_fields_handler
-from agentic_api.orchestrator import Orchestrator, TaskQueuePollers, TemporalOrchestrator
+from agentic_api.headers import SecurityHeaders
+from agentic_api.orchestrator import (
+    Orchestrator,
+    OrchestratorUnavailableError,
+    TaskQueuePollers,
+    TemporalOrchestrator,
+)
+from agentic_api.reconciler import reconcile_forever
 from agentic_api.routers import (
     admin,
     artifacts,
@@ -88,7 +95,11 @@ class LazyTemporalOrchestrator:
     async def _get(self) -> TemporalOrchestrator:
         async with self._lock:
             if self._inner is None:
-                self._inner = TemporalOrchestrator(await Client.connect(self._address))
+                try:
+                    client = await Client.connect(self._address)
+                except Exception as exc:  # the SDK reports a failed connect as RuntimeError
+                    raise OrchestratorUnavailableError(self._address) from exc
+                self._inner = TemporalOrchestrator(client)
             return self._inner
 
     async def start_run(self, run_id: uuid.UUID) -> str:
@@ -140,21 +151,30 @@ def create_app(settings: Settings | None = None, *, state: AppState | None = Non
         engine = create_engine(settings.database_url) if settings.database_url else None
         http = httpx.AsyncClient(timeout=10)
         valkey = redis.from_url(settings.valkey_url)
+        sessions = session_factory(engine) if engine else None
+        orchestrator = LazyTemporalOrchestrator(settings.temporal_address)
         attach_state(
             app,
             AppState(
-                sessions=session_factory(engine) if engine else None,
+                sessions=sessions,
                 session_verifier=SessionVerifier(
                     settings.auth_url, settings.auth_cache_seconds, http
                 ),
                 valkey=valkey,
-                orchestrator=LazyTemporalOrchestrator(settings.temporal_address),
+                orchestrator=orchestrator,
                 http=http,
             ),
+        )
+        reconciler = (
+            asyncio.create_task(reconcile_forever(sessions, orchestrator)) if sessions else None
         )
         try:
             yield
         finally:
+            if reconciler is not None:
+                reconciler.cancel()
+                with suppress(asyncio.CancelledError):
+                    await reconciler
             await http.aclose()
             await valkey.aclose()
             if engine is not None:
@@ -190,6 +210,10 @@ def create_app(settings: Settings | None = None, *, state: AppState | None = Non
         ):
             return JSONResponse({"detail": "csrf.origin_mismatch"}, status_code=403)
         return await call_next(request)
+
+    # Added last, so it is the outermost middleware: the CSRF refusals get the headers too.
+    docs_pages = (app.docs_url, app.swagger_ui_oauth2_redirect_url) if public_docs else ()
+    app.add_middleware(SecurityHeaders, docs_paths=[path for path in docs_pages if path])
 
     system = APIRouter(prefix="/api/v1", tags=["system"])
 

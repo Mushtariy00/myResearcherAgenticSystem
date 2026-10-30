@@ -32,7 +32,8 @@ async def test_audit_log_is_for_admins(client: httpx.AsyncClient) -> None:
 async def test_audit_log_pages_newest_first_with_actors(
     client: httpx.AsyncClient, db: Factory
 ) -> None:
-    project_id = await team_project(client)  # project.create, then two project.member_set
+    # The admin creates the project, makes alice its owner and steps down; alice adds two.
+    project_id = await team_project(client)
     await client.put("/api/v1/admin/budgets/bob", json={"monthly_usd": "5"}, headers=ADMIN)
     await client.delete(f"/api/v1/projects/{project_id}/members/vera", headers=as_user("alice"))
     async with db() as session:
@@ -42,12 +43,14 @@ async def test_audit_log_pages_newest_first_with_actors(
         await session.commit()
 
     page = (await client.get(AUDIT, headers=ADMIN)).json()
-    assert page["total"] == 6
+    assert page["total"] == 8
     assert [entry["action"] for entry in page["items"]] == [
         "run.cancel",
         "project.member_remove",
         "budget.set",
         "project.member_set",
+        "project.member_set",
+        "project.member_remove",
         "project.member_set",
         "project.create",
     ]
@@ -67,10 +70,10 @@ async def test_audit_log_pages_newest_first_with_actors(
     assert (budget["actor_name"], budget["actor_email"]) == ("Root", "root@lab.test")
 
     second = (await client.get(f"{AUDIT}?limit=2&offset=2", headers=ADMIN)).json()
-    assert second["total"] == 6
+    assert second["total"] == 8
     assert [entry["id"] for entry in second["items"]] == [e["id"] for e in page["items"][2:4]]
     members = (await client.get(f"{AUDIT}?action=project.member_set", headers=ADMIN)).json()
-    assert members["total"] == 2
+    assert members["total"] == 3
     assert {entry["action"] for entry in members["items"]} == {"project.member_set"}
     for query in ("limit=0", "limit=201", "offset=-1", "action="):
         assert (await client.get(f"{AUDIT}?{query}", headers=ADMIN)).status_code == 422

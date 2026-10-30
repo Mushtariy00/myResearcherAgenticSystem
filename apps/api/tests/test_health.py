@@ -1,5 +1,9 @@
+import re
+from collections.abc import Mapping
+
 from fastapi.testclient import TestClient
 
+from agentic_api.headers import API_POLICY, DOCS_POLICY
 from agentic_api.main import create_app
 from agentic_api.settings import Settings
 
@@ -46,6 +50,43 @@ def test_production_hides_docs_and_schema() -> None:
     assert client.get("/api/v1/docs").status_code == 404
     assert client.get("/api/v1/openapi.json").status_code == 404
     assert client.get("/api/v1/health").status_code == 200
+
+
+def _hardening(headers: Mapping[str, str]) -> tuple[str | None, str | None, str | None]:
+    return (
+        headers.get("x-content-type-options"),
+        headers.get("x-frame-options"),
+        headers.get("content-security-policy"),
+    )
+
+
+def test_every_response_is_hardened() -> None:
+    """API responses are data, never pages: nothing in them may run, load or be framed."""
+    for environment in ("production", "development"):
+        client = TestClient(create_app(Settings(environment=environment)))
+        for response in (
+            client.get("/api/v1/health"),
+            client.get("/api/v1/docs" if environment == "production" else "/api/v1/nowhere"),
+            client.post(
+                "/api/v1/projects", json={"name": "x"}, headers={"origin": "https://evil.example"}
+            ),
+        ):
+            assert _hardening(response.headers) == ("nosniff", "DENY", API_POLICY), (
+                environment,
+                response.request.url,
+            )
+
+
+def test_development_docs_may_load_swagger_ui() -> None:
+    client = TestClient(create_app(Settings(environment="development")))
+    docs = client.get("/api/v1/docs")
+    assert docs.status_code == 200
+    assert _hardening(docs.headers) == ("nosniff", "DENY", DOCS_POLICY)
+    # The page loads its script and stylesheet from the CDN the policy allows, its icon from
+    # FastAPI's site.
+    sources = re.findall(r'(?:src|href)="(https://[^"/]+)/', docs.text)
+    assert set(sources) == {"https://cdn.jsdelivr.net", "https://fastapi.tiangolo.com"}
+    assert _hardening(client.get("/api/v1/openapi.json").headers)[2] == API_POLICY
 
 
 def test_public_origin_may_list_several_origins() -> None:

@@ -27,6 +27,7 @@ source = { editable = "apps/api" }
 dependencies = [
     { name = "agentic-core" },
     { name = "agentic-db" },
+    { name = "anyio" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "pydantic-settings" },
@@ -39,6 +40,7 @@ dependencies = [
 requires-dist = [
     { name = "agentic-core", editable = "packages/core" },
     { name = "agentic-db", editable = "packages/db" },
+    { name = "anyio", specifier = ">=4.15,<5" },
     { name = "fastapi", specifier = ">=0.162,<0.163" },
     { name = "httpx", specifier = ">=0.28,<0.29" },
     { name = "pydantic-settings", specifier = ">=2.10,<3" },

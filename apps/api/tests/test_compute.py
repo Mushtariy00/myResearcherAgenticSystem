@@ -9,7 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from agentic_api.demo import gpu
 from agentic_api.demo.gpu import RealJob, day_schedule, demo_jobs_at, queue_snapshot, telemetry
 from agentic_core.enums import RunStatus, StageStatus
-from api_testkit import ADMIN, add_stage_run, as_user, set_run_status, start_run, team_project
+from api_testkit import (
+    ADMIN,
+    add_stage_run,
+    as_user,
+    create_project,
+    set_run_status,
+    start_run,
+    team_project,
+)
 
 Factory = async_sessionmaker[AsyncSession]
 NOON = datetime(2026, 10, 30, 12, 0, tzinfo=UTC)
@@ -166,9 +174,9 @@ async def test_the_gpu_queue_shows_running_experiments(
     client: httpx.AsyncClient, db: Factory
 ) -> None:
     depth = await team_project(client)
-    other = await client.post("/api/v1/projects", json={"name": "Other"}, headers=as_user("carol"))
+    other = await create_project(client, "Other", owner="carol")
     bobs_run, bobs_job = await _experiment_running(client, db, depth, "bob", 12)
-    _, carols_job = await _experiment_running(client, db, other.json()["id"], "carol", 3)
+    _, carols_job = await _experiment_running(client, db, other, "carol", 3)
     # Not GPU work: an approved experiment, and a run that is no longer running.
     finished = await start_run(client, depth)
     await set_run_status(db, finished, RunStatus.RUNNING)

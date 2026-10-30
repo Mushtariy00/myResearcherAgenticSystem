@@ -6,6 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "agentic-core",
     "agentic-db",
+    "anyio>=4.15,<5",
     "fastapi>=0.162,<0.163",
     "httpx>=0.28,<0.29",
     "pydantic-settings>=2.10,<3",

@@ -15,6 +15,7 @@ from api_testkit import (
     analysis,
     as_user,
     assert_pdf_structure,
+    create_project,
     literature,
     paper,
     pdf_page_texts,
@@ -43,9 +44,7 @@ def _ids(page: dict[str, Any]) -> list[str]:
 
 
 async def _project(client: httpx.AsyncClient, name: str, owner: str) -> str:
-    response = await client.post("/api/v1/projects", json={"name": name}, headers=as_user(owner))
-    assert response.status_code == 201, response.text
-    return response.json()["id"]
+    return await create_project(client, name, owner)
 
 
 def test_the_builders_make_valid_literature_outputs() -> None:

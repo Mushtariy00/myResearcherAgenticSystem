@@ -16,20 +16,32 @@ from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Worker
 
 from agentic_api.orchestrator import (
+    DecisionRejectedError,
+    OrchestratorUnavailableError,
     TaskQueuePollers,
     TemporalOrchestrator,
     WorkflowNotFoundError,
     WorkflowStillRunningError,
 )
-from agentic_core.contracts import RUN_WORKFLOW, TASK_QUEUE, RunInput, workflow_id_for
+from agentic_core.contracts import (
+    DECIDE_UPDATE,
+    RUN_WORKFLOW,
+    TASK_QUEUE,
+    DecisionInput,
+    RunInput,
+    workflow_id_for,
+)
 
 
 @workflow.defn(name=RUN_WORKFLOW, sandboxed=False)
 class StandInRunWorkflow:
-    """Stays open until signalled (like a run waiting for approval), then returns its start."""
+    """Stays open until signalled (like a run waiting for approval), then returns its start.
+    Its decide validator refuses a decision whose comment says ``refuse:<code>`` with that code.
+    """
 
     def __init__(self) -> None:
         self._finish = False
+        self.decisions: list[DecisionInput] = []
 
     @workflow.run
     async def run(self, inp: RunInput) -> str:
@@ -39,6 +51,26 @@ class StandInRunWorkflow:
     @workflow.signal
     def finish(self) -> None:
         self._finish = True
+
+    @workflow.update(name=DECIDE_UPDATE)
+    async def decide(self, decision: DecisionInput) -> None:
+        self.decisions.append(decision)
+
+    @decide.validator
+    def _validate_decide(self, decision: DecisionInput) -> None:
+        if decision.comment.startswith("refuse:"):
+            raise ValueError(decision.comment.removeprefix("refuse:"))
+
+
+def _decision(comment: str = "") -> DecisionInput:
+    return DecisionInput(
+        stage="literature",
+        stage_output_id=str(uuid.uuid4()),
+        sha256="0" * 64,
+        decision="approve",
+        actor_id="bob",
+        comment=comment,
+    )
 
 
 @pytest.fixture
@@ -82,6 +114,44 @@ async def test_cancel_tells_a_missing_execution_apart(temporal: Client) -> None:
     with pytest.raises(WorkflowFailureError):  # the outcome of a cancelled workflow
         await handle.result(rpc_timeout=timedelta(seconds=10))
     assert (await handle.describe()).status == WorkflowExecutionStatus.CANCELED
+
+
+async def test_starting_a_run_again_while_it_runs_changes_nothing(temporal: Client) -> None:
+    """The reconciler may start a run whose first start it can't tell happened."""
+    orchestrator = TemporalOrchestrator(temporal)
+    run_id = uuid.uuid4()
+    workflow_id = await orchestrator.start_run(run_id)
+    first_run = (await temporal.get_workflow_handle(workflow_id).describe()).run_id
+    assert await orchestrator.start_run(run_id) == workflow_id
+    assert (await temporal.get_workflow_handle(workflow_id).describe()).run_id == first_run
+
+
+async def test_decisions_tell_refusals_from_missing_workflows(temporal: Client) -> None:
+    orchestrator = TemporalOrchestrator(temporal)
+    run_id = uuid.uuid4()
+    await orchestrator.start_run(run_id)
+    await orchestrator.decide(run_id, _decision())  # accepted
+
+    for code in ("decision.stale", "decision.not_awaited", "decision.no_attempts_left"):
+        with pytest.raises(DecisionRejectedError) as refused:
+            await orchestrator.decide(run_id, _decision(f"refuse:{code}"))
+        assert refused.value.code == code
+    with pytest.raises(WorkflowNotFoundError):
+        await orchestrator.decide(uuid.uuid4(), _decision())
+
+
+async def test_a_decision_nobody_can_accept_times_out(temporal: Client) -> None:
+    """No worker polls the task queue (a restart, say), so no validator can run."""
+    run_id = uuid.uuid4()
+    await temporal.start_workflow(
+        RUN_WORKFLOW,
+        RunInput(run_id=str(run_id)),
+        id=workflow_id_for(str(run_id)),
+        task_queue="idle",
+    )
+    orchestrator = TemporalOrchestrator(temporal, rpc_timeout=timedelta(seconds=1))
+    with pytest.raises(OrchestratorUnavailableError):
+        await orchestrator.decide(run_id, _decision())
 
 
 async def test_namespace_probe(temporal: Client) -> None:

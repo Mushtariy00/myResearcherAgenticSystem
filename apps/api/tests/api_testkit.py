@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from http.cookies import SimpleCookie
 from typing import Any
@@ -16,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from agentic_api.auth import CurrentUser
 from agentic_api.orchestrator import (
     DecisionRejectedError,
+    OrchestratorUnavailableError,
     TaskQueuePollers,
     WorkflowNotFoundError,
     WorkflowStillRunningError,
@@ -35,14 +37,21 @@ def as_user(user_id: str, role: str = "user") -> dict[str, str]:
 ADMIN = as_user("root", "admin")
 
 
+@dataclass
 class FakeVerifier:
     """Reads `test-user=<id>:<role>` cookies instead of asking Better Auth."""
 
+    signed_out: set[str] = field(default_factory=set)  # users whose sessions were revoked
+    calls: int = 0
+
     async def verify(self, cookie_header: str) -> CurrentUser | None:
+        self.calls += 1
         cookie = SimpleCookie(cookie_header).get("test-user")
         if cookie is None:
             return None
         user_id, role = cookie.value.split(":")
+        if user_id in self.signed_out:
+            return None
         return CurrentUser(id=user_id, email=f"{user_id}@lab.test", name=user_id, role=role)
 
 
@@ -53,37 +62,53 @@ class FakeOrchestrator:
     started: list[uuid.UUID] = field(default_factory=list)
     restarted: list[tuple[uuid.UUID, str]] = field(default_factory=list)
     decisions: list[tuple[uuid.UUID, DecisionInput]] = field(default_factory=list)
+    decide_calls: int = 0
     cancelled: list[uuid.UUID] = field(default_factory=list)
     fail_start: bool = False  # Temporal unreachable: starts, restarts and cancels fail
+    start_delay: float = 0.0  # seconds each start takes
     still_running: bool = False  # restarts find the previous execution still open
-    reject_decisions: bool = False
+    reject_decisions: bool = False  # the validator refuses every decision as stale
+    refusals: list[str] = field(default_factory=list)  # validator codes for the next decisions
+    decide_error: Exception | None = None  # raised by every decision (after before_decide)
+    before_decide: Callable[[uuid.UUID], Awaitable[None]] | None = None
+    before_cancel: Callable[[uuid.UUID], Awaitable[None]] | None = None
     namespace_ok: bool = True
     pollers: TaskQueuePollers | None = field(
         default_factory=lambda: TaskQueuePollers(workflow=1, activity=1)
     )
 
     async def start_run(self, run_id: uuid.UUID) -> str:
+        await asyncio.sleep(self.start_delay)
         if self.fail_start:
-            raise RuntimeError("temporal down")
+            raise OrchestratorUnavailableError("temporal down")
         self.started.append(run_id)
         return f"run-{run_id}"
 
     async def restart_run(self, run_id: uuid.UUID, start_stage: str) -> str:
         if self.fail_start:
-            raise RuntimeError("temporal down")
+            raise OrchestratorUnavailableError("temporal down")
         if self.still_running:
             raise WorkflowStillRunningError(f"run-{run_id}")
         self.restarted.append((run_id, start_stage))
         return f"run-{run_id}"
 
     async def decide(self, run_id: uuid.UUID, decision: DecisionInput) -> None:
+        self.decide_calls += 1
+        if self.before_decide is not None:
+            await self.before_decide(run_id)
+        if self.decide_error is not None:
+            raise self.decide_error
         if self.reject_decisions:
-            raise DecisionRejectedError("stale")
+            raise DecisionRejectedError("decision.stale")
+        if self.refusals:
+            raise DecisionRejectedError(self.refusals.pop(0))
         self.decisions.append((run_id, decision))
 
     async def cancel_run(self, run_id: uuid.UUID) -> None:
+        if self.before_cancel is not None:
+            await self.before_cancel(run_id)
         if self.fail_start:
-            raise RuntimeError("temporal down")
+            raise OrchestratorUnavailableError("temporal down")
         if run_id not in self.started and run_id not in {r for r, _ in self.restarted}:
             raise WorkflowNotFoundError(f"run-{run_id}")
         self.cancelled.append(run_id)
@@ -98,24 +123,36 @@ class FakeOrchestrator:
         return self.pollers
 
 
-class _QuietPubSub:
+@dataclass
+class FakePubSub:
+    """A quiet channel. ``on_wait`` runs each time a stream waits for a wake-up."""
+
+    on_wait: Callable[[], Awaitable[None]] | None = None
+    channels: list[str] = field(default_factory=list)
+    closed: bool = False
+
     async def subscribe(self, *channels: str) -> None:
-        return None
+        self.channels.extend(channels)
 
     async def get_message(self, ignore_subscribe_messages: bool, timeout: float) -> None:  # noqa: ASYNC109 (mirrors redis)
+        if self.on_wait is not None:
+            await self.on_wait()
         await asyncio.sleep(0.01)
 
     async def aclose(self) -> None:
-        return None
+        self.closed = True
 
 
 @dataclass
 class FakeValkey:
     down: bool = False
     ping_delay: float = 0.0
+    on_wait: Callable[[], Awaitable[None]] | None = None  # for every stream's FakePubSub
+    pubsubs: list[FakePubSub] = field(default_factory=list)
 
-    def pubsub(self) -> _QuietPubSub:
-        return _QuietPubSub()
+    def pubsub(self) -> FakePubSub:
+        self.pubsubs.append(FakePubSub(on_wait=self.on_wait))
+        return self.pubsubs[-1]
 
     async def ping(self) -> bool:
         await asyncio.sleep(self.ping_delay)
@@ -127,11 +164,26 @@ class FakeValkey:
 # --- Building data -------------------------------------------------------------------------
 
 
-async def team_project(client: httpx.AsyncClient, name: str = "Depth") -> str:
-    """alice owns it; bob is a researcher; vera is a viewer."""
-    response = await client.post("/api/v1/projects", json={"name": name}, headers=as_user("alice"))
+async def create_project(client: httpx.AsyncClient, name: str, owner: str = "alice") -> str:
+    """A project that ``owner`` owns alone. Lab admins create projects; the admin hands this
+    one over to ``owner`` and steps down."""
+    response = await client.post("/api/v1/projects", json={"name": name}, headers=ADMIN)
     assert response.status_code == 201, response.text
     project_id = response.json()["id"]
+    if owner != "root":
+        members = f"/api/v1/projects/{project_id}/members"
+        added = await client.post(
+            members, json={"email": f"{owner}@lab.test", "role": "owner"}, headers=ADMIN
+        )
+        assert added.status_code == 201, added.text
+        removed = await client.delete(f"{members}/root", headers=ADMIN)
+        assert removed.status_code == 204, removed.text
+    return project_id
+
+
+async def team_project(client: httpx.AsyncClient, name: str = "Depth") -> str:
+    """alice owns it; bob is a researcher; vera is a viewer."""
+    project_id = await create_project(client, name)
     for email, role in (("bob@lab.test", "researcher"), ("vera@lab.test", "viewer")):
         response = await client.post(
             f"/api/v1/projects/{project_id}/members",

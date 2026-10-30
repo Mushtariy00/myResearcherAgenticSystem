@@ -11,6 +11,9 @@ its read flag for as long as it is derived:
   the run's next finish shows as new.
 - ``budget:<yyyy-mm>:<80|100>``: the user's paid spend this UTC month reached 80% or 100% of
   their monthly budget (budget_alert).
+- ``run.paused:<run_id>:<seq>``: a run waits for the lab's OpenRouter balance to be topped up
+  (run_paused), for its owner and every lab admin. ``seq`` is the run event that began this
+  pause, so a later pause of the same run is news again.
 """
 
 import uuid
@@ -24,6 +27,7 @@ from sqlalchemy.orm import aliased
 
 from agentic_api.auth import CurrentUser
 from agentic_api.schemas import NotificationKind, NotificationList, NotificationOut
+from agentic_core.contracts import EventType
 from agentic_core.enums import LlmCallState, LlmTier, ProjectRole, RunStatus, StageStatus
 from agentic_db.models import (
     Approval,
@@ -32,6 +36,7 @@ from agentic_db.models import (
     Project,
     ProjectMember,
     Run,
+    RunEvent,
     StageOutput,
     StageRun,
 )
@@ -73,6 +78,10 @@ def budget_key(month: str, percent: int) -> str:
     return f"budget:{month}:{percent}"
 
 
+def run_paused_key(run_id: uuid.UUID, seq: int) -> str:
+    return f"run.paused:{run_id}:{seq}"
+
+
 async def derive_notifications(
     db: AsyncSession, user: CurrentUser, now: datetime | None = None
 ) -> list[NotificationOut]:
@@ -81,6 +90,7 @@ async def derive_notifications(
     items = [
         *await _approvals(db, user, now),
         *await _finished_runs(db, user, now),
+        *await _paused_runs(db, user),
         *await _budget_alerts(db, user, now),
     ]
     items.sort(key=lambda item: (item.created_at, item.key), reverse=True)
@@ -240,6 +250,62 @@ async def _finished_runs(
         )
         for run_id, run_status, topic, error, finished_at, project_id, project_name in rows
     ]
+
+
+async def _paused_runs(db: AsyncSession, user: CurrentUser) -> list[NotificationOut]:
+    """Runs waiting for the lab's OpenRouter balance: news for each run's owner (in projects they
+    can still open) and for lab admins, who can top the balance up."""
+    query = (
+        select(
+            Run.id,
+            Run.topic,
+            Run.updated_at,
+            Project.id.label("project_id"),
+            Project.name.label("project_name"),
+        )
+        .join(Project, Project.id == Run.project_id)
+        .where(Run.status == RunStatus.PAUSED_BUDGET)
+    )
+    if not user.is_admin:
+        query = query.join(
+            ProjectMember,
+            and_(ProjectMember.project_id == Run.project_id, ProjectMember.user_id == user.id),
+        ).where(Run.owner_id == user.id)
+    runs = (await db.execute(query.order_by(Run.updated_at.desc()).limit(SOURCE_LIMIT))).all()
+    if not runs:
+        return []
+
+    # The pause began with the first paused status after the last other status.
+    began: dict[uuid.UUID, tuple[int, datetime]] = {}
+    for run_id, seq, payload, at in await db.execute(
+        select(RunEvent.run_id, RunEvent.seq, RunEvent.payload, RunEvent.created_at)
+        .where(
+            RunEvent.run_id.in_([run.id for run in runs]),
+            RunEvent.type == EventType.RUN_STATUS,
+        )
+        .order_by(RunEvent.run_id, RunEvent.seq)
+    ):
+        if payload.get("status") == RunStatus.PAUSED_BUDGET.value:
+            began.setdefault(run_id, (seq, at))
+        else:
+            began.pop(run_id, None)
+
+    items: list[NotificationOut] = []
+    for run_id, topic, updated_at, project_id, project_name in runs:
+        seq, paused_at = began.get(run_id, (0, updated_at))  # 0: a row written without events
+        items.append(
+            NotificationOut(
+                key=run_paused_key(run_id, seq),
+                kind="run_paused",
+                created_at=paused_at,
+                read=False,
+                run_id=run_id,
+                project_id=project_id,
+                stage=None,
+                params={"topic": topic, "project": project_name},
+            )
+        )
+    return items
 
 
 async def _budget_alerts(

@@ -23,7 +23,9 @@ class CurrentUser:
 class SessionVerifier:
     """Asks Better Auth's `get-session` endpoint who owns a cookie; caches answers briefly.
 
-    Caching for at most `ttl_seconds` bounds how long a revoked session keeps working.
+    Caching for at most `ttl_seconds` bounds how long a revoked session keeps working. Only
+    definite answers are cached: an error from Better Auth (a 500 while its database restarts,
+    say) is a 503 for this request alone, never a minute of "signed out".
     """
 
     def __init__(self, auth_url: str, ttl_seconds: int, client: httpx.AsyncClient) -> None:
@@ -42,21 +44,42 @@ class SessionVerifier:
         try:
             response = await self._client.get(self._url, headers={"cookie": cookie_header})
         except httpx.HTTPError as exc:
-            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "auth.unavailable") from exc
-        body = response.json() if response.status_code == 200 else None
-        user = None
-        if isinstance(body, dict) and isinstance(body.get("user"), dict):
-            raw = body["user"]
-            user = CurrentUser(
-                id=str(raw["id"]),
-                email=str(raw.get("email", "")),
-                name=str(raw.get("name", "")),
-                role=str(raw.get("role") or "user"),
-            )
+            raise _unavailable() from exc
+        user = _session_user(response)
         if len(self._cache) > 10_000:
             self._cache.clear()
         self._cache[key] = (now + self._ttl, user)
         return user
+
+
+def _unavailable() -> HTTPException:
+    return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "auth.unavailable")
+
+
+def _session_user(response: httpx.Response) -> CurrentUser | None:
+    """The signed-in user, or None when there is no session: a 200 with a null body (Better
+    Auth's answer) or a 401. Anything else is no answer and raises 503 ``auth.unavailable``."""
+    if response.status_code == status.HTTP_401_UNAUTHORIZED:
+        return None
+    if response.status_code != status.HTTP_200_OK:
+        raise _unavailable()
+    try:
+        body = response.json()
+    except ValueError:
+        raise _unavailable() from None
+    if not isinstance(body, dict | None):
+        raise _unavailable()
+    raw = body.get("user") if body else None
+    if raw is None:
+        return None
+    if not isinstance(raw, dict) or not raw.get("id"):
+        raise _unavailable()
+    return CurrentUser(
+        id=str(raw["id"]),
+        email=str(raw.get("email", "")),
+        name=str(raw.get("name", "")),
+        role=str(raw.get("role") or "user"),
+    )
 
 
 async def current_user(request: Request) -> CurrentUser:
