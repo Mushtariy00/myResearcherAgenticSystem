@@ -208,8 +208,9 @@ class ValkeyMutex:
     """A lock shared by every worker process, for arXiv's one-connection-at-a-time rule.
 
     The lock is a key with a lease, so a process that dies while holding it blocks the others
-    for ``lease_seconds`` at most. Coroutines in one process queue on a local lock first, so
-    only one of them polls Valkey.
+    for ``lease_seconds`` at most. The lease must outlast the longest hold, or a second
+    connection gets in: a PDF download (fetch's 60 s deadline) plus the wait for its arXiv token.
+    Coroutines in one process queue on a local lock first, so only one of them polls Valkey.
     """
 
     def __init__(
@@ -218,7 +219,7 @@ class ValkeyMutex:
         name: str,
         *,
         prefix: str = "arp:mutex",
-        lease_seconds: float = 60.0,
+        lease_seconds: float = 120.0,
         poll_seconds: float = 0.1,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     ) -> None:

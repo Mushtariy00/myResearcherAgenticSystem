@@ -34,7 +34,7 @@ def user_agent(contact: str | None = None) -> str:
 
 
 def make_client(
-    contact: str,
+    contact: str | None,
     *,
     timeout: httpx.Timeout = DEFAULT_TIMEOUT,
     max_connections: int = 20,
