@@ -1,17 +1,26 @@
 import re
 import uuid
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from agentic_core.enums import StageStatus
+from agentic_api.files import CHUNK_BYTES, path_response
+from agentic_api.routers import papers as papers_router
+from agentic_api.settings import Settings
+from agentic_core.enums import PdfStatus, StageStatus
 from agentic_core.schemas import validate_stage_output
+from agentic_scholarly.storage import store_pdf
 from api_testkit import (
+    ORIGIN,
     add_output,
+    add_paper,
+    add_paper_text,
+    add_screenings,
     add_stage_output,
-    add_stage_run,
     analysis,
     as_user,
     assert_pdf_structure,
@@ -19,6 +28,7 @@ from api_testkit import (
     literature,
     paper,
     pdf_page_texts,
+    screening,
     start_run,
     team_project,
 )
@@ -29,6 +39,13 @@ NOW = datetime.now(UTC)
 PRISM = "doi:10.5555/cvpr.2024.91234"
 DELTA = "\N{GREEK SMALL LETTER DELTA}"
 UMLAUT = "\N{LATIN SMALL LETTER U WITH DIAERESIS}"
+PREVIEW_NOTICE = "Generated preview, not the published paper."
+
+
+@pytest.fixture
+def settings(tmp_path: Path) -> Settings:
+    """Each test stores its PDFs in a data directory of its own."""
+    return Settings(environment="test", public_origin=ORIGIN, data_dir=tmp_path)
 
 
 async def _library(
@@ -47,6 +64,11 @@ async def _project(client: httpx.AsyncClient, name: str, owner: str) -> str:
     return await create_project(client, name, owner)
 
 
+def _stored_pdf(size: int = 3 * CHUNK_BYTES + 100) -> bytes:
+    body = bytes(range(256)) * (size // 256 + 1)
+    return b"%PDF-1.7\n" + body[:size] + b"\n%%EOF\n"
+
+
 def test_the_builders_make_valid_literature_outputs() -> None:
     data = literature(
         [paper("arxiv:1", "One"), paper(PRISM, "Two", decision="exclude", source="crossref")],
@@ -63,22 +85,27 @@ async def test_the_library_merges_papers_across_runs(
     bobs = await start_run(client, depth, user="bob")
     alices = await start_run(client, depth, user="alice")
     carols = await start_run(client, other, user="carol")
+    for key, title in (
+        ("arxiv:1", "Depth Anything V2"),
+        ("arxiv:2", "A Survey"),
+        ("arxiv:3", "Off Topic"),
+        ("arxiv:4", "Only in Other"),
+    ):
+        await add_paper(db, key, title)
     first = [
-        paper("arxiv:1", "Depth Anything", relevance=0.9),
-        paper("arxiv:2", "A Survey", relevance=0.6, decision="maybe"),
+        screening("arxiv:1", relevance=0.9, source="semantic_scholar"),
+        screening("arxiv:2", relevance=0.6, decision="maybe"),
     ]
     second = [
-        paper("arxiv:1", "Depth Anything V2", relevance=0.7),
-        paper("arxiv:3", "Off Topic", relevance=0.3, decision="exclude"),
+        screening("arxiv:1", relevance=0.7),
+        screening("arxiv:3", relevance=0.3, decision="exclude"),
     ]
     hidden = [
-        paper("arxiv:1", "Depth Anything (Other)", relevance=0.95, decision="maybe"),
-        paper("arxiv:4", "Only in Other", relevance=0.5),
+        screening("arxiv:1", relevance=0.95, decision="maybe", source="openalex"),
+        screening("arxiv:4", relevance=0.5),
     ]
-    for run_id, papers, hours in ((bobs, first, 3), (alices, second, 2), (carols, hidden, 1)):
-        await add_stage_output(
-            db, run_id, "literature", literature(papers), created_at=NOW - timedelta(hours=hours)
-        )
+    for run_id, screenings, hours in ((bobs, first, 3), (alices, second, 2), (carols, hidden, 1)):
+        await add_screenings(db, run_id, screenings, found_at=NOW - timedelta(hours=hours))
 
     page = await _library(client, "bob")
     assert (page["total"], _ids(page), page["demo"]) == (
@@ -90,7 +117,7 @@ async def test_the_library_merges_papers_across_runs(
     assert merged == {
         "paper": {
             "paper_id": "arxiv:1",
-            "title": "Depth Anything V2",  # the newest record bob can see
+            "title": "Depth Anything V2",
             "authors": ["Lihe Yang", "Bingyi Kang"],
             "year": 2024,
             "venue": "NeurIPS",
@@ -99,8 +126,8 @@ async def test_the_library_merges_papers_across_runs(
             "url": None,
             "abstract": "What Depth Anything V2 is about.",
             "citation_count": None,
-            "source": "arxiv",
-            "pdf_available": True,
+            "source": "arxiv",  # where the newest run bob can see found it
+            "pdf_available": False,  # no file stored
         },
         "run_count": 2,
         "project_count": 1,
@@ -116,74 +143,92 @@ async def test_the_library_merges_papers_across_runs(
     everything = await _library(client, "root", "admin")
     assert _ids(everything) == ["arxiv:1", "arxiv:2", "arxiv:4", "arxiv:3"]
     merged = everything["items"][0]
-    assert merged["paper"]["title"] == "Depth Anything (Other)"
+    assert merged["paper"]["source"] == "openalex"
     assert (merged["run_count"], merged["project_count"], merged["best_relevance"]) == (3, 2, 0.95)
     assert merged["decisions"] == ["include", "maybe"]
+    assert datetime.fromisoformat(merged["last_seen_at"]) == NOW - timedelta(hours=1)
 
 
-async def test_each_literature_attempt_counts_with_its_latest_version(
+async def test_runs_count_once_and_only_screened_papers_count(
     client: httpx.AsyncClient, db: Factory
 ) -> None:
     project = await team_project(client)
     run_id = await start_run(client, project)
-    first = await add_stage_run(db, run_id, "literature", StageStatus.CHANGES_REQUESTED, 1)
-    await add_output(db, first, literature([paper("arxiv:1", "Kept"), paper("arxiv:2", "Cut")]))
-    await add_output(db, first, literature([paper("arxiv:1", "Kept")]), version=2, edited_by="bob")
-    second = await add_stage_run(db, run_id, "literature", StageStatus.OUTPUT_READY, 2)
-    await add_output(db, second, literature([paper("arxiv:1", "Kept"), paper("arxiv:3", "New")]))
-    # Outputs from before the search existed hold only a plan; other stages never count.
-    plan_only = await start_run(client, project)
-    await add_stage_output(db, plan_only, "literature", {"topic": "Depth", "queries": ["a"]})
-    await add_stage_output(db, plan_only, "method", {"papers": [paper("arxiv:9", "Wrong stage")]})
+    for key in ("arxiv:1", "arxiv:2", "arxiv:3", "arxiv:4"):
+        await add_paper(db, key, f"Paper {key}")
+    await add_paper(db, "arxiv:5", "Undated", year=None)
+    await add_screenings(
+        db,
+        run_id,
+        [screening("arxiv:1"), screening("arxiv:2")],
+        status=StageStatus.CHANGES_REQUESTED,
+    )
+    await add_screenings(
+        db,
+        run_id,
+        [screening("arxiv:1", relevance=0.6), screening("arxiv:3")],
+        attempt=2,
+        status=StageStatus.OUTPUT_READY,
+    )
+    # A candidate that was ranked but not screened, and a paper without a year (the paper
+    # record needs one), stay out; so does a paper that only a stage output lists.
+    later = await start_run(client, project)
+    unscreened = screening("arxiv:4", relevance=None, decision=None, decision_reason=None)
+    await add_screenings(db, later, [unscreened, screening("arxiv:5")])
+    outputs_only = await start_run(client, project)
+    await add_stage_output(
+        db, outputs_only, "literature", literature([paper("arxiv:9", "Only in an output")])
+    )
 
     page = await _library(client)
-    assert sorted(_ids(page)) == ["arxiv:1", "arxiv:3"]
-    assert [item["run_count"] for item in page["items"]] == [1, 1]
+    assert (page["total"], sorted(_ids(page))) == (3, ["arxiv:1", "arxiv:2", "arxiv:3"])
+    assert [item["run_count"] for item in page["items"]] == [1, 1, 1]
+    for paper_id in ("arxiv:4", "arxiv:5", "arxiv:9"):
+        missing = await client.get(f"{URL}/{paper_id}", headers=as_user("bob"))
+        assert (missing.status_code, missing.json()["detail"]) == (404, "paper.not_found")
 
 
 async def test_search_and_filters(client: httpx.AsyncClient, db: Factory) -> None:
     depth = await team_project(client)
     second = await _project(client, "Second", "bob")
-    papers = [
-        paper(
-            "arxiv:1",
-            "Monocular Depth with Transformers",
-            authors=["Ana Silva"],
-            year=2021,
-            venue="CVPR",
-            abstract="A study of attention for indoor scenes.",
-            relevance=0.9,
-        ),
-        paper(
-            PRISM,
-            "Segmentation at Scale",
-            authors=["Ji-woo Kim", "Bo Li"],
-            year=2023,
-            venue="ICCV",
-            abstract="Uses 100% synthetic_data labels.",
-            source="crossref",
-            relevance=0.7,
-            decision="maybe",
-        ),
-        paper(
-            "openalex:W3",
-            "Edge Devices",
-            authors=["Carla Gomez"],
-            year=2025,
-            venue="IEEE TPAMI",
-            abstract="Runs on phones.",
-            source="openalex",
-            relevance=0.4,
-            decision="exclude",
-        ),
-    ]
-    await add_stage_output(db, await start_run(client, depth), "literature", literature(papers))
-    await add_stage_output(
+    await add_paper(
         db,
-        await start_run(client, second),
-        "literature",
-        literature([paper("arxiv:9", "Older Work", year=2020, relevance=0.6)]),
+        "arxiv:1",
+        "Monocular Depth with Transformers",
+        authors=["Ana Silva"],
+        year=2021,
+        venue="CVPR",
+        abstract="A study of attention for indoor scenes.",
     )
+    await add_paper(
+        db,
+        PRISM,
+        "Segmentation at Scale",
+        authors=["Ji-woo Kim", "Bo Li"],
+        year=2023,
+        venue="ICCV",
+        abstract="Uses 100% synthetic_data labels.",
+    )
+    await add_paper(
+        db,
+        "openalex:W3",
+        "Edge Devices",
+        authors=["Carla Gomez"],
+        year=2025,
+        venue="IEEE TPAMI",
+        abstract="Runs on phones.",
+    )
+    await add_paper(db, "arxiv:9", "Older Work", year=2020)
+    await add_screenings(
+        db,
+        await start_run(client, depth),
+        [
+            screening("arxiv:1", relevance=0.9),
+            screening(PRISM, source="crossref", relevance=0.7, decision="maybe"),
+            screening("openalex:W3", source="openalex", relevance=0.4, decision="exclude"),
+        ],
+    )
+    await add_screenings(db, await start_run(client, second), [screening("arxiv:9", relevance=0.6)])
 
     async def ids(**params: Any) -> list[str]:
         return _ids(await _library(client, **params))
@@ -220,6 +265,46 @@ async def test_search_and_filters(client: httpx.AsyncClient, db: Factory) -> Non
     assert long_query.status_code == 422
 
 
+async def test_full_text_search_reads_the_parsed_text(
+    client: httpx.AsyncClient, db: Factory
+) -> None:
+    project = await team_project(client)
+    other = await _project(client, "Other", "carol")
+    body = await add_paper(db, "arxiv:1", "Monocular Depth", abstract="Depth from a single image.")
+    await add_paper(db, "arxiv:2", "Transformers for Depth", abstract="A transformer sees depth.")
+    await add_paper(db, "arxiv:3", "Stereo Matching", abstract="Depth from two views.")
+    hidden = await add_paper(db, "arxiv:4", "Hidden Work")
+    await add_paper_text(
+        db,
+        body,
+        ("Method", "A transformer decoder refines depth, and the transformer runs at 30 FPS."),
+        ("Results", "Our xylophonic loss lowers the error by 9.8%."),
+    )
+    await add_paper_text(db, hidden, ("Method", "A xylophonic regulariser."))
+    await add_screenings(
+        db,
+        await start_run(client, project),
+        [
+            screening("arxiv:1", relevance=0.9),
+            screening("arxiv:2", relevance=0.5),
+            screening("arxiv:3", relevance=0.7),
+        ],
+    )
+    await add_screenings(db, await start_run(client, other, user="carol"), [screening("arxiv:4")])
+
+    async def ids(q: str, user: str = "bob", role: str = "user") -> list[str]:
+        return _ids(await _library(client, user, role, q=q))
+
+    # Only a section of the parsed text has the word; carol's paper stays hidden from bob.
+    assert await ids("xylophonic") == ["arxiv:1"]
+    assert sorted(await ids("xylophonic", "root", "admin")) == ["arxiv:1", "arxiv:4"]
+    # Best match first, whatever the relevance: the title and abstract outweigh the body.
+    assert await ids("transformers") == ["arxiv:2", "arxiv:1"]
+    assert await ids("stereo or xylophonic") == ["arxiv:3", "arxiv:1"]
+    assert await ids('"single image"') == ["arxiv:1"]
+    assert sorted(await ids("depth -stereo")) == ["arxiv:1", "arxiv:2"]
+
+
 async def test_the_library_is_for_members(client: httpx.AsyncClient) -> None:
     other = await _project(client, "Other", "carol")
     assert (await client.get(URL)).status_code == 401
@@ -233,107 +318,148 @@ async def test_the_library_is_for_members(client: httpx.AsyncClient) -> None:
     assert admin == {"items": [], "total": 0, "demo": False}
 
 
-async def test_papers_from_generated_outputs_are_marked_demo(
-    client: httpx.AsyncClient, db: Factory
-) -> None:
+async def test_seeded_demo_papers_are_marked_demo(client: httpx.AsyncClient, db: Factory) -> None:
     project = await team_project(client)
-    generated = await start_run(client, project)
-    real = await start_run(client, project)
-    pending = await start_run(client, project)
-    await add_stage_output(
-        db,
-        generated,
-        "literature",
-        literature([paper("arxiv:1", "Both"), paper("arxiv:2", "Generated only")]),
-        degraded=True,
-        degraded_reason="literature.demo_search",
+    # The seed marks a generated paper with a PDF available, though no file is stored.
+    await add_paper(db, "arxiv:1", "Generated", demo=True, pdf_status=PdfStatus.AVAILABLE)
+    await add_paper(
+        db, "arxiv:2", "Generated without a PDF", demo=True, pdf_status=PdfStatus.ABSTRACT_ONLY
     )
-    await add_stage_output(db, real, "literature", literature([paper("arxiv:1", "Both")]))
-    await add_stage_output(
+    await add_paper(db, "arxiv:3", "Real", pdf_status=PdfStatus.AVAILABLE)  # but no file
+    await add_paper(db, "arxiv:4", "Generated from CORE", demo=True)
+    await add_screenings(
         db,
-        pending,
-        "literature",
-        literature([paper("arxiv:3", "Real but degraded")]),
-        degraded=True,
-        degraded_reason="literature.search_pending",
+        await start_run(client, project),
+        [
+            screening("arxiv:1"),
+            screening("arxiv:2"),
+            screening("arxiv:3"),
+            screening("arxiv:4", source=None),  # the seed records no hit for CORE
+        ],
     )
     page = await _library(client)
     assert page["demo"] is True
-    assert {item["paper"]["paper_id"]: item["demo"] for item in page["items"]} == {
-        "arxiv:1": True,  # one of its records is generated
-        "arxiv:2": True,
-        "arxiv:3": False,  # degraded, but not generated
+    assert {
+        item["paper"]["paper_id"]: (
+            item["demo"],
+            item["paper"]["pdf_available"],
+            item["paper"]["source"],
+        )
+        for item in page["items"]
+    } == {
+        "arxiv:1": (True, True, "arxiv"),  # the generated preview stands in for the PDF
+        "arxiv:2": (True, False, "arxiv"),
+        "arxiv:3": (False, False, "arxiv"),
+        "arxiv:4": (True, False, "demo"),
     }
-    real_only = await _library(client, q="Real but")
-    assert real_only["demo"] is False
+    real_only = await _library(client, q="Real")
+    assert (_ids(real_only), real_only["demo"]) == (["arxiv:3"], False)
 
 
-async def _prism_runs(client: httpx.AsyncClient, db: Factory) -> tuple[str, str, str]:
-    """PRISM found by bob's run (with an analysis; generated) and later by alice's run."""
+async def test_a_paper_is_listed_under_the_source_of_its_best_hit(
+    client: httpx.AsyncClient, db: Factory
+) -> None:
+    project = await team_project(client)
+    await add_paper(db, "arxiv:1", "Found Three Times")
+    hits = [
+        {"source": "openalex", "query": "depth", "position": 4},
+        {"source": "arxiv", "query": "depth", "position": 1},
+        {"source": "semantic_scholar", "query": "monocular depth", "position": 1},
+    ]
+    await add_screenings(db, await start_run(client, project), [screening("arxiv:1", hits=hits)])
+    # The lowest position wins, and of two hits at one position the one searched first
+    # (Semantic Scholar before arXiv), as the stage output's PaperRef has it.
+    [item] = (await _library(client))["items"]
+    assert item["paper"]["source"] == "semantic_scholar"
+    assert _ids(await _library(client, source="semantic_scholar")) == ["arxiv:1"]
+    assert _ids(await _library(client, source="openalex")) == []
+
+
+async def _prism_runs(client: httpx.AsyncClient, db: Factory) -> tuple[str, str, str, str]:
+    """PRISM, a seeded demo paper, found by bob's run (with an analysis) and later by alice's.
+    Returns the project, both runs and the first run's output."""
     project = await team_project(client)
     first = await start_run(client, project, user="bob")
     second = await start_run(client, project, user="alice")
+    await add_paper(
+        db,
+        PRISM,
+        "PRISM: Scale-Aware Depth",
+        authors=["Ji-woo Kim", f"J{UMLAUT}rgen M{UMLAUT}ller"],
+        doi="10.5555/cvpr.2024.91234",
+        venue="CVPR",
+        demo=True,
+        pdf_status=PdfStatus.AVAILABLE,
+    )
     notes = analysis(
         PRISM,
         ("We train for 30 epochs with AdamW (Table 2).", 4),
         (f"On NYU Depth V2, PRISM achieves {DELTA}1 of 0.871.", 6),
         ("Removing the decoder increases the error by 9.8%.", 9),
     )
-    output_id = await add_stage_output(
+    found = screening(PRISM, relevance=0.9, decision_reason="Strong.", analysis=notes)
+    attempt = await add_screenings(db, first, [found], found_at=NOW - timedelta(hours=2))
+    output_id, _ = await add_output(
         db,
-        first,
-        "literature",
+        attempt,
         literature([paper(PRISM, "PRISM", relevance=0.9, decision_reason="Strong.")], [notes]),
-        degraded=True,
-        degraded_reason="literature.demo_search",
         created_at=NOW - timedelta(hours=2),
     )
-    later = paper(
+    repeated = analysis(PRISM, ("We train for 30 epochs with AdamW (Table 2).", 4))
+    again = screening(
         PRISM,
-        "PRISM: Scale-Aware Depth",
-        authors=["Ji-woo Kim", f"J{UMLAUT}rgen M{UMLAUT}ller"],
-        doi="10.5555/cvpr.2024.91234",
-        venue="CVPR",
         relevance=0.7,
         decision="maybe",
         decision_reason="Unclear protocol.",
+        analysis=repeated,
     )
-    repeated = analysis(PRISM, ("We train for 30 epochs with AdamW (Table 2).", 4))
-    await add_stage_output(
+    attempt = await add_screenings(db, second, [again], found_at=NOW - timedelta(hours=1))
+    await add_output(
         db,
-        second,
-        "literature",
-        literature([later], [repeated]),
+        attempt,
+        literature([paper(PRISM, "PRISM: Scale-Aware Depth", relevance=0.7)], [repeated]),
         created_at=NOW - timedelta(hours=1),
     )
-    return first, second, output_id
+    return project, first, second, output_id
 
 
 async def test_paper_detail_has_every_run_and_analysis(
     client: httpx.AsyncClient, db: Factory
 ) -> None:
-    first, second, output_id = await _prism_runs(client, db)
+    project, first, second, output_id = await _prism_runs(client, db)
+    # A third run has analysed it too, but shows the analysis only once it has an output.
+    third = await start_run(client, project)
+    pending = screening(PRISM, relevance=0.5, analysis=analysis(PRISM, ("Pending.", 2)))
+    await add_screenings(
+        db, third, [pending], status=StageStatus.RUNNING, found_at=NOW - timedelta(minutes=30)
+    )
+
     response = await client.get(f"{URL}/{PRISM}", headers=as_user("vera"))
     assert response.status_code == 200, response.text
     detail = response.json()
-    assert detail["paper"]["title"] == "PRISM: Scale-Aware Depth"  # the newest record
-    assert detail["paper"]["doi"] == "10.5555/cvpr.2024.91234"
+    assert detail["paper"]["title"] == "PRISM: Scale-Aware Depth"
+    assert (detail["paper"]["doi"], detail["paper"]["pdf_available"]) == (
+        "10.5555/cvpr.2024.91234",
+        True,  # its generated preview
+    )
     assert (detail["best_relevance"], detail["demo"]) == (0.9, True)
     assert [
         (run["id"], run["decision"], run["relevance"], run["decision_reason"], run["demo"])
         for run in detail["runs"]
     ] == [
-        (second, "maybe", 0.7, "Unclear protocol.", False),
+        (third, "include", 0.5, "Directly on topic.", True),
+        (second, "maybe", 0.7, "Unclear protocol.", True),
         (first, "include", 0.9, "Strong.", True),
     ]
-    assert (detail["runs"][0]["topic"], detail["runs"][0]["project_name"]) == (
+    assert (detail["runs"][1]["topic"], detail["runs"][1]["project_name"]) == (
         "Monocular depth",
         "Depth",
     )
-    assert detail["runs"][0]["status"] == "queued"
+    assert detail["runs"][1]["status"] == "queued"
     newest, oldest = detail["analyses"]
-    assert (newest["run_id"], newest["demo"], len(newest["evidence"])) == (second, False, 1)
+    assert (newest["run_id"], newest["demo"], len(newest["evidence"])) == (second, True, 1)
     assert (oldest["run_id"], oldest["stage_output_id"], oldest["attempt"]) == (first, output_id, 1)
+    assert datetime.fromisoformat(oldest["created_at"]) == NOW - timedelta(hours=2)
     assert [e["page"] for e in oldest["evidence"]] == [4, 6, 9]
     assert oldest["contribution"] == f"What {PRISM} contributes."
 
@@ -347,7 +473,7 @@ async def test_paper_detail_has_every_run_and_analysis(
     assert (await client.get(f"{URL}/{PRISM}")).status_code == 401
 
 
-async def test_paper_file_is_a_pdf_with_each_quote_on_its_page(
+async def test_a_demo_paper_gets_a_pdf_preview_with_each_quote_on_its_page(
     client: httpx.AsyncClient, db: Factory
 ) -> None:
     await _prism_runs(client, db)
@@ -373,7 +499,7 @@ async def test_paper_file_is_a_pdf_with_each_quote_on_its_page(
     for number, text in enumerate(pages, start=1):
         for page, quote in quotes.items():
             assert text.count(quote) == (1 if page == number else 0), (number, quote)
-    assert "Generated preview, not the published paper." in pages[0]
+    assert PREVIEW_NOTICE in pages[0]
     assert "PRISM: Scale-Aware Depth" in pages[0]
     assert f"Ji-woo Kim, J{UMLAUT}rgen M{UMLAUT}ller" in pages[0]
     assert "CVPR, 2024" in pages[0] and "DOI 10.5555/cvpr.2024.91234" in pages[0]
@@ -387,17 +513,143 @@ async def test_paper_file_is_a_pdf_with_each_quote_on_its_page(
     assert (hidden.status_code, hidden.json()["detail"]) == (404, "paper.not_found")
 
 
-async def test_a_paper_without_analyses_still_gets_a_preview(
+async def test_a_demo_paper_without_analyses_still_gets_a_preview(
     client: httpx.AsyncClient, db: Factory
 ) -> None:
     project = await team_project(client)
-    run_id = await start_run(client, project)
-    await add_stage_output(
-        db, run_id, "literature", literature([paper("arxiv:cs/0701234", "Old Paper", year=2007)])
-    )
+    await add_paper(db, "arxiv:cs/0701234", "Old Paper", year=2007, demo=True)
+    await add_screenings(db, await start_run(client, project), [screening("arxiv:cs/0701234")])
     response = await client.get(f"{URL}/arxiv:cs/0701234/file", headers=as_user("bob"))
     assert response.status_code == 200, response.text
     assert response.headers["content-disposition"] == 'attachment; filename="arxiv-cs-0701234.pdf"'
     assert assert_pdf_structure(response.content) == 4
     detail = await client.get(f"{URL}/arxiv:cs/0701234", headers=as_user("bob"))
-    assert (detail.json()["analyses"], detail.json()["demo"]) == ([], False)
+    assert (detail.json()["analyses"], detail.json()["demo"]) == ([], True)
+
+
+async def test_a_stored_pdf_is_streamed_from_the_data_directory(
+    client: httpx.AsyncClient, db: Factory, tmp_path: Path
+) -> None:
+    data = _stored_pdf()
+    sha256, _ = store_pdf(tmp_path, data)
+    project = await team_project(client)
+    stored = {"pdf_status": PdfStatus.AVAILABLE, "pdf_sha256": sha256}
+    await add_paper(db, "arxiv:2406.09414", "Depth Anything V2", **stored)
+    # A demo paper with a stored file gets the file, not the preview.
+    await add_paper(db, "arxiv:1", "Seeded", demo=True, **stored)
+    await add_screenings(
+        db,
+        await start_run(client, project),
+        [screening("arxiv:2406.09414"), screening("arxiv:1")],
+    )
+
+    response = await client.get(f"{URL}/arxiv:2406.09414/file", headers=as_user("vera"))
+    assert response.status_code == 200, response.text
+    assert response.content == data
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.headers["content-disposition"] == (
+        'attachment; filename="arxiv-2406.09414.pdf"'
+    )
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["cache-control"] == "private"
+    assert response.headers["content-length"] == str(len(data))
+    seeded = await client.get(f"{URL}/arxiv:1/file", headers=as_user("bob"))
+    assert seeded.content == data
+    detail = await client.get(f"{URL}/arxiv:2406.09414", headers=as_user("bob"))
+    assert detail.json()["paper"]["pdf_available"] is True
+
+    hidden = await client.get(f"{URL}/arxiv:2406.09414/file", headers=as_user("carol"))
+    assert (hidden.status_code, hidden.json()["detail"]) == (404, "paper.not_found")
+
+
+async def test_a_paper_without_a_stored_file_is_not_found(
+    client: httpx.AsyncClient, db: Factory, tmp_path: Path
+) -> None:
+    project = await team_project(client)
+    await add_paper(db, "arxiv:1", "Not looked for")
+    await add_paper(db, "arxiv:2", "No open copy", pdf_status=PdfStatus.ABSTRACT_ONLY)
+    # Stored, says the database, but the file is not in the data directory.
+    await add_paper(db, "arxiv:3", "Lost", pdf_status=PdfStatus.AVAILABLE, pdf_sha256="f" * 64)
+    await add_screenings(
+        db,
+        await start_run(client, project),
+        [screening("arxiv:1"), screening("arxiv:2"), screening("arxiv:3")],
+    )
+    for paper_id in ("arxiv:1", "arxiv:2", "arxiv:3"):
+        response = await client.get(f"{URL}/{paper_id}/file", headers=as_user("bob"))
+        assert (response.status_code, response.json()["detail"]) == (404, "paper.not_found")
+    assert not (tmp_path / "papers").exists()
+
+
+async def test_only_a_valid_stored_sha256_names_a_file(
+    client: httpx.AsyncClient, db: Factory, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    data = _stored_pdf(1000)
+    sha256, _ = store_pdf(tmp_path, data)
+    # The same bytes under an upper-case name, which a path built from that value would find.
+    upper = sha256.upper()
+    (tmp_path / "papers" / upper[:2]).mkdir(exist_ok=True)
+    (tmp_path / "papers" / upper[:2] / f"{upper}.pdf").write_bytes(data)
+    built: list[str] = []
+    pdf_path = papers_router.pdf_path
+
+    def spy(root: Path, value: str) -> Path:
+        built.append(value)
+        return pdf_path(root, value)
+
+    monkeypatch.setattr(papers_router, "pdf_path", spy)
+    project = await team_project(client)
+    invalid = {
+        "arxiv:1": upper,
+        "arxiv:2": "../../../../../../../../etc/passwd",
+        "arxiv:3": "g" * 64,
+        "arxiv:4": "",
+    }
+    for key, value in invalid.items():
+        await add_paper(db, key, key, pdf_status=PdfStatus.AVAILABLE, pdf_sha256=value)
+    await add_paper(db, "arxiv:5", "Failed", pdf_status=PdfStatus.FAILED, pdf_sha256=sha256)
+    await add_paper(
+        db, "arxiv:6", "Seeded", demo=True, pdf_status=PdfStatus.AVAILABLE, pdf_sha256=upper
+    )
+    await add_paper(db, "arxiv:7", "Stored", pdf_status=PdfStatus.AVAILABLE, pdf_sha256=sha256)
+    keys = [*invalid, "arxiv:5", "arxiv:6", "arxiv:7"]
+    await add_screenings(db, await start_run(client, project), [screening(key) for key in keys])
+
+    for key in [*invalid, "arxiv:5"]:
+        response = await client.get(f"{URL}/{key}/file", headers=as_user("bob"))
+        assert (response.status_code, response.json()["detail"]) == (404, "paper.not_found"), key
+        detail = await client.get(f"{URL}/{key}", headers=as_user("bob"))
+        assert detail.json()["paper"]["pdf_available"] is False, key
+    seeded = await client.get(f"{URL}/arxiv:6/file", headers=as_user("bob"))
+    assert PREVIEW_NOTICE in pdf_page_texts(seeded.content)[0]
+    assert built == []
+    stored = await client.get(f"{URL}/arxiv:7/file", headers=as_user("bob"))
+    assert (stored.content, built) == (data, [sha256])
+
+
+async def test_stored_files_are_read_a_chunk_at_a_time(tmp_path: Path) -> None:
+    path = tmp_path / "paper.pdf"
+    path.write_bytes(b"x" * (2 * CHUNK_BYTES + 5))
+    response = path_response(path, media_type="application/pdf", filename="paper.pdf")
+    path.unlink()  # the response reads the file it opened
+    chunks = [chunk async for chunk in response.body_iterator]
+    assert [len(chunk) for chunk in chunks] == [CHUNK_BYTES, CHUNK_BYTES, 5]
+    assert response.headers["content-length"] == str(2 * CHUNK_BYTES + 5)
+    with pytest.raises(FileNotFoundError):
+        path_response(path, media_type="application/pdf", filename="paper.pdf")
+
+
+def test_the_data_directory_is_outside_the_repo_unless_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)  # away from the repo's .env
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("ARP_DATA_DIR", raising=False)
+    default = tmp_path / ".local" / "share" / "arp"
+    assert Settings().data_dir == default
+    monkeypatch.setenv("ARP_DATA_DIR", "")  # as .env.example has it
+    assert Settings().data_dir == default
+    monkeypatch.setenv("ARP_DATA_DIR", "~/arp-files")
+    assert Settings().data_dir == tmp_path / "arp-files"
+    monkeypatch.setenv("ARP_DATA_DIR", "/srv/arp")
+    assert Settings().data_dir == Path("/srv/arp")

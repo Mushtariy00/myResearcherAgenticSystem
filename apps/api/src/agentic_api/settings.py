@@ -1,9 +1,13 @@
 """Runtime settings, read from ``ARP_*`` environment variables (and `.env` in development)."""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_DATA_DIR = "~/.local/share/arp"
 
 
 class Settings(BaseSettings):
@@ -25,6 +29,16 @@ class Settings(BaseSettings):
     paid_models: str = ""
     free_models: str = ""
     free_requests_per_day: int = 50
+    # Where the worker stores files: the papers' PDFs under papers/ (agentic_scholarly.storage).
+    # Empty means the default, outside the repo, because the Next dev server watches the repo.
+    data_dir: Path = Field(default=Path(DEFAULT_DATA_DIR), validate_default=True)
+
+    @field_validator("data_dir", mode="before")
+    @classmethod
+    def _expand_data_dir(cls, value: object) -> Path:
+        # The worker's rule (agentic_worker.settings), so both find the same files.
+        text = str(value).strip() if value is not None else ""
+        return Path(text or DEFAULT_DATA_DIR).expanduser()
 
 
 @lru_cache

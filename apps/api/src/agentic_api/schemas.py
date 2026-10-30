@@ -352,7 +352,7 @@ class SystemHealthOut(BaseModel):
 
 
 class PaperOut(BaseModel):
-    """A paper's bibliographic record, as its newest appearance in a literature output has it."""
+    """A paper's bibliographic record, as the lab's paper library stores it."""
 
     paper_id: str
     title: str
@@ -370,12 +370,12 @@ class PaperOut(BaseModel):
 
 class LibraryPaperOut(BaseModel):
     paper: PaperOut
-    run_count: int  # runs whose literature outputs include the paper
+    run_count: int  # runs whose literature stage screened the paper
     project_count: int
     best_relevance: float | None
     decisions: list[ScreeningDecision]  # every screening decision it got, in pipeline order
-    last_seen_at: datetime  # when the newest output that includes it was stored
-    demo: bool  # it comes from a generated literature output
+    last_seen_at: datetime  # when the newest run that screened it found it
+    demo: bool  # a seeded demo paper
 
 
 class PaperPage(BaseModel):

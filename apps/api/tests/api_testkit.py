@@ -8,10 +8,12 @@ import re
 import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from datetime import datetime
 from http.cookies import SimpleCookie
 from typing import Any
 
 import httpx
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from agentic_api.auth import CurrentUser
@@ -24,7 +26,7 @@ from agentic_api.orchestrator import (
 )
 from agentic_core.contracts import DecisionInput
 from agentic_core.enums import RunStatus, StageStatus
-from agentic_db.models import Run, StageOutput, StageRun
+from agentic_db.models import Paper, PaperText, Run, RunPaper, StageOutput, StageRun
 
 ORIGIN = "http://localhost:8080"
 Factory = async_sessionmaker[AsyncSession]
@@ -397,6 +399,90 @@ async def add_stage_output(
     stage_run_id = await add_stage_run(db, run_id, stage, status, attempt)
     output_id, _ = await add_output(db, stage_run_id, data, **fields)
     return output_id
+
+
+# --- The paper library (agentic_db.models: Paper, PaperText, RunPaper) -----------------------
+
+
+async def add_paper(db: Factory, key: str, title: str, **fields: Any) -> uuid.UUID:
+    """A paper in the lab's library, as the literature stage stores it; returns its row id."""
+    values: dict[str, Any] = {
+        "authors": ["Lihe Yang", "Bingyi Kang"],
+        "year": 2024,
+        "venue": "NeurIPS",
+        "abstract": f"What {title} is about.",
+        **fields,
+    }
+    async with db() as session:
+        row = Paper(key=key, title=title, **values)
+        session.add(row)
+        await session.commit()
+        return row.id
+
+
+async def add_paper_text(db: Factory, paper_id: uuid.UUID, *sections: tuple[str, str]) -> None:
+    """The paper's parsed full text: a page and a section for each (title, text) pair."""
+    async with db() as session:
+        session.add(
+            PaperText(
+                paper_id=paper_id,
+                parser="grobid-0.9.1",
+                page_count=len(sections),
+                pages=[text for _, text in sections],
+                sections=[{"title": title, "text": text} for title, text in sections],
+            )
+        )
+        await session.commit()
+
+
+def screening(key: str, **fields: Any) -> dict[str, Any]:
+    """One paper as a literature stage attempt found and screened it: the paper's key, the
+    source of its one hit (None: no hits) and run_papers columns, ``hits`` included."""
+    return {
+        "key": key,
+        "source": "arxiv",
+        "relevance": 0.8,
+        "decision": "include",
+        "decision_reason": "Directly on topic.",
+        **fields,
+    }
+
+
+async def add_screenings(
+    db: Factory,
+    run_id: str,
+    screenings: list[dict[str, Any]],
+    *,
+    attempt: int = 1,
+    status: StageStatus = StageStatus.APPROVED,
+    found_at: datetime | None = None,
+) -> str:
+    """A literature stage attempt of ``run_id`` that found these papers (``screening()`` rows of
+    papers already in the library), recorded as the worker records it; returns its id."""
+    stage_run_id = await add_stage_run(db, run_id, "literature", status, attempt)
+    async with db() as session:
+        keys = [item["key"] for item in screenings]
+        found = await session.execute(select(Paper.key, Paper.id).where(Paper.key.in_(keys)))
+        ids = {key: paper_id for key, paper_id in found}
+        for rank, item in enumerate(screenings, start=1):
+            columns = {name: value for name, value in item.items() if name not in {"key", "source"}}
+            if found_at is not None:
+                columns["created_at"] = found_at
+            source = item["source"]
+            hit = {"source": source, "query": "depth", "position": rank}
+            columns.setdefault("hits", [] if source is None else [hit])
+            session.add(
+                RunPaper(
+                    stage_run_id=uuid.UUID(stage_run_id),
+                    paper_id=ids[item["key"]],
+                    run_id=uuid.UUID(run_id),
+                    rank=rank,
+                    score=round(1 / rank, 3),
+                    **columns,
+                )
+            )
+        await session.commit()
+    return stage_run_id
 
 
 CODING_OUTPUT: dict[str, Any] = {

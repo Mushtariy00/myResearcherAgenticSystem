@@ -1,12 +1,15 @@
-"""File downloads: bytes streamed with the headers docs/PLAN.md asks for (browser hardening).
+"""File downloads: bytes or stored files streamed with the headers docs/PLAN.md asks for
+(browser hardening).
 
 Every file response is ``nosniff`` and private. Attachments make the browser save rather than
 render what was generated from model output. PDFs too: the viewer fetches them itself.
 """
 
+import os
 import re
 from collections.abc import Iterator
-from typing import Any, Literal
+from pathlib import Path
+from typing import Any, BinaryIO, Literal
 from urllib.parse import quote
 
 from fastapi.responses import StreamingResponse
@@ -51,6 +54,23 @@ def _chunks(content: bytes) -> Iterator[bytes]:
         yield content[start : start + CHUNK_BYTES]
 
 
+def _file_chunks(handle: BinaryIO) -> Iterator[bytes]:
+    with handle:
+        while chunk := handle.read(CHUNK_BYTES):
+            yield chunk
+
+
+def _headers(
+    disposition: Literal["inline", "attachment"], filename: str, length: int
+) -> dict[str, str]:
+    return {
+        "Content-Disposition": content_disposition(disposition, filename),
+        "Content-Length": str(length),
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "private",
+    }
+
+
 def file_response(
     content: bytes,
     *,
@@ -61,10 +81,27 @@ def file_response(
     return StreamingResponse(
         _chunks(content),
         media_type=media_type,
-        headers={
-            "Content-Disposition": content_disposition(disposition, filename),
-            "Content-Length": str(len(content)),
-            "X-Content-Type-Options": "nosniff",
-            "Cache-Control": "private",
-        },
+        headers=_headers(disposition, filename, len(content)),
+    )
+
+
+def path_response(
+    path: Path,
+    *,
+    media_type: str,
+    filename: str,
+    disposition: Literal["inline", "attachment"] = "attachment",
+) -> StreamingResponse:
+    """``file_response`` for a file on disk, read a chunk at a time while it is sent.
+
+    The file is opened here, so a missing one raises FileNotFoundError before the response
+    starts, and its length is the open file's, so it matches the bytes sent even if the path
+    is replaced meanwhile.
+    """
+    handle = path.open("rb")  # closed by _file_chunks once the body is sent
+    length = os.fstat(handle.fileno()).st_size
+    return StreamingResponse(
+        _file_chunks(handle),
+        media_type=media_type,
+        headers=_headers(disposition, filename, length),
     )

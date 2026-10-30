@@ -1,4 +1,4 @@
-"""A generated PDF preview of a paper, until worker-fetch stores the published PDFs.
+"""A generated PDF preview of a seeded demo paper, which has no stored PDF to show.
 
 Every page says it is generated. The text is the paper's metadata and abstract, the reading
 notes of the runs that analysed it, and neutral background sentences that claim nothing about
