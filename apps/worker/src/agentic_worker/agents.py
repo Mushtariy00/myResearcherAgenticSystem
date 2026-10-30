@@ -1,8 +1,9 @@
-"""The literature stage's CrewAI agents: no tools, every call through the LLM gateway.
+"""The stages' CrewAI agents: no tools, every call through the LLM gateway.
 
 Each step asks a fresh agent with its own GatewayLLM, so its calls get the step's semantic
 idempotency keys (``<key prefix>:call-<n>``) and an attempt that runs again replays them. An
-answer that is not the JSON the step needs gets one repair request, as the plan step does.
+answer that is not what the step needs gets one repair request, as the plan step does; a second
+unusable answer fails the stage (``<stage>.invalid_output``).
 """
 
 import asyncio
@@ -11,7 +12,7 @@ from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, replace
 from typing import Any, Protocol
 
-from agentic_worker.gateway_llm import GatewayLLM
+from agentic_worker.gateway_llm import AttemptEndedError, GatewayLLM
 from agentic_worker.llm_json import InvalidModelOutputError
 from agentic_worker.stages import StageContext, StageFailedError
 
@@ -27,7 +28,7 @@ Return ONLY the corrected JSON object, in this form:
 # Free reasoning models write their reasoning into the answer; the live check saw one spend a
 # whole screening budget on it and never reach the JSON.
 JSON_ONLY = "Answer with the JSON object alone, starting with {: no reasoning or notes around it."
-_CUT_OFF = (
+CUT_OFF = (
     "it ran out of room ({tokens} tokens) before the JSON was complete; answer with the JSON "
     "object alone, without reasoning"
 )
@@ -60,7 +61,11 @@ class Request[T]:
     persona: Persona
     prompt: str
     parse: Callable[[str], T]  # raises InvalidModelOutputError
-    shape: str  # the JSON form the repair request restates
+    shape: str  # the form the repair request restates
+    # The repair request, and what it says of an answer cut off at its budget; an answer that
+    # is not a JSON object (a section of the draft) words them for its own form.
+    repair: str = REPAIR_PROMPT
+    cut_off: str = CUT_OFF
 
 
 @dataclass(frozen=True)
@@ -107,11 +112,13 @@ def fenced(label: str, text: str) -> str:
     return f"--- BEGIN {label} ---\n{_MARKER.sub('-', text).strip()}\n--- END {label} ---"
 
 
-class LiteratureAgents:
+class StageAgents:
     def __init__(self, make_llm: LlmFactory) -> None:
         self._make_llm = make_llm
 
     async def ask[T](self, ctx: StageContext, request: Request[T]) -> Answer[T]:
+        if ctx.cancelled.is_set():  # the attempt has ended: it asks nothing more
+            raise AttemptEndedError(ctx.stage_run_id)
         if len(request.key_prefix) > MAX_KEY_PREFIX:
             raise ValueError(f"idempotency key prefix too long: {request.key_prefix[:60]}...")
         return await asyncio.to_thread(self._ask, ctx, request)
@@ -146,7 +153,7 @@ class LiteratureAgents:
             error = str(first_error)
             used = llm.calls[-1].get("completion_tokens") if llm.calls else None
             if isinstance(used, int) and used >= request.max_output_tokens:
-                error = _CUT_OFF.format(tokens=used)
+                error = request.cut_off.format(tokens=used)
             # The repair sees the request again: a missing decision cannot be fixed without it.
             repaired = llm.call(
                 [
@@ -154,14 +161,16 @@ class LiteratureAgents:
                     {"role": "assistant", "content": answer[:_ECHOED_ANSWER_CHARS]},
                     {
                         "role": "user",
-                        "content": REPAIR_PROMPT.format(error=error, shape=request.shape),
+                        "content": request.repair.format(error=error, shape=request.shape),
                     },
                 ]
             )
             try:
                 value = request.parse(repaired)
             except InvalidModelOutputError as exc:
-                raise StageFailedError(f"literature.invalid_output: {request.role}: {exc}") from exc
+                raise StageFailedError(
+                    f"{ctx.stage}.invalid_output: {request.role}: {exc}"
+                ) from exc
         return Answer(
             value=value,
             model=llm.calls[-1]["model"] if llm.calls else None,

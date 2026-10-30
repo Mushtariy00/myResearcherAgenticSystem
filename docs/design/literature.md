@@ -197,9 +197,28 @@ models, or buy the one-time $10 that raises the cap to 1,000 a day.
   `nosniff`; the viewer fetches it itself. A seeded demo paper without a stored file still
   gets the generated preview PDF. Any other paper without a file gets 404.
 
+## Method and writing (built 2026-10-30, `ARP_LLM_STAGES=real`)
+
+- **Method** (`method@1`): one call on the approved review, which gives research gaps and
+  proposals.
+  - Evidence ids must name papers of the review; unknown ones are dropped.
+  - The recommendation must be one of the proposals: one repair, then the stage fails.
+- **Writing** (`writing@1`): an outline call, then one call per section (at most 8). Sections
+  come back as Markdown between marker lines, not JSON, so LaTeX and line breaks survive.
+- **Citations are code, not trust:**
+  - the writer sees the review's papers numbered;
+  - every `[n]` must be in range, and an out-of-range one is removed and flagged
+    `writing.citations_removed`;
+  - the citations list and the references are built from the markers actually used.
+- **Honest flags:**
+  - a stage built on a generated review is `method.demo_literature` or
+    `writing.demo_literature`;
+  - a draft over simulated coding or experiment outputs (until Phase 3) is
+    `writing.simulated_results`, and its prompts tell the writer to present those numbers as
+    "to be confirmed".
+- Simulated runs (the demo seed's) and `ARP_LLM_STAGES=demo` keep the generated outputs.
+
 ## Later in Phase 2
 
-- Real method and writing stages; citation verification (each `[n]` must resolve to an
-  included paper of the run).
 - Email notifications (SMTP; Mailpit in dev) and approval reminders.
 - Caddy TLS on the server, off-box backups and a restore drill.

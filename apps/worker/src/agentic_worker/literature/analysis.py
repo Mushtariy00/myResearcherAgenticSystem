@@ -13,13 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from agentic_core.schemas import EvidenceQuote, NonEmptyStr, PaperAnalysis, ResearchPlan
 from agentic_db.models import Paper, PaperText
 from agentic_scholarly.quotes import verify_quote
-from agentic_worker.literature.agents import (
-    JSON_ONLY,
-    MAX_KEY_PREFIX,
-    Persona,
-    Request,
-    fenced,
-)
+from agentic_worker.agents import JSON_ONLY, MAX_KEY_PREFIX, Persona, Request, fenced
 from agentic_worker.literature.fulltext import PDFIUM_PARSER
 from agentic_worker.literature.reading import grobid_sections, page_sections, paper_text
 from agentic_worker.llm_json import parse_model_output

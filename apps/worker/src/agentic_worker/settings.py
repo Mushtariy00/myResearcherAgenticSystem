@@ -21,6 +21,9 @@ class WorkerSettings(BaseSettings):
     max_concurrent_activities: int = 4  # the dev box has 4 cores and 7.7 GiB
     # How long each simulated (demo) stage takes; a run's config may override it per run.
     demo_stage_seconds: float = Field(default=6.0, ge=0)
+    # The method and writing stages. "demo" keeps their generated demo outputs, for working
+    # offline; coding and experiment stay demo until Phase 3 either way.
+    llm_stages: Literal["real", "demo"] = "real"
 
     # Literature stage (docs/design/literature.md). "demo" keeps the real plan with a generated
     # search, for working offline.

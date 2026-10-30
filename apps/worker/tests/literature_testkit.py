@@ -28,8 +28,8 @@ from agentic_scholarly.http import RetryPolicy, make_client
 from agentic_scholarly.ratelimit import SOURCE_LIMITS, Limit, MemoryMutex, MemoryRateLimiter
 from agentic_scholarly.testing import FakeNetwork, RecordingSleep, http_response, make_pdf
 from agentic_worker.activities import StageActivities
+from agentic_worker.agents import LlmFactory, StageAgents, gateway_llms
 from agentic_worker.gateway_llm import GatewayLLM
-from agentic_worker.literature.agents import LiteratureAgents, LlmFactory, gateway_llms
 from agentic_worker.literature.runner import LiteratureRunner
 from agentic_worker.literature.sources import Scholarly
 from agentic_worker.stages import PipelineStageRunner, StageContext
@@ -507,7 +507,7 @@ def harness(
     grobid = grobid or FakeGrobid()
     scholarly = scholarly_for(data_dir, apis, network, grobid)
     planner = FakePlanner()
-    runner = LiteratureRunner(planner, scholarly, db, LiteratureAgents(fake_llms(gateway)))
+    runner = LiteratureRunner(planner, scholarly, db, StageAgents(fake_llms(gateway)))
     activities = StageActivities(
         db, FakeValkey(), PipelineStageRunner(planner, literature=runner, demo_stage_seconds=0)
     )

@@ -10,13 +10,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from agentic_core.contracts import EventType
 from agentic_core.demo import SOURCE_LABELS
 from agentic_core.stages import Stage
-from agentic_db.models import RunEvent
+from agentic_worker.progress import attempt_lines
 from agentic_worker.stages import StageContext
 
 SEARCHED = "literature.searched"
@@ -103,29 +101,7 @@ async def earlier_lines(
     sessions: async_sessionmaker[AsyncSession], run_id: uuid.UUID, attempt: int
 ) -> Earlier:
     """The literature lines written since this attempt's stage.started event."""
-    stage = Stage.LITERATURE.value
-    started = (
-        select(func.coalesce(func.max(RunEvent.seq), 0))
-        .where(
-            RunEvent.run_id == run_id,
-            RunEvent.type == EventType.STAGE_STARTED,
-            RunEvent.payload.contains({"stage": stage, "attempt": attempt}),
-        )
-        .scalar_subquery()
-    )
-    async with sessions() as session:
-        payloads = list(
-            await session.scalars(
-                select(RunEvent.payload)
-                .where(
-                    RunEvent.run_id == run_id,
-                    RunEvent.type == EventType.LOG,
-                    RunEvent.seq > started,
-                    RunEvent.payload.contains({"stage": stage}),
-                )
-                .order_by(RunEvent.seq)
-            )
-        )
+    payloads = await attempt_lines(sessions, run_id, Stage.LITERATURE.value, attempt)
     codes = {str(payload.get("code")) for payload in payloads}
     failed = [
         str(payload["params"]["source"])

@@ -11,8 +11,8 @@ from agentic_core.enums import PdfStatus
 from agentic_db.models import Paper, RunPaper
 from agentic_scholarly.storage import store_pdf
 from agentic_scholarly.testing import make_pdf
+from agentic_worker.agents import MAX_KEY_PREFIX, fenced
 from agentic_worker.literature import analysis, fulltext, reading, screening, synthesis
-from agentic_worker.literature.agents import MAX_KEY_PREFIX, fenced
 from agentic_worker.literature.library import Candidate
 from agentic_worker.llm_json import InvalidModelOutputError
 

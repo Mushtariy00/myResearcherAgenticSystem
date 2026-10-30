@@ -1,11 +1,13 @@
 """What each stage produces.
 
-Literature is the real stage (agentic_worker.literature) when the worker is given one. Without
-it (ARP_LITERATURE_SEARCH=demo) literature runs its real CrewAI research-plan step and fills in
-search, screening and analysis with demo data. Method, coding, experiment and writing return
-demo outputs (``agentic_core.demo``) built on the approved outputs of the stages before them.
-Every demo output is flagged degraded, and each simulated stage takes a while and reports its
-progress as log events, so the front end sees what a real run looks like.
+Literature, method and writing are real stages (agentic_worker.literature, .method, .writing)
+when the worker is given them. Without the real literature stage (ARP_LITERATURE_SEARCH=demo)
+literature runs its real CrewAI research-plan step and fills in search, screening and analysis
+with demo data. Coding and experiment, method and writing without their real stages
+(ARP_LLM_STAGES=demo), and every stage of a simulated run return demo outputs
+(``agentic_core.demo``) built on the approved outputs of the stages before them. Every demo
+output is flagged degraded, and each simulated stage takes a while and reports its progress as
+log events, so the front end sees what a real run looks like.
 """
 
 import asyncio
@@ -80,6 +82,9 @@ class StageContext:
     config: RunConfig = field(default_factory=RunConfig)
     # Approved outputs of the earlier stages of this run, keyed by stage (the latest approval).
     inputs: Mapping[str, dict[str, Any]] = field(default_factory=dict)
+    # The degraded reason of each of them that has one, keyed by stage (stage.demo: a demo
+    # output, whose numbers are made up).
+    degraded_inputs: Mapping[str, str] = field(default_factory=dict)
     # Per-run override of the simulated stage duration (runs.config "demo_stage_seconds").
     demo_stage_seconds: float | None = None
     # A simulated run (runs.config "simulated", the demo seed's live runs): its literature stage
@@ -241,7 +246,10 @@ class PipelineStageRunner:
         self,
         planner: ResearchPlanner,
         *,
-        literature: StageRunner | None = None,  # the real literature stage
+        # The real stages; without one, its stage returns demo outputs.
+        literature: StageRunner | None = None,
+        method: StageRunner | None = None,
+        writing: StageRunner | None = None,
         # Where a demo search records its papers in the library, so they resolve like real ones
         # (the demo seed records its own, inside its transaction).
         demo_library: async_sessionmaker[AsyncSession] | None = None,
@@ -249,7 +257,8 @@ class PipelineStageRunner:
         clock: Callable[[], datetime] = _utc_now,  # the demo seed backdates finished runs
     ) -> None:
         self._planner = planner
-        self._literature_stage = literature
+        real = {Stage.LITERATURE: literature, Stage.METHOD: method, Stage.WRITING: writing}
+        self._real = {stage: runner for stage, runner in real.items() if runner is not None}
         self._demo_library = demo_library
         self._demo_stage_seconds = demo_stage_seconds
         self._clock = clock
@@ -259,8 +268,9 @@ class PipelineStageRunner:
             stage = Stage(ctx.stage)
         except ValueError:
             raise StageFailedError(f"stage.unknown: {ctx.stage}") from None
-        if stage is Stage.LITERATURE and self._literature_stage is not None and not ctx.simulated:
-            return await self._literature_stage.run(ctx)
+        real = self._real.get(stage)
+        if real is not None and not ctx.simulated:
+            return await real.run(ctx)
         if stage is Stage.LITERATURE:
             planned = await self._planner.plan(ctx)
             seed = demo_seed(ctx.run_id, ctx.stage, ctx.attempt)

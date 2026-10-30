@@ -49,6 +49,9 @@ STAGE_STEP = timedelta(minutes=30)
 # The literature stage searches, fetches PDFs and makes tens of LLM calls in one activity. An
 # activity option, so changing it leaves the command sequence (and replay) as it was.
 LITERATURE_STEP = timedelta(hours=2)
+# The writing stage makes up to 9 LLM calls in one activity (an outline and at most 8 sections,
+# each allowed the gateway's 150 s), plus their repairs.
+WRITING_STEP = timedelta(hours=1)
 STAGE_HEARTBEAT = timedelta(minutes=2)
 # Database errors that no retry fixes, e.g. a NUL character in a comment. Temporal names an
 # activity's exception by its class, here SQLAlchemy's.
@@ -130,7 +133,9 @@ _STAGE_FAILURES = frozenset({"literature.no_papers"})
 
 
 def _stage_timeout(stage: str) -> timedelta:
-    return LITERATURE_STEP if stage == Stage.LITERATURE.value else STAGE_STEP
+    return {Stage.LITERATURE.value: LITERATURE_STEP, Stage.WRITING.value: WRITING_STEP}.get(
+        stage, STAGE_STEP
+    )
 
 
 def _error_code(error: ActivityError) -> str:

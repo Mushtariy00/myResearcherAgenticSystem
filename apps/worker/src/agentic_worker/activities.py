@@ -176,6 +176,32 @@ async def approved_outputs(
     return {stage_name: data for stage_name, data in rows}  # ordered: the latest one wins
 
 
+async def approved_degraded_reasons(
+    session: AsyncSession, run_id: uuid.UUID, stage: str
+) -> dict[str, str]:
+    """Why the approved output of each stage before ``stage`` is degraded, for those that are.
+
+    The reason is the one the stage gave its own output. A version a reviewer edited is never
+    flagged, but numbers a demo stage made up stay made up after an edit.
+    """
+    earlier = [s.value for s in STAGE_ORDER[: STAGE_ORDER.index(Stage(stage))]]
+    if not earlier:
+        return {}
+    rows = await session.execute(
+        select(StageRun.stage, StageOutput.degraded_reason)
+        .join(StageOutput, StageOutput.stage_run_id == StageRun.id)
+        .where(
+            StageRun.run_id == run_id,
+            StageRun.stage.in_(earlier),
+            StageRun.status == StageStatus.APPROVED,
+            StageOutput.edited_by.is_(None),
+        )
+        .order_by(StageRun.attempt, StageOutput.version)
+    )
+    latest = {stage_name: reason for stage_name, reason in rows}  # ordered: the latest one wins
+    return {stage_name: reason for stage_name, reason in latest.items() if reason}
+
+
 @contextlib.asynccontextmanager
 async def heartbeating() -> AsyncIterator[None]:
     """Heartbeat while long work runs, so Temporal can deliver cancellation promptly."""
@@ -388,6 +414,7 @@ class StageActivities:
                 budget_cap_usd=str(run.budget_cap_usd) if run.budget_cap_usd is not None else None,
                 config=run_config(run.config),
                 inputs=await approved_outputs(session, run_id, inp.stage),
+                degraded_inputs=await approved_degraded_reasons(session, run_id, inp.stage),
                 demo_stage_seconds=demo_stage_seconds(run.config),
                 simulated=run.config.get(SIMULATED_KEY) is True,
                 log=self._logger(run_id, inp.stage),

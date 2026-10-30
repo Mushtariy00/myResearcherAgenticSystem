@@ -11,7 +11,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from agentic_core.schemas import NonEmptyStr, ResearchPlan
-from agentic_worker.literature.agents import JSON_ONLY, Persona, Request, fenced
+from agentic_worker.agents import JSON_ONLY, Persona, Request, fenced
 from agentic_worker.literature.library import Candidate
 from agentic_worker.literature.reading import cut
 from agentic_worker.llm_json import InvalidModelOutputError, parse_model_output

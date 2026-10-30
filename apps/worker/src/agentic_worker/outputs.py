@@ -23,11 +23,21 @@ PLAN_PROMPT_VERSION = "literature-plan@1"
 # The real literature stage: the plan prompt (literature-plan@1) with the screening, analysis
 # and synthesis prompts of agentic_worker.literature. Bump it when any of them changes.
 LITERATURE_PROMPT_VERSION = "literature@1"
+# The real method and writing stages (agentic_worker.method, agentic_worker.writing): bump each
+# when any of its prompts changes.
+METHOD_PROMPT_VERSION = "method@1"
+WRITING_PROMPT_VERSION = "writing@1"
 DEMO_PROMPT_VERSION = demo.PROMPT_VERSION
 # Degraded reasons the front end shows for demo outputs (the search when the worker runs with
-# ARP_LITERATURE_SEARCH=demo, and the stages after literature, which are not built yet).
+# ARP_LITERATURE_SEARCH=demo; coding and experiment, which are not built yet; method and
+# writing with ARP_LLM_STAGES=demo; every stage of a simulated run).
 LITERATURE_DEMO_REASON = "literature.demo_search"
 STAGE_DEMO_REASON = "stage.demo"
+# A literature output with one of these reasons holds generated papers, not found ones (the last
+# two are Phase 1 placeholders). A real stage built on it says so: its papers are made up.
+GENERATED_LITERATURE_REASONS = frozenset(
+    {LITERATURE_DEMO_REASON, STAGE_DEMO_REASON, "literature.search_pending", "stage.placeholder"}
+)
 
 
 def content_sha256(data: dict[str, Any]) -> str:

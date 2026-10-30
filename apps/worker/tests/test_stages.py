@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import pytest
+import redis.asyncio as redis
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from agentic_core import demo
 from agentic_core.schemas import (
@@ -19,6 +21,7 @@ from agentic_core.schemas import (
     WritingOutput,
     validate_stage_output,
 )
+from agentic_worker.__main__ import stage_runner
 from agentic_worker.outputs import (
     DEMO_PROMPT_VERSION,
     LITERATURE_DEMO_REASON,
@@ -26,6 +29,7 @@ from agentic_worker.outputs import (
     STAGE_DEMO_REASON,
     progress_steps,
 )
+from agentic_worker.settings import WorkerSettings
 from agentic_worker.stages import (
     MAX_DEMO_STAGE_SECONDS,
     CrewAIPlanner,
@@ -131,6 +135,56 @@ async def test_simulated_runs_keep_the_demo_literature_when_the_real_one_is_on()
     assert simulated.degraded_reason == LITERATURE_DEMO_REASON and real.runs == []
     assert (await runner.run(context("literature"))).data == {"real": True}
     assert len(real.runs) == 1
+
+
+async def test_simulated_runs_keep_demo_method_and_writing_when_the_real_ones_are_on(
+    runner: PipelineStageRunner,
+) -> None:
+    class RealStage:
+        def __init__(self) -> None:
+            self.runs: list[str] = []
+
+        async def run(self, ctx: StageContext) -> StageOutcome:
+            self.runs.append(ctx.stage)
+            return StageOutcome(data={"real": ctx.stage})
+
+    approved = {stage: outcome.data for stage, outcome in (await run_pipeline(runner)).items()}
+    real = RealStage()
+    both = PipelineStageRunner(FakePlanner(), method=real, writing=real, demo_stage_seconds=0)
+    for stage in ("method", "writing"):
+        simulated = dataclasses.replace(context(stage, inputs=approved), simulated=True)
+        outcome = await both.run(simulated)
+        assert (outcome.degraded_reason, outcome.prompt_version) == (
+            STAGE_DEMO_REASON,
+            DEMO_PROMPT_VERSION,
+        )
+    assert real.runs == []
+    for stage in STAGES:
+        await both.run(context(stage, inputs=approved))
+    assert real.runs == ["method", "writing"]  # coding and experiment stay demo (Phase 3)
+
+
+async def test_the_demo_llm_stages_setting_keeps_demo_method_and_writing(
+    runner: PipelineStageRunner,
+) -> None:
+    approved = {stage: outcome.data for stage, outcome in (await run_pipeline(runner)).items()}
+    # A gateway that does not exist: a real stage would fail instead of calling one.
+    settings = WorkerSettings(
+        llm_stages="demo",
+        literature_search="demo",
+        demo_stage_seconds=0,
+        gateway_url="http://gateway.invalid",
+    )
+    valkey = redis.Redis()
+    wired, scholarly = stage_runner(settings, async_sessionmaker(), valkey)
+    assert scholarly is None
+    for stage in ("method", "writing"):
+        outcome = await wired.run(context(stage, inputs=approved))
+        assert (outcome.degraded_reason, outcome.prompt_version) == (
+            STAGE_DEMO_REASON,
+            DEMO_PROMPT_VERSION,
+        )
+    await valkey.aclose()
 
 
 async def test_literature_keeps_the_planners_plan(runner: PipelineStageRunner) -> None:

@@ -21,6 +21,7 @@ from typing import Any
 from agentic_core.schemas import ResearchPlan
 from agentic_db.models import Paper, PaperText
 from agentic_scholarly.models import PaperMeta
+from agentic_worker.agents import StageAgents
 from agentic_worker.gateway_llm import AttemptEndedError
 from agentic_worker.literature import (
     analysis,
@@ -31,7 +32,6 @@ from agentic_worker.literature import (
     search,
     synthesis,
 )
-from agentic_worker.literature.agents import LiteratureAgents
 from agentic_worker.literature.library import Candidate, Sessions
 from agentic_worker.literature.output import degraded_reason, literature_output
 from agentic_worker.literature.progress import Earlier, Progress
@@ -87,7 +87,7 @@ class LiteratureRunner:
         planner: ResearchPlanner,
         scholarly: Scholarly,
         sessions: Sessions,
-        agents: LiteratureAgents,
+        agents: StageAgents,
     ) -> None:
         self._planner = planner
         self._scholarly = scholarly
