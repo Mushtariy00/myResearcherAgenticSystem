@@ -56,8 +56,7 @@ export function AppHeader() {
           className="order-last -mx-1 flex basis-full items-center gap-1 overflow-x-auto pb-2 md:order-none md:mx-0 md:basis-auto md:pb-0"
         >
           <NavLink href="/">{t("nav.dashboard")}</NavLink>
-          {/* The Studio sidebar's label until the core navigation messages have one. */}
-          <NavLink href="/papers">{t("studio.shell.nav.papers")}</NavLink>
+          <NavLink href="/papers">{t("nav.papers")}</NavLink>
           {user.role === "admin" && <NavLink href="/admin">{t("nav.admin")}</NavLink>}
         </nav>
         <div className="ml-auto flex items-center gap-1">

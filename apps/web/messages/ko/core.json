@@ -33,7 +33,10 @@
       "admin": "랩 관리자",
       "user": "구성원"
     },
-    "skipToContent": "본문으로 건너뛰기"
+    "skipToContent": "본문으로 건너뛰기",
+    "papers": "논문",
+    "notifications": "알림",
+    "profile": "프로필"
   },
   "auth": {
     "fields": {

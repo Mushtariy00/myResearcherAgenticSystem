@@ -33,7 +33,10 @@
       "admin": "Lab admin",
       "user": "Member"
     },
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "papers": "Papers",
+    "notifications": "Notifications",
+    "profile": "Profile"
   },
   "auth": {
     "fields": {
