@@ -161,18 +161,19 @@ NYU2_CONTRACT = {
 
 
 async def register_nyu2(db: Factory, *, enabled: bool = True) -> None:
+    # A merge: the first test of a session finds the row the migrations registered (since
+    # 2026-10-31 version 2026.10), and the tests expect this one.
     async with db() as session:
-        dataset = await session.get(Dataset, "nyu2")
-        if dataset is None:
-            dataset = Dataset(
+        await session.merge(
+            Dataset(
                 name="nyu2",
                 version="2026.05",
                 title="NYU Depth V2",
                 contract=NYU2_CONTRACT,
                 details={"width": 640, "height": 480},
+                enabled=enabled,
             )
-            session.add(dataset)
-        dataset.enabled = enabled
+        )
         await session.commit()
 
 

@@ -4,8 +4,10 @@ the checks that run before any GPU time.
 Code inside a JSON string breaks: models escape it wrongly and lose its line breaks. So the answer
 holds a ```python block per file, whose first line names it ("# file: model.py"), and one ```json
 block with the choices. It is read leniently where models vary (```py, a heading that names the
-file instead of the comment, prose around the blocks) and strictly where it matters: exactly one
-model.py, a loss.py only with "loss": "generated", files within the checker's size, scalar kwargs.
+file instead of the comment, prose around the blocks, a closing fence at the end of a block's last
+line, files written without their fences but each after its comment) and strictly where it
+matters: exactly one model.py, a loss.py only with "loss": "generated", files within the
+checker's size, scalar kwargs.
 An unusable answer raises InvalidModelOutputError, so StageAgents asks once for a corrected one.
 """
 
@@ -42,6 +44,8 @@ _LOSSES: dict[str, LossChoice] = {
 
 _OPENING = re.compile(r"^[ \t]*(`{3,})[ \t]*([^`]*?)[ \t]*$")
 _CLOSING = re.compile(r"^[ \t]*(`{3,})[ \t]*$")
+# A closing fence at the end of a block's last line: '{"summary": ...}```'.
+_GLUED_CLOSING = re.compile(r"^(.*[^`\s])[ \t]*(`{3,})[ \t]*$")
 _LANGUAGE = re.compile(r"[\w+#-]*")
 # The comment that names a block's file: "# file: model.py", "# filename = loss.py", "# model.py".
 _FILE_COMMENT = re.compile(
@@ -141,6 +145,8 @@ def parse_answer(raw: str) -> Written:
         elif block.language in _PYTHON:
             unnamed.append(text)
         # A block in another language (a shell line, some output) is not a file.
+    if not named and not unnamed:
+        named = _unfenced_files(prose)
     unknown = sorted(set(named) - CODE_FILES)
     if unknown:
         raise InvalidModelOutputError(
@@ -181,14 +187,46 @@ def _blocks(text: str) -> tuple[list[_Block], str]:
                 fence, info, heading, body = opening.group(1), opening.group(2), before, []
             continue
         closing = _CLOSING.match(line)
+        glued = None if closing is not None else _GLUED_CLOSING.match(line)
         if closing is not None and len(closing.group(1)) >= len(fence):
             blocks.append(_Block(info, "\n".join(body), heading))
+            body, before = None, ""
+        elif glued is not None and len(glued.group(2)) >= len(fence):
+            blocks.append(_Block(info, "\n".join([*body, glued.group(1)]), heading))
             body, before = None, ""
         else:
             body.append(line)
     if body is not None:
         raise InvalidModelOutputError("the answer ends inside a code block: it is incomplete")
     return blocks, "\n".join(prose)
+
+
+def _unfenced_files(prose: str) -> dict[str, list[str]]:
+    """Files written without their fences, each after the comment that names it ("# file:
+    model.py") and up to the next one, or up to a "{" at the start of a line: the choices' JSON
+    object, without its fence too. Taken only when each parses as Python once the comments and
+    blank lines at its end are left out (they head what follows, such as "# JSON block"): else
+    none, and the answer is asked for again."""
+    files: dict[str, list[str]] = {}
+    name: str | None = None
+    lines: list[str] = []
+    for line in [*prose.split("\n"), "# file: end.py"]:  # the last marker ends the last file
+        marker = _FILE_COMMENT.match(line.strip())
+        if marker is None and not line.startswith("{"):
+            lines.append(line)
+            continue
+        if name is not None:
+            while lines and (not lines[-1].strip() or lines[-1].lstrip().startswith("#")):
+                lines.pop()
+            files.setdefault(name, []).append("\n".join(lines))
+        name, lines = (marker.group(1).lower() if marker else None), []
+    for texts in files.values():
+        for text in texts:
+            try:
+                ast.parse(text)
+            except SyntaxError:
+                return {}
+    return files
 
 
 def _file_name(block: _Block) -> tuple[str | None, str]:

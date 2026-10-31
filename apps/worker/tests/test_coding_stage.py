@@ -316,7 +316,7 @@ async def test_an_answer_cut_off_twice_fails_the_stage_without_a_gpu_job(db: Fac
         fake.calls[1]
         .messages[2]["content"]
         .startswith(
-            "Your previous answer could not be used: it ran out of room (8000 tokens) before the "
+            "Your previous answer could not be used: it ran out of room (16000 tokens) before the "
             "answer was complete"
         )
     )

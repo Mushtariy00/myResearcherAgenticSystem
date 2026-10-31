@@ -116,6 +116,27 @@ def test_an_unnamed_block_a_list_and_choices_without_a_fence_are_read_too() -> N
     assert parse_answer(coding_answer("", loss=None)).loss == "generated"
 
 
+def test_files_without_their_fences_are_read_by_their_comments() -> None:
+    # As a free model answered on 2026-10-31: each file after its "# file:" comment but with no
+    # fences, and the JSON block's closing fence at the end of its last line.
+    raw = (
+        f"# file: model.py\n{MODEL_PY}\n\n# file: loss.py\n{LOSS_PY}\n\n# JSON block\n"
+        f"```json\n{json.dumps(CHOICES)}```"
+    )
+    answer = parse_answer(raw)
+    assert answer.code == {"model.py": MODEL_PY, "loss.py": LOSS_PY}
+    assert json.loads(answer.choices()) == CHOICES | {"training": TRAINING}
+    # Its repairs left out the JSON block's fence too: the object after loss.py is not loss.py's.
+    choices = json.dumps(CHOICES, indent=2)
+    bare = f"# file: model.py\n{MODEL_PY}\n# file: loss.py\n{LOSS_PY}\n{choices}"
+    answer = parse_answer(bare)
+    assert answer.code == {"model.py": MODEL_PY, "loss.py": LOSS_PY}
+    assert json.loads(answer.choices()) == CHOICES | {"training": TRAINING}
+    # A closing fence at the end of a code block's last line ends that block too.
+    glued = coding_answer("").replace("(self.head(hidden))\n```", "(self.head(hidden))```")
+    assert parse_answer(glued).code["model.py"] == MODEL_PY
+
+
 def _replace_choice(raw: str, **choices: Any) -> str:
     return raw.replace(json.dumps(CHOICES), json.dumps(CHOICES | choices))
 
@@ -129,6 +150,12 @@ BIG_MODEL = MODEL_PY + "\n".join(f"# padding line {n:05d} " + "x" * 60 for n in 
     [
         (TWO_MODELS, "the answer has 2 blocks for model.py; give exactly one"),
         (f"```json\n{json.dumps(CHOICES)}\n```", "the answer has no model.py: put it in a"),
+        (
+            # Code without fences is taken only when it is all code: this has prose in it.
+            f"# file: model.py\n{MODEL_PY}\nThat is the model.\n"
+            f"```json\n{json.dumps(CHOICES)}\n```",
+            "the answer has no model.py: put it in a",
+        ),
         (
             coding_answer("").replace("# file: loss.py", "# file: train.py"),
             "the answer has a block for train.py: write only model.py and",
@@ -259,7 +286,7 @@ def test_the_first_prompt_states_the_contract_and_shows_its_inputs_as_data() -> 
     assert (request.role, request.key_prefix, request.max_output_tokens) == (
         "coding.write",
         f"{ctx.stage_run_id}:coding:write",
-        8000,
+        16000,
     )
     assert request.parse is parse_answer
     prompt = request.prompt

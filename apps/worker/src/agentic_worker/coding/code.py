@@ -28,8 +28,10 @@ from agentic_worker.upstream import reviewer_feedback
 
 MAX_TRIES = 3
 # About 25 KB of code and the choices: a model and a loss of a few hundred lines each (two files
-# at the checker's 20 KB limit would not fit, and need not).
-MAX_OUTPUT_TOKENS = 8000
+# at the checker's 20 KB limit would not fit, and need not), plus a reasoning model's thinking,
+# which counts too. On 2026-10-31 a free model's 13 KB answer took 6,000 tokens and its repair
+# was cut off at 8,000.
+MAX_OUTPUT_TOKENS = 16000
 WRITE_ROLE = "coding.write"
 REPAIR_ROLE = "coding.repair"
 # The smoke test: a dry run of one epoch of SMOKE_STEPS training and validation batches.
