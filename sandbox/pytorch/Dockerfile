@@ -4,12 +4,18 @@
 # PyTorch 2.15 dropped cu126 wheels. Move to a newer CUDA tag once the server GPU is Turing or newer.
 FROM pytorch/pytorch:2.14.1-cuda12.6-cudnn9-runtime
 
+# PyTorch 2.14 sends some eager ops (a batched matmul that is an outer product, a few norms and
+# sums) to Triton, CuTe DSL or Helion kernels it compiles at run time into /tmp. The sandbox's /tmp
+# is noexec, and a Pascal GPU can't run those kernels anyway, so the ops keep PyTorch's own kernels
+# (TORCH_DISABLE_NATIVE_JIT). Without it, generated attention code failed its smoke test with
+# "cuda_utils...so: failed to map segment from shared object" (2026-10-31).
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/opt/harness \
     HOME=/tmp \
     MPLCONFIGDIR=/tmp \
-    TORCH_HOME=/tmp/torch
+    TORCH_HOME=/tmp/torch \
+    TORCH_DISABLE_NATIVE_JIT=1
 
 COPY requirements.txt /opt/harness/requirements.txt
 # The base image is Ubuntu 24.04 with torch pip-installed into the system Python (PEP 668 marks it
