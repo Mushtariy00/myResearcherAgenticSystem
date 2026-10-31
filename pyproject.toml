@@ -27,7 +27,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["legacy", "sandbox"]
+extend-exclude = ["sandbox"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "S", "ASYNC", "RUF"]
@@ -60,7 +60,7 @@ include = [
     "packages/db",
     "packages/scholarly",
 ]
-exclude = ["**/.venv", "**/node_modules", "legacy", "sandbox"]
+exclude = ["**/.venv", "**/node_modules", "sandbox"]
 extraPaths = ["apps/api/tests", "apps/executor/tests", "apps/gateway/tests", "apps/worker/tests"]
 
 [tool.pytest.ini_options]

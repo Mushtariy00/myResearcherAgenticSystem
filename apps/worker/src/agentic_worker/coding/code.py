@@ -42,7 +42,7 @@ _ERROR_CHARS = 2000
 # A dataset's data contract, in the order agentic_db.models.Dataset documents it.
 _CONTRACT_KEYS = ("inputs", "targets", "units", "valid_range", "missing_values", "evaluation")
 
-# Ported from legacy/src/agentic_ai_system/config/agents.yaml ("coding_architect"); its goal is
+# Ported from main:src/agentic_ai_system/config/agents.yaml ("coding_architect"); its goal is
 # now the harness's contract rather than an implementation plan.
 CODING_ARCHITECT = Persona(
     role="{topic} Coding Architect",

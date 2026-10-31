@@ -21,7 +21,7 @@ from agentic_worker.upstream import literature_notes, reviewer_feedback
 MAX_OUTPUT_TOKENS = 4000
 ROLE = "method.propose"
 
-# Ported from legacy/src/agentic_ai_system/config/agents.yaml ("method_analyst").
+# Ported from main:src/agentic_ai_system/config/agents.yaml ("method_analyst").
 METHOD_ANALYST = Persona(
     role="{topic} Method Analyst",
     goal="Identify research gaps and propose concrete method directions from literature findings",

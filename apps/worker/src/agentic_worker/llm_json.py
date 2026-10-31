@@ -1,6 +1,6 @@
 """Pull a JSON object out of free-form model text, then validate it strictly.
 
-Ported from legacy/src/agentic_ai_system/orchestration/flow_utils.py (extract_json_candidate,
+Ported from main:src/agentic_ai_system/orchestration/flow_utils.py (extract_json_candidate,
 parse_model_output): fenced block → first balanced {...} → json → json5 → Python literal.
 """
 

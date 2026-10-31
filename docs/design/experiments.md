@@ -1,6 +1,7 @@
 # Phase 3 design: real code and real experiments
 
-Status: draft (2026-10-30). This replaces the simulated coding and experiment stages
+Status: done (2026-10-31): the exit checks passed (see Verification). This replaced the
+simulated coding and experiment stages
 (`stage.demo`) with:
 - generated model code, checked and smoke-tested in the GPU sandbox;
 - real training runs on the lab GPU.
@@ -18,7 +19,7 @@ no change for them.
   are all contained.
 - A cancel kills a running job in 5 s or less.
 - Restarting the worker or the executor never duplicates a container.
-- `legacy/` is deleted at the end of the phase.
+- `legacy/` is deleted at the end of the phase (done 2026-10-31; the prototype stays on `main`).
 
 ## What exists (Phase 0)
 
@@ -257,9 +258,53 @@ the next try. The activity timeouts are 2 h (coding) and 8 h (experiment).
   150 steps on it (50,688 training and 654 validation samples) with no dataset warning. Training
   and validation now measure on one scale: RMSE 1.58 and 1.53 m, AbsRel 0.43 and 0.46. It took
   10 minutes, reading the data from D:'s hard disk.
-- **Live, still to do:**
-  - killing the worker mid-job resumes without a second job;
-  - an NYU2 run from the UI to real metrics, with the LLM writing the code.
+- **Live, the exit run (2026-10-31): NYU2 from the UI, free models only**
+  (nvidia/nemotron-3-ultra-550b-a55b:free):
+  - Literature: 188 papers found on arXiv and OpenAlex (Semantic Scholar was rate-limited), 24
+    screened, 8 kept, 5 read in full; 14 LLM calls. Method: 3 proposals; the recommended one is a
+    hybrid CNN-Transformer with token-sharing attention and guided upsampling.
+  - Coding took five attempts, each retried from the run page; the fifth one's third try passed
+    its smoke test (15 s). The other tries:
+    - our bugs, fixed the same day (below);
+    - names starting with "_" (`self._helper`), which the prompt forbids;
+    - real bugs in the generated attention code: GroupNorm groups that don't divide the
+      channels, and tensor shape mismatches.
+  - The experiment trained 3 epochs of 1,000 steps at batch size 4 (planned from the smoke test's
+    memory), in 30.8 GPU-minutes at about 92% GPU load. Validation RMSE went 1.322 → 1.162 →
+    1.116 m, AbsRel 0.521 → 0.393 → 0.354. The output has the curves, the final metrics, the
+    log, the metrics as CSV, the checkpoint (1.3 MB) and its provenance: the image digest, code
+    and config sha256, nyu2 2026.10, seed 42, the GPU.
+  - The worker was killed with SIGKILL a minute into training. The job went on in its
+    container. Temporal ran the experiment activity again on the new worker (attempt 2), which
+    found the job and waited on it; one job and one container all along.
+  - Writing outlined 8 sections and drafted 3. Then OpenRouter refused the free model for the
+    day, after 37 answered calls (the free tier is documented as 50 requests a day). The stage
+    waits for the reset (00:00 UTC) and goes on by itself; writing is not part of this phase's
+    exit.
+- **What the exit run found, fixed the same day:**
+  - The answer parser refused the free model's answers. Its files came without fences (each
+    after its "# file:" comment), with the closing fence at the end of a line, or with the JSON
+    object unfenced too.
+  - Coding's 8,000 output tokens cut off a reasoning model's repair, whose thinking counts too:
+    now 16,000.
+  - PyTorch 2.14 sends some eager ops (a batched matmul that is an outer product) to Triton
+    kernels it compiles into /tmp. In the sandbox, /tmp is noexec, so the generated attention
+    failed with "failed to map segment from shared object". The image sets
+    TORCH_DISABLE_NATIVE_JIT=1.
+  - The run page's live events stayed ended after a retry until the page was reloaded.
+- **Still open:**
+  - The gateway's per-attempt timeout (120 s) and deadline (150 s) are httpx read timeouts.
+    OpenRouter keeps a non-streaming request alive with whitespace while the model writes, so
+    they never fire: one code answer took 379 s. Only the worker's 180 s limit does; the retry
+    then waits for the call (`call.in_progress`) and replays it, so nothing is paid twice. But a
+    model that never answers is never cut off, and the fallback to the next model never starts.
+  - One passing model took 15 tries of the free model. What would cut that most: a library of
+    tested blocks in the harness (normalisation that picks valid groups, encoder stages with known
+    channels, attention over feature maps, decoder and loss blocks) for the generated code to
+    compose; a shape trace of each module in a failed smoke test; repairs that see every earlier
+    failure; and a stronger model for the coding role.
+  - Wording: a literature output with a source missing is labelled "Placeholder output"; a
+    coding failure says every try failed its smoke test when some were refused by the checks.
 
 ## Order of work
 
@@ -270,5 +315,5 @@ the next try. The activity timeouts are 2 h (coding) and 8 h (experiment).
    `make docker-proxy-check`, `make executor-check`).
 3. **Worker stages (done):** coding (LLM, checks, smoke loop) and experiment
    (`make stages-check`).
-4. **API and web:** the queue, datasets and artifacts become real; live curves.
-5. The exit checks, then delete `legacy/`.
+4. **API and web (done):** the queue, datasets and artifacts become real; live curves.
+5. **The exit checks, then delete `legacy/` (done, 2026-10-31).**

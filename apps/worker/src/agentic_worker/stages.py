@@ -129,7 +129,7 @@ class ResearchPlanner(Protocol):
     async def plan(self, ctx: StageContext) -> PlannedSearch: ...
 
 
-# Ported from legacy/src/agentic_ai_system/config/agents.yaml ("researcher").
+# Ported from main:src/agentic_ai_system/config/agents.yaml ("researcher").
 RESEARCHER = {
     "role": "{topic} Senior Data Researcher",
     "goal": "Uncover cutting-edge developments in {topic}",

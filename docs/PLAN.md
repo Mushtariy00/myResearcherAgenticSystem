@@ -38,8 +38,9 @@ The team's own roadmap asks for this upgrade:
 - a budget-aware LLM gateway;
 - a hardened GPU executor.
 
-`main` keeps the old system. On `v2`, the old code first moves to `legacy/` (with `git mv`) as a
-reference, and `legacy/` is deleted after Phase 3. Logic is ported, not copied wholesale.
+`main` keeps the old system. On `v2`, the old code first moved to `legacy/` (with `git mv`) as a
+reference, and `legacy/` was deleted after Phase 3 (2026-10-31). Logic is ported, not copied
+wholesale; a port comment names the old file as `main:<path>`.
 
 ## Constraints
 - **Dev box:** WSL2 Ubuntu 24.04, **7.7 GiB RAM**, 4 cores, GTX 1060 6 GB.
@@ -295,6 +296,8 @@ How the gateway works:
 Every state-changing request checks `Origin` (CSRF) and uses SameSite=Lax cookies.
 
 ## Port map from `legacy/`
+`legacy/` is gone (deleted after Phase 3): the old paths below are the prototype's, on `main`.
+
 | Old | New |
 |---|---|
 | `config/agents.yaml` roles and prompts | `packages/agents` (versioned prompt registry) |
@@ -320,7 +323,7 @@ An optional script imports the old runs.
 ```text
 apps/web, apps/api, apps/gateway, apps/worker (flow|agents|fetch|gpu roles), apps/executor
 packages/core, db, workflows, agents, llm (client used by workers), scholarly, events
-sandbox/pytorch (not a uv member) · infra/compose (+ Caddyfile, SOPS secrets) · docs/adr · legacy/
+sandbox/pytorch (not a uv member) · infra/compose (+ Caddyfile, SOPS secrets) · docs/adr
 ```
 
 ## Roadmap — each phase ships its own controls and tests

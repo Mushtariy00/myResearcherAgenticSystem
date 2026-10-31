@@ -7,10 +7,11 @@ run on a GPU in locked-down containers.
 This branch (`v2`) is a production rebuild of the CrewAI + Streamlit prototype on `main`.
 - **What and why:** [docs/PLAN.md](docs/PLAN.md).
 - **Key decisions:** [docs/adr/](docs/adr/).
-- **Old code:** kept read-only in [legacy/](legacy/) while its logic is ported. It is deleted
-  after Phase 3.
+- **Old code:** the prototype stays on `main`. Its logic was ported, and the `legacy/` copy on
+  this branch was deleted after Phase 3.
 
-**Status:** Phase 0 (foundations and risk spikes).
+**Status:** Phase 3 (real code and experiments on the GPU): its exit checks passed on
+2026-10-31 ([docs/design/experiments.md](docs/design/experiments.md)).
 
 ## Stack
 | Part | Choice |
@@ -31,7 +32,6 @@ sandbox/pytorch     GPU training image + harness (data, metrics, loop)
 infra/compose       dev infrastructure (compose.yaml, Caddyfile.dev)
 scripts/            setup, doctor, sandbox smoke test, backup / restore / restore drill
 docs/               plan, ADRs and runbooks (docs/runbooks/backup-restore.md)
-legacy/             the old system, for reference while porting
 ```
 
 ## Getting started (WSL2 Ubuntu 24.04)
@@ -78,5 +78,5 @@ legacy/             the old system, for reference while porting
 ## Phase 0 exit criteria
 - `make up` is healthy within the memory budget, and CI is green.
 - `make sandbox-smoke` passes all 6 checks. `make sandbox-epoch` trains one full NYU2 epoch in the
-  hardened container. Copy the dataset to the Linux disk first and set `DATASET_DIR`; reading
-  from `D:` is slow.
+  hardened container. Set `DATASET_DIR` to the corrected NYU2 copy (`make nyu2-fix`). Keep it on a
+  data drive, not in WSL's own disk, which grows on C: and doesn't shrink (`.env.example`).

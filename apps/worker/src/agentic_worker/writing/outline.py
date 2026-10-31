@@ -20,7 +20,7 @@ MAX_OUTPUT_TOKENS = 4000
 ROLE = "writing.outline"
 MAX_SECTIONS = 8  # one call each: a draft costs at most 9 calls before repairs
 
-# Ported from legacy/src/agentic_ai_system/config/agents.yaml ("writing_strategist").
+# Ported from main:src/agentic_ai_system/config/agents.yaml ("writing_strategist").
 WRITING_STRATEGIST = Persona(
     role="{topic} Writing Strategist",
     goal="Produce a section-wise writing plan based on approved research and experiment context",

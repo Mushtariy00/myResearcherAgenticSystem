@@ -1,6 +1,6 @@
 """Strict v1 stage-output schemas: the contract between stages, the API and the front end.
 
-Ported from legacy/src/agentic_ai_system/schemas/models.py and extended to every stage. Fields
+Ported from main:src/agentic_ai_system/schemas/models.py and extended to every stage. Fields
 are required unless they have a default, and unknown fields are rejected, so an empty or
 truncated LLM answer (``{}``) fails validation instead of passing as an all-defaults object.
 

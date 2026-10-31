@@ -1,1 +1,0 @@
-PYTHONPATH=src python -m agentic_ai_system.train.loop --config config/nyu2.yaml --dry-run

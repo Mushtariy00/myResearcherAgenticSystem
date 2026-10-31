@@ -16,7 +16,7 @@ down_revision: str | None = "164cac3d30f1"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-# The lab's NYU Depth V2 copy (legacy/data_contract.json, approved 2026-05-30). Its folder differs
+# The lab's NYU Depth V2 copy (main:data_contract.json, approved 2026-05-30). Its folder differs
 # from machine to machine, so host_path stays NULL and the executor's ARP_DATASET_NYU2 names it.
 NYU2 = {
     "name": "nyu2",
