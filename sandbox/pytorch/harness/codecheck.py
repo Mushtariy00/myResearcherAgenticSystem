@@ -5,6 +5,9 @@ runs it before a smoke job, and the harness runs it again at load time inside th
 allowlist, so anything not explicitly permitted is refused with a finding. The sandbox (no network,
 read-only root, no secrets) is the last line of defence, never the first.
 
+Besides the allowed modules, generated code may import the harness's tested blocks by name
+(BLOCKS, from harness.blocks).
+
 This file has an identical twin at sandbox/pytorch/harness/codecheck.py, because the sandbox image
 cannot import packages/core. A test keeps the two byte-for-byte equal; edit both together. It
 depends only on the standard library for the same reason.
@@ -30,6 +33,31 @@ ALLOWED_IMPORTS = frozenset(
         "functools",
         "collections",
         "__future__",
+    }
+)
+
+# The harness's tested blocks (sandbox/pytorch/harness/blocks.py, its __all__; a test keeps the
+# two equal). Generated code imports them by name, `from harness.blocks import Encoder`, never the
+# module itself: its own imports (torch) would then be reachable as attributes, past the
+# denylist below.
+BLOCKS_MODULE = "harness.blocks"
+BLOCKS = frozenset(
+    {
+        "ConvNormAct",
+        "CrossAttention",
+        "DepthHead",
+        "Encoder",
+        "FeatureAttention",
+        "GuidedUpsample",
+        "InvertedResidual",
+        "SqueezeExcite",
+        "UpBlock",
+        "gradient_loss",
+        "group_norm",
+        "masked_l1",
+        "resize_to",
+        "silog_loss",
+        "ssim_loss",
     }
 )
 
@@ -186,15 +214,25 @@ def _is_constant(value: ast.expr | None) -> bool:
 def _check_import(node: ast.Import | ast.ImportFrom) -> list[Finding]:
     if isinstance(node, ast.Import):
         return [
-            Finding(node.lineno, "check.import", f"Import of '{alias.name}' is not allowed")
+            Finding(node.lineno, "check.import", _refusal(f"Import of '{alias.name}'", alias.name))
             for alias in node.names
             if alias.name not in ALLOWED_IMPORTS
         ]
     if node.level:
         return [Finding(node.lineno, "check.import", "Relative imports are not allowed")]
     module = node.module or ""
+    if module == BLOCKS_MODULE:
+        return [
+            Finding(
+                node.lineno,
+                "check.import",
+                f"'{alias.name}' is not one of the harness's blocks: {', '.join(sorted(BLOCKS))}",
+            )
+            for alias in node.names
+            if alias.name not in BLOCKS
+        ]
     if module not in ALLOWED_IMPORTS:
-        return [Finding(node.lineno, "check.import", f"Import from '{module}' is not allowed")]
+        return [Finding(node.lineno, "check.import", _refusal(f"Import from '{module}'", module))]
     # `from torch import load` reaches a denylisted entry point without an attribute access.
     findings: list[Finding] = []
     for alias in node.names:
@@ -204,6 +242,13 @@ def _check_import(node: ast.Import | ast.ImportFrom) -> list[Finding]:
                 Finding(node.lineno, "check.torch_denylist", f"'{dotted}' is not allowed")
             )
     return findings
+
+
+def _refusal(what: str, module: str) -> str:
+    """Why an import is refused, with the way to the harness's blocks when it reaches for them."""
+    if module == "harness" or module.startswith("harness."):
+        return f"{what} is not allowed: import the blocks by name, from {BLOCKS_MODULE} import ..."
+    return f"{what} is not allowed"
 
 
 def _check_call(node: ast.Call) -> list[Finding]:

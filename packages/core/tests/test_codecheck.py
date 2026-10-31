@@ -1,11 +1,14 @@
 """Tests for the generated-code allowlist checker and its sandbox twin."""
 
+import ast
 from pathlib import Path
 
 import pytest
 
 import agentic_core.codecheck as codecheck
-from agentic_core.codecheck import MAX_SOURCE_BYTES, Finding, check_module
+from agentic_core.codecheck import BLOCKS, MAX_SOURCE_BYTES, Finding, check_module
+
+REPO = Path(codecheck.__file__).parents[4]
 
 GOOD_MODEL = """\
 from __future__ import annotations
@@ -43,9 +46,58 @@ class Loss(nn.Module):
 """
 
 
-@pytest.mark.parametrize("source", [GOOD_MODEL, GOOD_LOSS])
+BLOCKS_MODEL = """\
+import torch
+from torch import nn
+
+from harness.blocks import DepthHead, Encoder, group_norm
+
+
+class Model(nn.Module):
+    def __init__(self, max_depth: float = 10.0) -> None:
+        super().__init__()
+        self.encoder = Encoder(channels=(8, 16))
+        self.norm = group_norm(16)
+        self.head = DepthHead(16, max_depth)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.head(self.norm(self.encoder(x)[-1]), x.shape[-2:])
+"""
+
+
+@pytest.mark.parametrize("source", [GOOD_MODEL, GOOD_LOSS, BLOCKS_MODEL])
 def test_contract_abiding_modules_pass(source: str) -> None:
     assert check_module(source, filename="model.py") == []
+
+
+@pytest.mark.parametrize(
+    ("source", "message"),
+    [
+        # The module itself would reach its own imports (torch) as attributes, past the denylist.
+        ("import harness.blocks\n", "import the blocks by name, from harness.blocks import"),
+        ("from harness import blocks\n", "import the blocks by name, from harness.blocks import"),
+        ("import harness\n", "import the blocks by name"),
+        ("from harness.blocks import torch\n", "'torch' is not one of the harness's blocks"),
+        ("from harness.blocks import *\n", "'*' is not one of the harness's blocks"),
+        ("from harness.train import main\n", "Import from 'harness.train' is not allowed"),
+    ],
+)
+def test_the_blocks_are_imported_by_name_and_nothing_else(source: str, message: str) -> None:
+    findings = check_module(source, filename="model.py")
+    assert [finding.code for finding in findings] == ["check.import"]
+    assert message in findings[0].message
+
+
+def test_the_allowed_blocks_are_the_harness_blocks_all() -> None:
+    # The checker can't import the harness (no torch here): it reads blocks.py's __all__.
+    tree = ast.parse((REPO / "sandbox" / "pytorch" / "harness" / "blocks.py").read_text())
+    exported = next(
+        node.value
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == "__all__" for target in node.targets)
+    )
+    assert set(ast.literal_eval(exported)) == BLOCKS
 
 
 REFUSALS = {
@@ -100,8 +152,7 @@ def test_findings_carry_the_right_line_numbers() -> None:
 
 def test_sandbox_twin_is_byte_identical() -> None:
     core_copy = Path(codecheck.__file__)
-    repo_root = core_copy.parents[4]
-    sandbox_copy = repo_root / "sandbox" / "pytorch" / "harness" / "codecheck.py"
+    sandbox_copy = REPO / "sandbox" / "pytorch" / "harness" / "codecheck.py"
     assert sandbox_copy.read_bytes() == core_copy.read_bytes(), (
         "packages/core and sandbox/pytorch copies of codecheck.py have diverged; edit both"
     )

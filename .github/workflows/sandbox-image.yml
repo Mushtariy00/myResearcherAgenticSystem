@@ -29,3 +29,8 @@ jobs:
           -c "import yaml, pathlib; from harness.config import ExperimentConfig;
           ExperimentConfig.model_validate(yaml.safe_load(pathlib.Path('/opt/harness/configs/nyu2-smoke.yaml').read_text()));
           print('config ok')"
+      - name: Harness blocks and shape trace (unit tests, CPU)
+        run: >
+          docker run --rm --network none --read-only --tmpfs /tmp --user 10001:10001
+          -v "$PWD/sandbox/pytorch/tests:/opt/tests:ro" --entrypoint python arp-sandbox-pytorch:ci
+          -m unittest discover -s /opt/tests -v

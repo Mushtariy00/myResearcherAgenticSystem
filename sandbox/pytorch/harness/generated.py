@@ -60,6 +60,14 @@ class ShapeMismatch(GeneratedCodeError):
     error_code = "code.shape_mismatch"
 
 
+class ForwardFailed(GeneratedCodeError):
+    """The model's forward pass raised on the first batch. The message is the error, then the
+    shape trace (harness.trace) of where it happened, for the coding agent's repair."""
+
+    def __init__(self, error: Exception, trace: str) -> None:
+        super().__init__(f"{type(error).__name__}: {error}\n{trace}".rstrip())
+
+
 def load_generated_model(code_dir: Path, kwargs: dict[str, object]) -> nn.Module:
     """Build ``Model`` from ``code_dir/model.py`` with the config kwargs."""
     model_class = _load_class(code_dir, "model.py", "Model")

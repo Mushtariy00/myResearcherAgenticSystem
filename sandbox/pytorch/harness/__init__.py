@@ -5,4 +5,4 @@ model and loss modules (Phase 3). Ported from main:src/agentic_ai_system/train/l
 silent fallbacks to "generic" modules and synthetic data.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"  # 0.2: the blocks generated code may import, and the smoke shape trace

@@ -36,6 +36,7 @@ from harness.config import ExperimentConfig
 from harness.data import build_dataset, depth_scale_warnings
 from harness.generated import (
     CodeRefused,
+    ForwardFailed,
     GeneratedCodeError,
     ShapeMismatch,
     ModelTooLarge,
@@ -45,6 +46,7 @@ from harness.generated import (
 from harness.limits import MAX_PARAMS
 from harness.models import build_model
 from harness.tasks import MIN_VALID_DEPTH_M, DepthMetrics, depth_loss
+from harness.trace import ShapeTrace
 
 log = logging.getLogger("harness")
 LOG_EVERY_STEPS = 20
@@ -106,7 +108,8 @@ def _smoke_probe(
     """First-batch checks before training spends GPU time: output shape then a finite loss.
 
     The shape is checked before ``loss_fn_factory`` runs, so a wrong-shape model is reported as a
-    shape mismatch rather than a loss that fails to load.
+    shape mismatch rather than a loss that fails to load. A forward pass that raises, or gives the
+    wrong shape, is reported with its shape trace (harness.trace).
     """
     try:
         images, depths = next(iter(loader))
@@ -115,12 +118,18 @@ def _smoke_probe(
     images, depths = images.to(device), depths.to(device)
     was_training = model.training
     model.eval()
-    with torch.no_grad():
-        prediction = model(images)
+    with torch.no_grad(), ShapeTrace(model) as trace:
+        try:
+            prediction = model(images)
+        except Exception as exc:
+            if _is_cuda_oom(exc):
+                raise  # train.oom: the batch size, not the code
+            raise ForwardFailed(exc, trace.report()) from exc
     model.train(was_training)
     if prediction.shape != depths.shape:
         raise ShapeMismatch(
-            f"Model output {tuple(prediction.shape)} does not match target {tuple(depths.shape)}"
+            f"Model output {tuple(prediction.shape)} does not match target "
+            f"{tuple(depths.shape)}\n{trace.report()}"
         )
     loss_fn = loss_fn_factory()
     if not torch.isfinite(loss_fn(prediction, depths)):

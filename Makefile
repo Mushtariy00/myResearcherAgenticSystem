@@ -17,7 +17,7 @@ export ARP_JOBS_DIR := $(call host_path,$(or $(strip $(ARP_DATA_DIR)),~/.local/s
 export ARP_DOCKER_BIND_ALLOWLIST := $(ARP_JOBS_DIR)$(patsubst %,$(comma)%,$(call host_path,$(ARP_DATASET_NYU2)))
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker executor fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch sandbox-limits docker-proxy-check executor-check stages-check nyu2-fix
+.PHONY: help doctor setup env up down ps logs backup restore restore-drill migrate migration bootstrap-admin demo-seed client api gateway worker executor fake-openrouter web lint format typecheck test sandbox-build sandbox-smoke sandbox-epoch sandbox-limits sandbox-test docker-proxy-check executor-check stages-check nyu2-fix
 
 help: ## List targets
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -133,6 +133,11 @@ sandbox-epoch: ## Phase 0 exit check: one full NYU2 epoch in the sandbox (slow)
 
 sandbox-limits: ## Phase 3: the training container's limits hold
 	bash scripts/sandbox-limits.sh
+
+sandbox-test: ## Phase 3: the harness's blocks and shape trace, unit-tested on the CPU in the image
+	docker run --rm --network none --read-only --tmpfs /tmp --user 10001:10001 \
+		-v "$(CURDIR)/sandbox/pytorch/tests:/opt/tests:ro" --entrypoint python \
+		arp-sandbox-pytorch:dev -m unittest discover -s /opt/tests -v
 
 docker-proxy-check: ## Phase 3: the Docker socket proxy passes the executor's calls and refuses the rest
 	bash scripts/docker-proxy-check.sh
