@@ -136,3 +136,27 @@ describe("useRunEvents reconnecting", () => {
     expect(FakeEventSource.instances).toHaveLength(1);
   });
 });
+
+describe("useRunEvents after the run ends", () => {
+  it("opens the stream again when the finished run starts again (a retry)", () => {
+    const { result, rerender } = renderHook(
+      ({ going }: { going: boolean }) => useRunEvents(RUN_ID, () => {}, undefined, going),
+      { initialProps: { going: true } },
+    );
+    act(() => {
+      FakeEventSource.latest().open();
+      FakeEventSource.latest().send(runEvent("log", { message: "the last try failed" }, 9));
+      FakeEventSource.latest().end();
+    });
+    // Ended while the run still looked under way: it stays ended.
+    expect(result.current.state).toBe("ended");
+    rerender({ going: false }); // the run's detail now says it failed
+    expect(FakeEventSource.instances).toHaveLength(1);
+
+    rerender({ going: true }); // retried
+    expect(FakeEventSource.instances).toHaveLength(2);
+    expect(FakeEventSource.latest().url).toBe(`/api/v1/runs/${RUN_ID}/events?after=9`);
+    act(() => FakeEventSource.latest().open());
+    expect(result.current.state).toBe("live");
+  });
+});

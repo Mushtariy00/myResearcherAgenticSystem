@@ -36,8 +36,16 @@ export type ResumeCheck = () => Promise<boolean>;
  * When the browser gives up on the stream, the hook opens a new one after a growing wait
  * (RECONNECT_DELAYS_MS), resuming after the newest event it has, unless `canResume` says the
  * session or the run is gone.
+ *
+ * A finished run's stream ends. `going` says whether the run is under way: when a finished run
+ * starts again (a retry), the hook opens its stream again.
  */
-export function useRunEvents(runId: string, onDetailChange: () => void, canResume?: ResumeCheck) {
+export function useRunEvents(
+  runId: string,
+  onDetailChange: () => void,
+  canResume?: ResumeCheck,
+  going = false,
+) {
   const [events, setEvents] = useState<readonly RunEvent[]>([]);
   const [state, setState] = useState<StreamState>("connecting");
   const [attempt, setAttempt] = useState(0);
@@ -168,6 +176,17 @@ export function useRunEvents(runId: string, onDetailChange: () => void, canResum
     retries.current = 0;
     setAttempt((value) => value + 1);
   }, []);
+
+  // Only the moment the run starts again counts: a stream that ends while the run still looks
+  // under way (its detail not yet refetched) stays ended.
+  const wasGoing = useRef(going);
+  useEffect(() => {
+    const restarted = going && !wasGoing.current;
+    wasGoing.current = going;
+    if (restarted && state === "ended") {
+      reconnect();
+    }
+  }, [going, state, reconnect]);
 
   return { events, state, reconnect };
 }

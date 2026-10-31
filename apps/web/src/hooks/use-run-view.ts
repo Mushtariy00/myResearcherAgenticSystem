@@ -128,7 +128,9 @@ export function useRunView(runId: string): RunView {
       return status !== 401 && status !== 403 && status !== 404;
     }
   }, [queryClient, runId]);
-  const stream = useRunEvents(runId, refreshDetail, canResume);
+  // A retry starts a finished run again, and its event stream (which ended with it) with it.
+  const going = query.data !== undefined && !isTerminalRunStatus(query.data.status);
+  const stream = useRunEvents(runId, refreshDetail, canResume, going);
   useStageRefresh(runId, stream.events);
   const loggedSpend = useRunSpend(runId, stream.events);
   const trainingEvents = useKeptEvents(runId, stream.events, isTrainingEvent);
