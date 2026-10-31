@@ -59,6 +59,11 @@ def database_url() -> Iterator[str]:
         config = Config(str(ALEMBIC_INI))
         config.set_main_option("sqlalchemy.url", rendered)
         command.upgrade(config, "head")
+        # Every test starts from empty tables, as `db` leaves them: the rows the migrations seed
+        # (the nyu2 dataset) would otherwise reach only whichever test runs first.
+        test_dsn = test_url.set(drivername="postgresql").render_as_string(hide_password=False)
+        with psycopg.connect(test_dsn, autocommit=True) as conn:
+            conn.execute(sql.SQL("TRUNCATE {} RESTART IDENTITY CASCADE").format(_tables()))
         yield rendered
     finally:
         if throwaway:  # FORCE: it is this session's own database, nobody else's
@@ -71,6 +76,10 @@ async def db_engine(database_url: str) -> AsyncIterator[AsyncEngine]:
     engine = create_engine(database_url, pool_size=4)
     yield engine
     await engine.dispose()
+
+
+def _tables() -> sql.Composed:
+    return sql.SQL(", ").join(sql.Identifier(table.name) for table in Base.metadata.sorted_tables)
 
 
 @pytest.fixture
