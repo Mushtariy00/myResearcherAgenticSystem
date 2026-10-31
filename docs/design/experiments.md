@@ -60,12 +60,33 @@ The coding agent writes only these files. Everything else is the harness's.
   `forward(prediction, target, valid_mask)` returning a scalar. The harness keeps computing the
   metrics itself, so a custom loss can't fake them.
 - **Allowed imports:** `torch`, `torch.nn`, `torch.nn.functional`, `math`, `typing`,
-  `dataclasses`, `functools`, `collections`, `__future__`.
+  `dataclasses`, `functools`, `collections`, `__future__`; and the harness's blocks by name.
+- **The harness's blocks** (`sandbox/pytorch/harness/blocks.py`, harness 0.2):
+  - tested building blocks the generated code composes, so it wires parts rather than
+    re-deriving their shapes:
+    - `group_norm` (picks groups that divide the channels);
+    - `ConvNormAct`, `InvertedResidual`, and an `Encoder` with known channels and strides per
+      stage;
+    - `FeatureAttention`, `CrossAttention` (to maps or learned tokens), `SqueezeExcite`;
+    - `UpBlock` and `GuidedUpsample` (any skip or guide size), and a metric `DepthHead`;
+    - the losses `masked_l1`, `silog_loss`, `gradient_loss`, `ssim_loss`.
+  - They answer the exit run's real bugs: GroupNorm groups that didn't divide the channels, and
+    attention shape mismatches.
+  - Imported by name only (`from harness.blocks import Encoder`). The module itself would make
+    its own imports (torch) reachable as attributes, past the denylist.
+  - The prompt describes each block and shows an example model built from them
+    (`examples/depth_blocks`).
+  - `make sandbox-test` (also in CI) unit-tests them on the CPU in the image.
 - **Refused:**
   - any other import;
   - `open`, `exec`, `eval`, `compile`, `__import__`, `globals`, `getattr` / `setattr` with
     dunder names;
   - attribute access to `__subclasses__`, `__globals__`, `__builtins__`;
+  - an attribute that starts with "_". The worker first renames the code's own one-underscore
+    names (`self._helper` → `self.helper_`, every use too; same length, so the layout stays), so
+    this only refuses reaching into other objects (`torch._C`). Only names the file defines are
+    renamed, so a defined `_C` makes `torch._C` the harmless `torch.C_`; it never lets
+    `torch._C` through.
   - files over 20 KB.
 - **Checked twice:**
   - statically by the worker (an AST allowlist, before anything runs);
@@ -73,7 +94,12 @@ The coding agent writes only these files. Everything else is the harness's.
     (`architecture: "generated"`) from a read-only `/job/code`.
   The sandbox (no network, read-only root, no secrets) is the last line, not the first.
 - **Smoke test:** a dry run. It checks the parameter count (at most 50 M), the output shape
-  on a real batch, a finite loss, and the step time.
+  on a real batch, a finite loss, and the step time. A first forward pass that raises, or gives
+  the wrong shape, is reported with a shape trace: the modules running when it failed,
+  outermost first, the inputs of the innermost, and the last modules that ran, with their
+  inputs and outputs (`harness/trace.py`).
+- **Repairs** see the try before (its code, choices, and findings or smoke report), and why
+  each earlier try failed, cut short: in the exit run a repair brought back an earlier error.
 
 ## GPU jobs
 
@@ -298,11 +324,11 @@ the next try. The activity timeouts are 2 h (coding) and 8 h (experiment).
     they never fire: one code answer took 379 s. Only the worker's 180 s limit does; the retry
     then waits for the call (`call.in_progress`) and replays it, so nothing is paid twice. But a
     model that never answers is never cut off, and the fallback to the next model never starts.
-  - One passing model took 15 tries of the free model. What would cut that most: a library of
-    tested blocks in the harness (normalisation that picks valid groups, encoder stages with known
-    channels, attention over feature maps, decoder and loss blocks) for the generated code to
-    compose; a shape trace of each module in a failed smoke test; repairs that see every earlier
-    failure; and a stronger model for the coding role.
+  - One passing model took 15 tries of the free model. Done since (see the contract above): the
+    harness's tested blocks, the shape trace of a failed smoke test, repairs that see every
+    earlier failure, and the code's own private names renamed rather than refused. Still to do:
+    a stronger model for the coding role (admin model routing per role), and a live run of the
+    LLM with the blocks.
   - Wording: a literature output with a source missing is labelled "Placeholder output"; a
     coding failure says every try failed its smoke test when some were refused by the checks.
 

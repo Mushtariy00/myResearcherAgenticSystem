@@ -85,7 +85,7 @@ class CodingRunner:
                 )
             log.info("run %s: coding try %d failed (%s)", ctx.run_id, number, tried.error_code)
             failures.append(tried)
-            retry = code.Retry(number + 1, written, tried)
+            retry = code.Retry(number + 1, written, tried, tuple(enumerate(failures[:-1], start=1)))
         raise StageFailedError(f"coding.smoke_failed: {failures[-1].error_code}")
 
     async def _try(

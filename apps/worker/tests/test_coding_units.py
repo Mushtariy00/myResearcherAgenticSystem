@@ -4,6 +4,7 @@ and the reports of failed tries."""
 import dataclasses
 import json
 import textwrap
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -21,7 +22,7 @@ from coding_testkit import (
 from llm_stages_testkit import block, context
 
 from agentic_core import demo
-from agentic_core.codecheck import ALLOWED_IMPORTS, MAX_SOURCE_BYTES, SAFE_BUILTINS
+from agentic_core.codecheck import ALLOWED_IMPORTS, BLOCKS, MAX_SOURCE_BYTES, SAFE_BUILTINS
 from agentic_core.enums import GpuJobStatus
 from agentic_core.schemas import MethodOutput
 from agentic_db.models import Dataset, GpuJob
@@ -31,6 +32,7 @@ from agentic_worker.coding.config import TrainingChoices
 from agentic_worker.llm_json import InvalidModelOutputError
 from agentic_worker.stages import StageContext
 
+REPO = Path(__file__).resolve().parents[3]
 NYU2 = Dataset(
     name="nyu2",
     version="2026.05",
@@ -297,7 +299,14 @@ def test_the_first_prompt_states_the_contract_and_shows_its_inputs_as_data() -> 
     assert block(prompt, "DATA CONTRACT").strip() == "\n".join(
         f"{key}: {value}" for key, value in NYU2_CONTRACT.items()
     )
-    assert f"Allowed imports, and no others: {', '.join(sorted(ALLOWED_IMPORTS))}." in prompt
+    assert (
+        f"Allowed imports, and no others: {', '.join(sorted(ALLOWED_IMPORTS))}; and the harness's "
+        "blocks below, by name: `from harness.blocks import Encoder, UpBlock`"
+    ) in prompt
+    # The blocks' reference names every block, and the example wires some of them.
+    assert all(name in code.BLOCKS_REFERENCE for name in BLOCKS)
+    assert code.BLOCKS_REFERENCE in prompt
+    assert block(prompt, "EXAMPLE MODEL.PY").strip() == code.EXAMPLE_MODEL.strip()
     assert f"every builtin outside these: {', '.join(sorted(SAFE_BUILTINS))};" in prompt
     for refused in ("open, exec, eval, compile, __import__, globals, vars", "getattr, setattr"):
         assert refused in prompt
@@ -354,6 +363,90 @@ def test_a_repair_shows_the_try_before_and_why_it_failed() -> None:
         "status: failed\nerror_code: code.import_failed\nerror: Model(**kwargs) raised "
         "TypeError: bad\nend of the log:\nTraceback (most recent call last):\nTypeError: bad"
     )
+    assert "EARLIER TRIES" not in third.prompt  # the Retry above names no earlier try
+
+
+def test_a_repair_also_sees_why_the_tries_before_the_last_one_failed() -> None:
+    # In the exit run a repair fixed one error and brought back an earlier one.
+    ctx, method = coding_context()
+    first = code.refused(check_code(written(REFUSED_MODEL_PY, **KWARGS)))
+    error = "RuntimeError: " + "x" * 2000
+    second = code.smoke_failed(
+        GpuJob(status=GpuJobStatus.FAILED, error_code="train.error", error=error)
+    )
+    retry = code.Retry(3, written(**KWARGS), second, earlier=((1, first),))
+    prompt = code.prompt(ctx, method, NYU2, retry)
+    earlier = block(prompt, "EARLIER TRIES").strip()
+    assert earlier == f"Try 1 (code.refused):\n{first.report}"
+    assert "don't bring any of them back" in prompt
+    smoke = block(prompt, "TRY 2 SMOKE TEST").strip()
+    assert smoke.startswith("status: failed\nerror_code: train.error\nerror: RuntimeError: xx")
+
+
+# --- the code's own private names ----------------------------------------------------------------
+
+PRIVATE_MODEL = """import torch
+from torch import nn
+
+
+def _scale(x: torch.Tensor, _factor: float = 2.0) -> torch.Tensor:
+    return x * _factor
+
+
+class Model(nn.Module):
+    def __init__(self, _width: int = 8, max_depth: float = 10.0) -> None:
+        super().__init__()
+        self._conv = nn.Conv2d(3, _width, 3, padding=1)  # "_conv" in a comment stays
+        self.head = nn.Conv2d(_width, 1, 1)
+        self.max_depth = max_depth
+
+    def _features(self, x: torch.Tensor) -> torch.Tensor:
+        return _scale(self._conv(x), _factor=0.5)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        note = "self._conv"
+        return self.max_depth * torch.sigmoid(self.head(self._features(x))) + 0 * len(note)
+"""
+
+
+def test_the_codes_own_private_names_are_renamed_for_the_checker() -> None:
+    # The free model's self._helper methods cost the exit run tries the checks refused.
+    raw = coding_answer(
+        "", model_py=PRIVATE_MODEL, loss_py=None, loss="l1", model_kwargs={"_width": 4}
+    )
+    answer = parse_answer(raw)
+    renamed = (
+        PRIVATE_MODEL.replace("_scale(", "scale_(")
+        .replace("_factor", "factor_")
+        .replace("_width", "width_")
+        .replace("self._conv", "self.conv_")
+        .replace("_features", "features_")
+    )
+    # A comment and a string keep their text; a name keeps its length, so the layout stays.
+    renamed = renamed.replace('# "conv_" in', '# "_conv" in').replace(
+        '"self.conv_"', '"self._conv"'
+    )
+    assert answer.code["model.py"] == renamed
+    assert answer.model_kwargs == {"width_": 4}  # model_kwargs follow model.py's names
+    assert check_code(answer) == []
+
+
+def test_a_name_that_reaches_into_another_object_stays_for_the_checker() -> None:
+    reaching = MODEL_PY.replace("torch.sigmoid(", "torch._C.sigmoid(")
+    answer = parse_answer(coding_answer("", model_py=reaching))
+    assert "torch._C.sigmoid(" in answer.code["model.py"]
+    assert [f.code for f in check_code(answer)] == ["check.underscore"]
+    # A file that defines the same name only renames every use of it: torch.C_ reaches nothing.
+    defining = reaching.replace("self.max_depth = max_depth", "self._C = max_depth")
+    renamed = parse_answer(coding_answer("", model_py=defining)).code["model.py"]
+    assert "torch.C_.sigmoid(" in renamed and "_C" not in renamed
+
+
+def test_the_prompts_example_is_the_harness_example_and_passes_the_checks() -> None:
+    example = (REPO / "sandbox" / "pytorch" / "examples" / "depth_blocks" / "model.py").read_text()
+    assert example[example.index("from __future__") :] == code.EXAMPLE_MODEL
+    raw = coding_answer("", model_py=code.EXAMPLE_MODEL, loss_py=None, loss="l1")
+    assert check_code(parse_answer(raw)) == []
 
 
 def test_a_revision_shows_what_it_can_read_of_the_previous_output() -> None:
@@ -379,7 +472,7 @@ def test_a_smoke_job_without_an_error_code_still_reports_one() -> None:
     assert code.smoke_failed(timeout).error_code == "job.timeout"
     assert code.smoke_failed(GpuJob(status=GpuJobStatus.FAILED)).error_code == "train.error"
     long = code.smoke_failed(GpuJob(status=GpuJobStatus.FAILED, error="word " * 1000))
-    assert len(long.report) < 2100 and long.report.endswith(" [...]")
+    assert len(long.report) < 3600 and long.report.endswith(" [...]")
 
 
 def test_a_log_tail_keeps_the_end_of_the_log_from_a_line_start() -> None:

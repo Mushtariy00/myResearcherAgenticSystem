@@ -9,14 +9,20 @@ line, files written without their fences but each after its comment) and strictl
 matters: exactly one model.py, a loss.py only with "loss": "generated", files within the
 checker's size, scalar kwargs.
 An unusable answer raises InvalidModelOutputError, so StageAgents asks once for a corrected one.
+
+The code's own names that start with one underscore (self._helper) are renamed (self.helper_):
+the checker refuses such attributes, which reach other objects' private parts, and models write
+their own all the time.
 """
 
 import ast
+import io
 import json
 import keyword
 import math
 import re
 import textwrap
+import tokenize
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -55,6 +61,8 @@ _FENCE_FILE = re.compile(r"([\w.-]+\.py)\b", re.IGNORECASE)  # "```python model.
 _HEADING_FILE = re.compile(r"\b(model|loss)\.py\b", re.IGNORECASE)  # "### model.py"
 _PYTHON = frozenset({"", "python", "py", "python3", "py3"})
 _JSON = frozenset({"json", "json5", "jsonc"})
+# A name that starts with one underscore (_scale, _helper); two make a dunder, which stays refused.
+_PRIVATE = re.compile(r"_[A-Za-z0-9]\w*")
 
 
 @dataclass(frozen=True)
@@ -162,10 +170,11 @@ def parse_answer(raw: str) -> Written:
         )
     code = {name: _source(name, named[name]) for name in (MODEL_FILE, LOSS_FILE) if name in named}
     answer = _choices(choices, prose)
+    code, kwargs = _own_names_public(code, _model_kwargs(answer.model_kwargs))
     return Written(
         code=code,
         summary=answer.summary,
-        model_kwargs=_model_kwargs(answer.model_kwargs),
+        model_kwargs=kwargs,
         loss=_loss(answer.loss, LOSS_FILE in code),
         training=_training(answer.training),
     )
@@ -267,6 +276,92 @@ def _source(name: str, texts: Sequence[str]) -> str:
             "bytes: make it shorter"
         )
     return source
+
+
+def _own_names_public(
+    code: Mapping[str, str], kwargs: Mapping[str, ModelKwarg]
+) -> tuple[dict[str, str], dict[str, ModelKwarg]]:
+    """The files with the one-underscore names each defines renamed, every use of them too
+    (self._helper -> self.helper_), and model_kwargs' keys after model.py's. Only names a file
+    defines (a def, a class, an argument, an assignment, self._x = ...) are renamed: one that
+    reaches into another object (torch._C) stays, for the checker to refuse."""
+    renamed: dict[str, str] = {}
+    model_renames: dict[str, str] = {}
+    for name, source in code.items():
+        renames = _private_renames(source)
+        renamed[name] = _rename(source, renames)
+        if name == MODEL_FILE:
+            model_renames = renames
+    return renamed, {model_renames.get(key, key): value for key, value in kwargs.items()}
+
+
+def _private_renames(source: str) -> dict[str, str]:
+    """Each one-underscore name ``source`` defines, and the name it gets: of the same length, so
+    the code keeps its layout (_helper -> helper_, else helper0 ...), and unused in the file. A
+    name with no such free name keeps its own, and the checker says why."""
+    try:
+        tree = ast.parse(source)
+        taken = {
+            token.string
+            for token in tokenize.generate_tokens(io.StringIO(source).readline)
+            if token.type == tokenize.NAME
+        }
+    except (SyntaxError, tokenize.TokenError):
+        return {}  # the checker reports it
+    defined: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+            defined.add(node.name)
+        elif isinstance(node, ast.arg):
+            defined.add(node.arg)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            defined.add(node.id)
+        elif isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Store):
+            defined.add(node.attr)
+        elif isinstance(node, ast.alias) and node.asname:
+            defined.add(node.asname)
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            defined.add(node.name)
+    renames: dict[str, str] = {}
+    for name in sorted(defined):
+        if not _PRIVATE.fullmatch(name):
+            continue
+        stem = name[1:]
+        candidates = [stem + "_", *(stem + digit for digit in "0123456789")]
+        candidates += [letter + stem for letter in "pqvxz"]  # a stem that starts with a digit
+        free = next(
+            (
+                candidate
+                for candidate in candidates
+                if candidate.isidentifier()
+                and not keyword.iskeyword(candidate)
+                and candidate not in taken
+            ),
+            None,
+        )
+        if free is not None:
+            renames[name] = free
+            taken.add(free)
+    return renames
+
+
+def _rename(source: str, renames: Mapping[str, str]) -> str:
+    """``source`` with each name in ``renames`` replaced, token by token: strings and comments
+    keep their text."""
+    if not renames:
+        return source
+    tokens = tokenize.generate_tokens(io.StringIO(source).readline)
+    renamed = tokenize.untokenize(
+        token._replace(string=renames.get(token.string, token.string))
+        if token.type == tokenize.NAME
+        else token
+        for token in tokens
+    )
+    try:
+        ast.parse(renamed)
+    except SyntaxError:  # untokenize lost the layout: leave the names for the checker
+        return source
+    return renamed
 
 
 def _choices(blocks: Sequence[str], prose: str) -> _Choices:
