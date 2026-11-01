@@ -204,7 +204,8 @@ the next try. The activity timeouts are 2 h (coding) and 8 h (experiment).
   - a failure goes back to the LLM with the findings, or the job's error and log tail, as data;
     at most 3 tries, then the stage fails with `coding.smoke_failed`. A failure of the GPU host
     (`job.bad_input`, `job.start_failed`, `job.lost`) fails it at once: another try of the code
-    would fail the same way;
+    would fail the same way. So does a refusal on the GPU host of code the worker's checks passed
+    (`coding.checker_mismatch`): the executor or the image runs another version of the checker;
   - the output is CodingOutput: the files, entrypoint `model.py:Model`, the smoke test, and
     `config.json` with the choices and what the smoke test measured (parameters, peak GPU
     memory, steps per second), which the experiment stage trains with.
@@ -318,19 +319,49 @@ the next try. The activity timeouts are 2 h (coding) and 8 h (experiment).
     failed with "failed to map segment from shared object". The image sets
     TORCH_DISABLE_NATIVE_JIT=1.
   - The run page's live events stayed ended after a retry until the page was reloaded.
+- **Live, the blocks (2026-11-01): NYU2 from the UI again, free models only** (the same model):
+  - Literature: 136 papers found. Semantic Scholar was rate-limited, and OpenAlex after some of
+    the 6 queries; what OpenAlex had answered was kept, and every paper kept came from it. 15
+    screened, 5 kept, 3 read in full; 8 LLM calls. Method: 3 proposals; the recommended one
+    trains a SPEED-like pyramidal-pooling encoder-decoder on the full training set, with a
+    depth, gradient and SSIM loss and fake-quantized training.
+  - Coding, attempt 1, three tries (the answers took 454, 75 and 298 s). Every answer parsed at
+    once, was built on the blocks (`Encoder`, `FeatureAttention`, `UpBlock`, `GuidedUpsample`,
+    `DepthHead`; `masked_l1`, `gradient_loss`, `ssim_loss`), passed the worker's checks with no
+    finding, and had no private name to rename.
+    - Tries 1 and 2 were refused on the GPU host. The executor had run since before the checker
+      learned `harness.blocks`: it had not been restarted. Such a refusal now ends the stage at
+      once (`coding.checker_mismatch`).
+    - Try 3 ran. Its forward pass and first training step passed; then the model's own
+      fake-quantization raised at step 2 (an integer buffer updated in place with a float). The
+      log's traceback named the line, and the attempt had no try left.
+  - Coding, attempt 2 (retried from the run page): one answer (191 s), and its smoke test passed
+    (56 s). model.py is 39 lines of blocks (a 5-stage `Encoder`, `FeatureAttention` at stride
+    32, four `UpBlock`s, `GuidedUpsample` with the image, `DepthHead`); the loss is silog +
+    gradient + SSIM. That is 4 tries in all, 2 of them lost to the stale executor, against the
+    exit run's 15; and 13 LLM calls for the whole run, against 46 with its writing.
+  - The experiment trained 3 epochs of 1,000 steps at batch size 4, in 35.3 GPU-minutes (the
+    workspace's tests ran beside the first epoch). Validation RMSE went 1.317 → 1.166 → 1.094 m,
+    AbsRel 0.510 → 0.385 → 0.317: a little better than the exit run's model (1.116 m, 0.354)
+    with 477,105 parameters. The output has the log, the metrics as CSV, the checkpoint (1.9 MB)
+    and its provenance: the image digest, code and config sha256, nyu2 2026.10, seed 42, the GPU.
+    The coding summary, the model's own words, said about 1.8 M parameters; the smoke test's
+    count in config.json is the one to trust.
+  - Also fixed: the run page said a source that failed after answering "could not be searched";
+    a `call.in_progress` wait said it waited for "an earlier try"; and the stages a run leaves
+    out showed as waiting until the run ended.
 - **Still open:**
   - The gateway's per-attempt timeout (120 s) and deadline (150 s) are httpx read timeouts.
     OpenRouter keeps a non-streaming request alive with whitespace while the model writes, so
-    they never fire: one code answer took 379 s. Only the worker's 180 s limit does; the retry
+    they never fire: code answers took up to 454 s. Only the worker's 180 s limit does; the retry
     then waits for the call (`call.in_progress`) and replays it, so nothing is paid twice. But a
     model that never answers is never cut off, and the fallback to the next model never starts.
-  - One passing model took 15 tries of the free model. Done since (see the contract above): the
-    harness's tested blocks, the shape trace of a failed smoke test, repairs that see every
-    earlier failure, and the code's own private names renamed rather than refused. Still to do:
-    a stronger model for the coding role (admin model routing per role), and a live run of the
-    LLM with the blocks.
+  - A stronger model for the coding role (admin model routing per role). With the blocks, the
+    free model's code passes the checks and its shapes fit (above); what fails is the code it
+    writes beside them.
   - Wording: a literature output with a source missing is labelled "Placeholder output"; a
-    coding failure says every try failed its smoke test when some were refused by the checks.
+    coding failure says every try failed its smoke test when some were refused by the checks;
+    the review panel counts attempts from the last retry ("Attempt 1 of 3" on coding attempt 2).
 
 ## Order of work
 
