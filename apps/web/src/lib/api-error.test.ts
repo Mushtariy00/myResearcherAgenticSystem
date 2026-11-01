@@ -74,6 +74,7 @@ describe("runErrorKey", () => {
       "coding.no_dataset",
       "coding.smoke_failed",
       "coding.job_cancelled",
+      "coding.checker_mismatch",
       "experiment.no_dataset",
       "experiment.demo_code",
       "experiment.invalid_code_config",

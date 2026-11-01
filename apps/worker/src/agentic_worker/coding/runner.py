@@ -19,7 +19,13 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from agentic_core.enums import GpuJobKind, GpuJobStatus
-from agentic_core.gpu_jobs import HOST_FAILURES, LOSS_FILE, MODEL_FILE, SMOKE_TIMEOUT_SECONDS
+from agentic_core.gpu_jobs import (
+    CODE_REFUSED,
+    HOST_FAILURES,
+    LOSS_FILE,
+    MODEL_FILE,
+    SMOKE_TIMEOUT_SECONDS,
+)
 from agentic_core.schemas import CodeFile, CodeRole, CodingOutput, MethodOutput, SmokeTest
 from agentic_core.stages import Stage
 from agentic_db.models import GpuJob
@@ -130,6 +136,17 @@ class CodingRunner:
             # The GPU host failed the job (a missing image or dataset folder, a lost container),
             # not the code: another try would fail the same way.
             raise StageFailedError(f"coding.smoke_failed: {failure.error_code}: {job.error or ''}")
+        if failure.error_code == CODE_REFUSED and job.code == written.code:
+            # The checks above passed this code, and the GPU host runs the same checker (the
+            # executor before the container starts, the harness inside it): its refusal means
+            # another version of it there, an executor not restarted or a sandbox image not
+            # rebuilt since the checker changed. Another try would be refused the same way, with
+            # findings that contradict the prompt.
+            raise StageFailedError(
+                "coding.checker_mismatch: the GPU host refused code that passes the worker's "
+                "checks, so it runs another version of the checker (restart the executor, or "
+                f"rebuild the sandbox image): {job.error or ''}"
+            )
         return failure
 
 

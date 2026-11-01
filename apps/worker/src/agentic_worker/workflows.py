@@ -142,6 +142,7 @@ _FAILURE_CODES = frozenset(
         "coding.no_dataset",  # the run's dataset is not registered, or the harness can't use it
         "coding.smoke_failed",  # 3 tries, and none passed its smoke test
         "coding.job_cancelled",  # a smoke job was cancelled outside the run
+        "coding.checker_mismatch",  # the GPU host refused code the worker's checks pass
         "experiment.no_dataset",
         "experiment.demo_code",  # the approved code is a demo output, never run
         "experiment.invalid_code_config",  # config.json, edited on approval, can't be trained

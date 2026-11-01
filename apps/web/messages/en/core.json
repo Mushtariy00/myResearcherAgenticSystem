@@ -227,7 +227,8 @@
     "coding": {
       "no_dataset": "The run's dataset is not registered, or the training harness cannot use it, so no code was written. Start a run with a dataset from the list.",
       "smoke_failed": "The generated code failed its smoke test on the GPU in every try (at most 3). The event log says why each try failed.",
-      "job_cancelled": "A smoke test was cancelled outside this run, so the coding stage stopped. Retry the run to test the code again."
+      "job_cancelled": "A smoke test was cancelled outside this run, so the coding stage stopped. Retry the run to test the code again.",
+      "checker_mismatch": "The GPU host refused code that passes the worker's own checks, so its code checker is another version (an executor not restarted, or a sandbox image not rebuilt, since the checker changed). No more tries were spent on it. Once an admin has restarted the executor or rebuilt the image, retry the run from the coding stage."
     },
     "experiment": {
       "no_dataset": "The run's dataset is not registered or is turned off, so the training could not start.",

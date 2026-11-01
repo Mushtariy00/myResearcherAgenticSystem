@@ -267,6 +267,26 @@ async def test_a_smoke_job_cancelled_outside_the_run_fails_the_stage(db: Factory
     assert len(mw.gateway.calls) == 1  # no repair: the code did not fail
 
 
+async def test_a_refusal_on_the_gpu_host_of_code_the_checks_pass_ends_the_stage(
+    db: Factory,
+) -> None:
+    # An executor started before the checker learned harness.blocks refuses what the prompt asks.
+    mw = coding_harness(db)
+    lines: Lines = []
+    ctx = await mw.attempt(lines=lines)
+    refused = (
+        "model.py refused by the allowlist: check.import line 7: Import from 'harness.blocks' is "
+        "not allowed"
+    )
+    async with executing(db, {1: failed("code.refused", refused)}):
+        with pytest.raises(StageFailedError, match=r"^coding\.checker_mismatch: ") as failure:
+            await mw.runner.run(ctx)
+    message = str(failure.value)
+    assert message.endswith(f"(restart the executor, or rebuild the sandbox image): {refused}")
+    assert len(mw.gateway.calls) == 1  # no repair: the refusal would contradict the prompt
+    assert ("coding.smoke_failed", {"try": 1, "error_code": "code.refused"}) in lines
+
+
 async def test_without_a_dataset_the_harness_trains_on_the_stage_fails_before_any_call(
     db: Factory,
 ) -> None:
