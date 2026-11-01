@@ -71,6 +71,12 @@ export function StageTabs({
   const tDemo = useTranslations("shared.demo");
   const labels = useLabels();
   const summaryText = useSummaryText();
+  const noOutputText = (entry: StageOverview) => {
+    if (entry.excluded) {
+      return t("notInRun");
+    }
+    return entry.attempts > 0 ? t("noOutputYet") : t("notReached");
+  };
   return (
     <Tabs.Root
       value={selected ?? null}
@@ -105,7 +111,7 @@ export function StageTabs({
               </span>
               <StageStatusBadge status={entry.status} />
               <span className="line-clamp-2 text-xs text-muted-foreground">
-                {summary ?? (entry.attempts > 0 ? t("noOutputYet") : t("notReached"))}
+                {summary ?? noOutputText(entry)}
               </span>
             </Tabs.Tab>
           );

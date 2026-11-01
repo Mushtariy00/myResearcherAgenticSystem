@@ -16,7 +16,7 @@
           "unavailable": "지금은 사용할 수 있는 무료 모델이 없습니다."
         },
         "call": {
-          "in_progress": "이전 시도의 모델 호출이 아직 끝나지 않았습니다."
+          "in_progress": "이 단계가 이미 보낸 모델 호출에 아직 답하는 중입니다. 답이 오면 그 답을 씁니다."
         },
         "lab_balance": {
           "exhausted": "랩의 OpenRouter 잔액이 소진되었습니다. 잔액이 충전되면 실행이 이어집니다."
@@ -58,7 +58,8 @@
       "writing": "{words, plural, other {#단어}} · {citations, plural, other {인용 #개}}",
       "raw": "JSON으로 표시",
       "noOutputYet": "아직 결과 없음",
-      "notReached": "아직 시작 전"
+      "notReached": "아직 시작 전",
+      "notInRun": "이 실행에 포함되지 않음"
     },
     "stage": {
       "loading": "단계를 불러오는 중…",
@@ -430,6 +431,7 @@
         "searched": "{sources}에서 검색어 {queries}개로 검색해 논문 {found}편을 찾았습니다",
         "searchedIncomplete": "{sources}에서 검색어 {queries}개로 검색해 논문 {found}편을 찾았고, 그중 {incomplete}편은 저자·연도·초록이 없어 제외했습니다",
         "sourceFailed": "{source}에서 검색하지 못해({reason}) 이 출처 없이 계속합니다",
+        "sourceStopped": "{source}에서 검색어 {queries}개 중 {answered}개를 검색한 뒤 더 검색하지 못했습니다({reason}). 그때까지 찾은 논문은 그대로 씁니다",
         "sourceErrors": {
           "rate_limited": "요청이 제한됨",
           "quota_exhausted": "일일 한도 소진",

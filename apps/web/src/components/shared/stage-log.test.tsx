@@ -63,6 +63,25 @@ describe("useStageLogLine", () => {
     ).toBe(
       "Semantic Scholar could not be searched (it is limiting requests); continuing without it",
     );
+    expect(
+      lineOf("literature.source_failed", {
+        source: "openalex",
+        error: "source.rate_limited",
+        answered: 2,
+        queries: 6,
+      }),
+    ).toBe(
+      "OpenAlex stopped answering after 2 of 6 queries (it is limiting requests); the papers it " +
+        "found before that are kept",
+    );
+    expect(
+      lineOf("literature.source_failed", {
+        source: "arxiv",
+        error: "source.network",
+        answered: 0,
+        queries: 6,
+      }),
+    ).toBe("arXiv could not be searched (it could not be reached); continuing without it");
     expect(lineOf("literature.screened", { candidates: 15, included: 4 })).toBe(
       "Screened 15 candidates and included 4 papers for full reading",
     );
@@ -104,6 +123,16 @@ describe("useStageLogLine", () => {
         "ko",
       ),
     ).toBe("OpenAlex에서 검색하지 못해(일일 한도 소진) 이 출처 없이 계속합니다");
+    expect(
+      lineOf(
+        "literature.source_failed",
+        { source: "openalex", error: "source.rate_limited", answered: 2, queries: 6 },
+        "ko",
+      ),
+    ).toBe(
+      "OpenAlex에서 검색어 6개 중 2개를 검색한 뒤 더 검색하지 못했습니다(요청이 제한됨). 그때까지 " +
+        "찾은 논문은 그대로 씁니다",
+    );
     expect(lineOf("method.proposed", { proposals: 3, gaps: 2 }, "ko")).toBe(
       "연구 공백 2개에 대해 방법 3개를 제안했습니다",
     );

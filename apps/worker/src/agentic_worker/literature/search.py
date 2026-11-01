@@ -30,6 +30,7 @@ class SearchResult:
     scores: list[float]  # agentic_scholarly.rank's score of each paper
     sources: list[str]  # the sources asked
     failed: dict[str, str]  # source -> error code (SourceError.code)
+    answered: dict[str, int]  # source -> the queries it answered (all, unless it failed)
     found: int  # papers after merging
     incomplete: int  # of those, left out: no authors, abstract or usable year
 
@@ -56,8 +57,11 @@ async def search(
     ]
     # Sources run side by side; each one's queries in turn, under its rate limit.
     results = await asyncio.gather(*(_ask(clients[source], queries) for source in sources))
-    failed = {source: error for source, (_, error) in zip(sources, results, strict=True) if error}
-    merged = merge(paper for papers, _ in results for paper in papers)
+    failed = {
+        source: error for source, (_, error, _) in zip(sources, results, strict=True) if error
+    }
+    answered = {source: count for source, (_, _, count) in zip(sources, results, strict=True)}
+    merged = merge(paper for papers, _, _ in results for paper in papers)
     now_year = datetime.now(UTC).year
     ranked = rank(merged, queries, config.year_from, config.year_to, now_year=now_year)
     kept = [paper for paper in ranked if complete(paper)]
@@ -70,6 +74,7 @@ async def search(
         ],
         sources=sources,
         failed=failed,
+        answered=answered,
         found=len(merged),
         incomplete=len(merged) - len(kept),
     )
@@ -77,12 +82,14 @@ async def search(
 
 async def _ask(
     client: SearchClient, queries: Sequence[SearchQuery]
-) -> tuple[list[PaperMeta], str | None]:
+) -> tuple[list[PaperMeta], str | None, int]:
+    """What the source found, the error it failed with (None if it did not), and the queries it
+    answered before that."""
     found: list[PaperMeta] = []
-    for query in queries:
+    for answered, query in enumerate(queries):
         try:
             found += await client.search(query)
         except SourceError as exc:
             log.warning("source %s failed on %r: %s", client.name, query.text, exc)
-            return found, exc.code
-    return found, None
+            return found, exc.code, answered
+    return found, None, len(queries)

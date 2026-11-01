@@ -190,7 +190,12 @@ export function useStageLogLine(): (code: string, p: Params) => string | null {
           }
           const error = p.error.slice("source.".length) as SourceError;
           const reason = t(`literature.sourceErrors.${error}`);
-          return t("literature.sourceFailed", { source: source(p.source), reason });
+          // Lines written before the counts were added say nothing of the queries answered.
+          const answered = count(p.answered) ?? 0;
+          const queries = count(p.queries);
+          return answered > 0 && queries !== null
+            ? t("literature.sourceStopped", { source: source(p.source), reason, answered, queries })
+            : t("literature.sourceFailed", { source: source(p.source), reason });
         }
         case "literature.screened": {
           const candidates = count(p.candidates);

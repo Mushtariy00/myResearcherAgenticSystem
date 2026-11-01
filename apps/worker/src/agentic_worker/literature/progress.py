@@ -55,14 +55,21 @@ class Progress:
         params = {"queries": queries, "sources": list(sources), "found": found}
         await self.say(SEARCHED, params | {"incomplete": incomplete}, message)
 
-    async def source_failed(self, source: str, error: str) -> None:
+    async def source_failed(self, source: str, error: str, answered: int, queries: int) -> None:
         # Not deduplicated: a source fails at most once per search, and a search runs again only
         # when the attempt stopped before storing its results.
         label = SOURCE_LABELS.get(source, source)
+        if answered:  # the papers it found for those count
+            message = (
+                f"{label} stopped answering after {answered} of {queries} queries ({error}); the "
+                "papers it found before that are kept"
+            )
+        else:
+            message = f"{label} could not be searched ({error}); continuing without it"
         await self.ctx.log(
             SOURCE_FAILED,
-            {"source": source, "error": error},
-            f"{label} could not be searched ({error}); continuing without it",
+            {"source": source, "error": error, "answered": answered, "queries": queries},
+            message,
         )
 
     async def screened(self, candidates: int, included: int) -> None:

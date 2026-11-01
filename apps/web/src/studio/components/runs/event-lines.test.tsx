@@ -187,11 +187,11 @@ describe("useEventDescriber", () => {
       kind: "waiting",
       tone: "warning",
       stage: "literature",
-      text: "Literature is waiting: A model call from an earlier try is still in progress.",
+      text: "Literature is waiting: The model is still answering a call this stage already sent; its answer is used once it arrives.",
     });
     expect(line.detail).toMatch(/^It tries again by itself at Oct 30, 2:30\sPM\.$/);
     expect(describer("ko")(waiting)).toMatchObject({
-      text: "문헌 조사 단계 대기 중: 이전 시도의 모델 호출이 아직 끝나지 않았습니다.",
+      text: "문헌 조사 단계 대기 중: 이 단계가 이미 보낸 모델 호출에 아직 답하는 중입니다. 답이 오면 그 답을 씁니다.",
       detail: "10월 30일 오후 2:30에 자동으로 다시 시도합니다.",
     });
     expect(

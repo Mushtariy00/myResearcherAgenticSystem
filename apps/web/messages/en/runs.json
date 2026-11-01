@@ -16,7 +16,7 @@
           "unavailable": "No free model is available right now."
         },
         "call": {
-          "in_progress": "A model call from an earlier try is still in progress."
+          "in_progress": "The model is still answering a call this stage already sent; its answer is used once it arrives."
         },
         "lab_balance": {
           "exhausted": "The lab's OpenRouter balance is used up. The run continues after a top-up."
@@ -58,7 +58,8 @@
       "writing": "{words, plural, one {# word} other {# words}} · {citations, plural, one {# citation} other {# citations}}",
       "raw": "Shown as JSON",
       "noOutputYet": "No output yet",
-      "notReached": "Not reached yet"
+      "notReached": "Not reached yet",
+      "notInRun": "Not part of this run"
     },
     "stage": {
       "loading": "Loading the stage…",
@@ -430,6 +431,7 @@
         "searched": "Searched {sources} with {queries, plural, one {# query} other {# queries}}: {found, plural, one {# paper} other {# papers}} found",
         "searchedIncomplete": "Searched {sources} with {queries, plural, one {# query} other {# queries}}: {found, plural, one {# paper} other {# papers}} found, {incomplete} of them left out for lack of authors, a year or an abstract",
         "sourceFailed": "{source} could not be searched ({reason}); continuing without it",
+        "sourceStopped": "{source} stopped answering after {answered} of {queries} queries ({reason}); the papers it found before that are kept",
         "sourceErrors": {
           "rate_limited": "it is limiting requests",
           "quota_exhausted": "its daily quota is used up",

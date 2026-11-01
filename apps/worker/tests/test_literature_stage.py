@@ -270,11 +270,49 @@ async def test_a_failing_source_flags_a_partial_search(db: Factory, data_dir: Pa
     stored = await stored_output(db, stage_run_id)
     assert (stored.degraded, stored.degraded_reason) == (True, "literature.partial_search")
     lines = await progress(db, run_id)
+    (searched,) = [params for code, params in lines if code == "literature.searched"]
     assert [params for code, params in lines if code == "literature.source_failed"] == [
-        {"source": "semantic_scholar", "error": "source.rate_limited"}
+        {
+            "source": "semantic_scholar",
+            "error": "source.rate_limited",
+            "answered": 0,
+            "queries": searched["queries"],
+        }
     ]
     # The other sources carried the stage.
     assert len(LiteratureOutput.model_validate(stored.data).papers) == 5
+
+
+async def test_a_source_that_stops_answering_keeps_what_it_found(
+    db: Factory, data_dir: Path
+) -> None:
+    lit = harness(db, data_dir, apis=FakeApis(openalex_answers=1))
+    run_id, stage_run_id = await run_stage(lit)
+    stored = await stored_output(db, stage_run_id)
+    assert (stored.degraded, stored.degraded_reason) == (True, "literature.partial_search")
+    lines = await progress(db, run_id)
+    (searched,) = [params for code, params in lines if code == "literature.searched"]
+    assert searched["queries"] > 1
+    assert [params for code, params in lines if code == "literature.source_failed"] == [
+        {
+            "source": "openalex",
+            "error": "source.rate_limited",
+            "answered": 1,
+            "queries": searched["queries"],
+        }
+    ]
+    # Its answer to the first query counts: the papers only OpenAlex knows are there.
+    refs = LiteratureOutput.model_validate(stored.data).papers
+    assert {KEYS[ADABINS], KEYS[DPT]} <= {ref.paper_id for ref in refs}
+    (message,) = [
+        event["message"]
+        for event in await run_events(db, run_id, "log")
+        if event["code"] == "literature.source_failed"
+    ]
+    assert message == (
+        f"OpenAlex stopped answering after 1 of {searched['queries']} queries "
+        "(source.rate_limited); the papers it found before that are kept"
+    )
 
 
 async def test_without_any_full_text_the_output_says_so(db: Factory, data_dir: Path) -> None:

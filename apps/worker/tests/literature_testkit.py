@@ -221,15 +221,20 @@ def arxiv_feed(papers: Iterable[FakePaper]) -> str:
 @dataclass
 class FakeApis:
     """api.openalex.org, export.arxiv.org and api.semanticscholar.org, answering every query
-    with the papers they know; Semantic Scholar is rate limited unless told otherwise."""
+    with the papers they know; Semantic Scholar is rate limited unless told otherwise, and
+    OpenAlex after ``openalex_answers`` requests if that is set."""
 
     papers: Sequence[FakePaper] = PAPERS
     s2_status: int = 429
+    openalex_answers: int | None = None
     requests: list[str] = field(default_factory=list)  # hosts, in order
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         host = request.url.host
         self.requests.append(host)
+        limit = self.openalex_answers
+        if host == "api.openalex.org" and limit is not None and self.requests.count(host) > limit:
+            return httpx.Response(429, headers={"Retry-After": "120"})
         if host == "api.openalex.org":
             works = [openalex_work(p) for p in self.papers if p.openalex_id]
             return httpx.Response(200, json={"results": works})

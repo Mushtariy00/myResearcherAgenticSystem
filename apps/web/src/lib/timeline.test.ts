@@ -92,6 +92,19 @@ describe("buildTimeline", () => {
     const entries = buildTimeline(["literature"], [stageRun("review", "running")], "running");
     expect(entries.map((e) => e.stage)).toEqual(["literature", "review"]);
   });
+
+  it("skips the stages a run was started without while it runs, not only once it ends", () => {
+    const stages = ["literature", "method", "coding", "experiment"];
+    const entries = buildTimeline(
+      STAGE_ORDER,
+      [stageRun("literature", "approved"), stageRun("method", "running")],
+      "running",
+      stages,
+    );
+    expect(statuses(entries)).toEqual(["approved", "running", "pending", "pending", "skipped"]);
+    expect(entries.map((e) => e.excluded ?? false)).toEqual([false, false, false, false, true]);
+    expect(entries.find((e) => e.current)?.stage).toBe("method");
+  });
 });
 
 describe("isTerminalRunStatus", () => {

@@ -145,7 +145,10 @@ export function useRunView(runId: string): RunView {
   );
   const run = query.data;
   const timeline = useMemo(
-    () => (run ? stageOverviews(buildTimeline(stageOrder, run.stages, run.status)) : []),
+    () =>
+      run
+        ? stageOverviews(buildTimeline(stageOrder, run.stages, run.status, run.config.stages))
+        : [],
     [run, stageOrder],
   );
   const awaiting = useMemo(

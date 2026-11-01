@@ -150,7 +150,7 @@ class LiteratureRunner:
         result = await search.search(self._scholarly.search, plan, ctx.config)
         # Logged before the candidates are stored: a resumed attempt reads the failures back.
         for source, error in result.failed.items():
-            await say.source_failed(source, error)
+            await say.source_failed(source, error, result.answered[source], len(plan.queries))
         kept: dict[uuid.UUID, _Found] = {}
         limit = CANDIDATES_PER_PAPER * ctx.config.max_papers
         for meta, score in zip(result.papers, result.scores, strict=True):

@@ -17,6 +17,8 @@ export type TimelineEntry = {
   latest: StageRunOut | undefined;
   /** The stage the run is working on or waiting for a decision on. */
   current: boolean;
+  /** The run was started without this stage, so it never runs (and shows as `skipped`). */
+  excluded?: boolean;
 };
 
 export function isTerminalRunStatus(status: RunStatus | undefined): boolean {
@@ -56,11 +58,14 @@ function latestAttempt(attempts: StageRunOut[]): StageRunOut | undefined {
  * One entry per pipeline stage, in order. Each shows its latest attempt's status. When a run
  * has finished, stages it never reached are `skipped`, and an attempt the API still reports as
  * unfinished takes the run's outcome (cancelled or failed) so the timeline never looks stuck.
+ * Given the run's own stages (`included`), the others are `skipped` and `excluded` from the
+ * start, not waiting.
  */
 export function buildTimeline(
   stages: readonly string[],
   stageRuns: readonly StageRunOut[],
   runStatus: RunStatus,
+  included?: readonly string[],
 ): TimelineEntry[] {
   const byStage = new Map<string, StageRunOut[]>();
   for (const stageRun of stageRuns) {
@@ -74,7 +79,8 @@ export function buildTimeline(
   return order.map((stage) => {
     const attempts = byStage.get(stage) ?? [];
     const latest = latestAttempt(attempts);
-    let status: TimelineStatus = latest?.status ?? "pending";
+    const excluded = !latest && included !== undefined && !included.includes(stage);
+    let status: TimelineStatus = latest?.status ?? (excluded ? "skipped" : "pending");
     if (finished) {
       if (!latest) {
         status = "skipped";
@@ -87,6 +93,7 @@ export function buildTimeline(
       }
     }
     const current = !finished && (status === "running" || status === "output_ready");
-    return { stage, status, attempts: attempts.length, latest, current };
+    const entry: TimelineEntry = { stage, status, attempts: attempts.length, latest, current };
+    return excluded ? { ...entry, excluded } : entry;
   });
 }
