@@ -45,7 +45,8 @@ export function PasswordCard() {
         <CardDescription>{t("profile.password.description")}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} noValidate className="grid gap-4">
+        {/* POST: a press before the page's script runs must not put the password in the URL. */}
+        <form method="post" onSubmit={onSubmit} noValidate className="grid gap-4">
           {problemText && (
             <Alert variant="destructive" id={problemId}>
               <AlertCircleIcon aria-hidden />

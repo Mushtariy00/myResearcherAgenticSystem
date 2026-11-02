@@ -56,6 +56,11 @@ describe.each([
     expect(claimSignInRedirect()).toBe(true);
   });
 
+  it("posts, so a press before the page's script runs keeps the password out of the URL", () => {
+    renderStudio(form("/"));
+    expect(screen.getByRole("button", { name: "Sign in" }).closest("form")?.method).toBe("post");
+  });
+
   it("keeps the cache when the sign-in is refused", async () => {
     vi.mocked(authClient.signIn.email).mockResolvedValueOnce({
       data: null,

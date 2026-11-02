@@ -66,7 +66,8 @@ export function ResetPasswordForm({
         <CardDescription>{t("reset.description")}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="grid gap-4">
+        {/* POST: a press before the page's script runs must not put the password in the URL. */}
+        <form method="post" onSubmit={onSubmit} className="grid gap-4">
           {problemText && (
             <Alert variant="destructive">
               <AlertCircleIcon aria-hidden />

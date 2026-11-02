@@ -6,6 +6,14 @@ import { loadRootEnv } from "./src/lib/load-env.ts";
 // The repo-root .env is shared with the Python services; only the web app's own keys are loaded.
 loadRootEnv(path.resolve(typeof __dirname === "string" ? __dirname : process.cwd(), "../.."));
 
+// The dev server refuses its live-reload socket and fonts to other addresses (a 403, and the page
+// never starts). The extra addresses allowed to sign in, such as a demo tunnel, may load them too.
+const devOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter((origin) => URL.canParse(origin))
+  .map((origin) => new URL(origin).hostname);
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -18,6 +26,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
+  allowedDevOrigins: devOrigins,
   // Native argon2 binding and the Postgres driver stay as plain Node modules.
   serverExternalPackages: ["@node-rs/argon2", "pg"],
   // No rewrites to the API: Caddy routes /api/v1/* straight to FastAPI so SSE is never buffered.

@@ -23,7 +23,8 @@ export function StudioLoginForm({ next }: { next: string }) {
         <h1 className="studio-display text-2xl text-foreground">{t("login.title")}</h1>
         <p className="text-sm text-pretty text-muted-foreground">{t("login.description")}</p>
       </div>
-      <form onSubmit={onSubmit} className="grid gap-5" aria-busy={pending}>
+      {/* POST: a press before the page's script runs must not put the password in the URL. */}
+      <form method="post" onSubmit={onSubmit} className="grid gap-5" aria-busy={pending}>
         <FormAlert message={error ? t(`errors.${error}`) : null} />
         <div className="grid gap-2">
           <Label htmlFor="studio-login-email">{t("fields.email")}</Label>
