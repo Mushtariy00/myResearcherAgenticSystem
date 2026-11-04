@@ -29,7 +29,7 @@ already fixed, each with a test that fails without the fix. Exceptions:
 - **Member-add by email** (Backend, unverified): unchanged on purpose. Only lab admins
   create projects now, and accounts exist only by admin invite.
 - **Offboarding** (Web, confirmed): ticked for ban, unban and revoking sessions. Deleting the
-  user's OpenRouter key waits for per-user keys, which don't exist yet.
+  user's OpenRouter key waits for per-user keys, which are deferred (ADR 0004).
 - **Refuted entries:**
   - the query cache is now cleared on sign-in;
   - `make web` no longer exports the gateway token or the OpenRouter key;

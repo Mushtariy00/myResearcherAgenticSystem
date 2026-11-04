@@ -22,7 +22,8 @@ now. FastAPI must authorize every request, including long-lived SSE streams.
 - **Bootstrap and offboarding:**
   - The first admin is created from a CLI command, never through a public sign-up.
   - Invite links can be copied when SMTP isn't configured; dev uses Mailpit.
-  - Offboarding deletes the user's sessions and their provisioned OpenRouter key.
+  - Offboarding deletes the user's sessions. It would delete their provisioned OpenRouter key
+    too, but per-user keys are deferred ([ADR 0004](0004-llm-gateway-openrouter-budgets.md)).
 
 ## Consequences
 - The API depends on the `web` service for authentication (both run on one host).

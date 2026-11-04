@@ -350,18 +350,21 @@ the next try. The activity timeouts are 2 h (coding) and 8 h (experiment).
   - Also fixed: the run page said a source that failed after answering "could not be searched";
     a `call.in_progress` wait said it waited for "an earlier try"; and the stages a run leaves
     out showed as waiting until the run ended.
+- **Fixed on 2026-11-04** ([ADR 0004](../adr/0004-llm-gateway-openrouter-budgets.md)):
+  - The gateway's timeouts were httpx read timeouts. OpenRouter keeps a non-streaming request
+    alive with whitespace while the model writes, so they never fired, and a model that never
+    answered was never replaced. Each attempt now has a wall-clock limit that scales with the
+    output it may write (120 s plus 20 tokens a second: 920 s for a coding call, which took up to
+    454 s here), and the next model takes over when it passes.
+  - Each agent role can have its own models, from the admin page.
+  - Wording: a literature output with a source missing no longer reads "Placeholder output"; a
+    coding failure no longer says every try failed its smoke test when some were refused by the
+    checks; after a retry the review panel shows the stage's own attempt too ("Attempt 2: 1 of 3
+    since the retry").
 - **Still open:**
-  - The gateway's per-attempt timeout (120 s) and deadline (150 s) are httpx read timeouts.
-    OpenRouter keeps a non-streaming request alive with whitespace while the model writes, so
-    they never fire: code answers took up to 454 s. Only the worker's 180 s limit does; the retry
-    then waits for the call (`call.in_progress`) and replays it, so nothing is paid twice. But a
-    model that never answers is never cut off, and the fallback to the next model never starts.
-  - A stronger model for the coding role (admin model routing per role). With the blocks, the
+  - A stronger model for the coding role, which the admin page can now set. With the blocks, the
     free model's code passes the checks and its shapes fit (above); what fails is the code it
-    writes beside them.
-  - Wording: a literature output with a source missing is labelled "Placeholder output"; a
-    coding failure says every try failed its smoke test when some were refused by the checks;
-    the review panel counts attempts from the last retry ("Attempt 1 of 3" on coding attempt 2).
+    writes beside them. Trying paid models needs the lab's first $10 of credit.
 
 ## Order of work
 

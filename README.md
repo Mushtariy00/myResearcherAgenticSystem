@@ -11,7 +11,10 @@ This branch (`v2`) is a production rebuild of the CrewAI + Streamlit prototype o
   this branch was deleted after Phase 3.
 
 **Status:** Phase 3 (real code and experiments on the GPU): its exit checks passed on
-2026-10-31 ([docs/design/experiments.md](docs/design/experiments.md)).
+2026-10-31 ([docs/design/experiments.md](docs/design/experiments.md)). The model layer was finished
+on 2026-11-04: time limits that replace a stuck model, model lists per agent role, and the real lab
+balance ([ADR 0004](docs/adr/0004-llm-gateway-openrouter-budgets.md)). Next: a full run on paid
+models, then Phase 4 (hardening, the lab server).
 
 ## Stack
 | Part | Choice |

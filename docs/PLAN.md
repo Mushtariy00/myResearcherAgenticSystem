@@ -153,9 +153,10 @@ temporal ◄── worker-flow    (workflow code only: deterministic, no I/O, no
   released`, reserved_usd, cost_usd, unique `generation_id`, lease, tokens, latency, error class,
   tier
 - `budgets` (user, monthly_usd, UTC-month period)
-- `provider_keys` (per-user OpenRouter key, encrypted with the KEK)
-- `model_catalog` (prices, context length, passive health)
-- `settings` (paid-models kill switch)
+- `settings` (paid-models kill switch, each role's model chains, and what the gateway reads from
+  OpenRouter for the rest of the platform: the model catalog and the account's balance)
+- Later, with per-user keys ([ADR 0004](adr/0004-llm-gateway-openrouter-budgets.md)):
+  `provider_keys` (per-user OpenRouter key, encrypted with the KEK)
 
 ## LLM gateway: paid if the budget allows, otherwise free
 Facts (OpenRouter docs, Oct 2026):
@@ -166,11 +167,11 @@ Facts (OpenRouter docs, Oct 2026):
   $10 purchase. Extra keys don't add capacity, so the lab should buy $10 once.
 
 How the gateway works:
-1. **Holds all keys:**
-   - the lab management key;
-   - one provisioned key per user, whose limit equals the user's monthly budget.
-   - **Auto top-up stays OFF.** The management key can raise any limit, so the prepaid balance is
-     the true lab cap, with an alert at a balance floor.
+1. **Holds the only key:** one OpenRouter key for the lab. The journal holds each person to their
+   budget before a call goes out; per-user keys wait
+   ([ADR 0004](adr/0004-llm-gateway-openrouter-budgets.md) says why).
+   - **Auto top-up stays OFF**, so the prepaid balance is the true lab cap, with a warning on the
+     admin page below a balance floor (`ARP_BALANCE_ALERT_FLOOR_USD`, $2 by default).
 2. **Journal per call:**
    - Reserve input tokens plus the role's **max output tokens** × price, against the minimum of
      the user's budget and the run cap.
@@ -181,13 +182,18 @@ How the gateway works:
    - If the reservation succeeds and the kill switch is off → the role's paid chain.
    - Otherwise → the role's free chain, after checking that the free model's context length fits.
    - Run policy is **Auto** (default) or **Free only**.
-   - Cheap roles (query expansion, screening) can be configured to stay on free models.
+   - An admin can give each agent role its own chains on the admin page, and a cheap role
+     (screening, say) an empty paid chain, which keeps it on free models.
+   - **Time limits:** each attempt gets 120 s plus 20 tokens a second of the output it may write,
+     measured by the clock, because OpenRouter's keep-alive whitespace outlasts a read timeout. A
+     model past its limit rests for 30 minutes and the next one takes over; a call gives up after
+     three times the limit, or when its models run out.
 4. **402 handling:**
-   - A user key limit → the rest of the run continues on free models, and the UI marks
+   - A limit on the lab's key → the calls continue on free models, and the UI marks
      "switched to free".
    - An exhausted lab balance (free models fail too) → `paused_budget`, and admins get an alert.
 5. **Free quota:** one account-wide bucket (20/min, 1,000/day) with a **per-user fair share**.
-   Model health comes from real call outcomes plus a daily `/models` refresh; there are no
+   Model health comes from real call outcomes plus an hourly `/models` refresh; there are no
    quota-burning probes.
 6. **Privacy:**
    - `confidential` projects route with `data_collection: deny`, which may exclude most free
@@ -330,11 +336,11 @@ sandbox/pytorch (not a uv member) · infra/compose (+ Caddyfile, SOPS secrets) �
 | Phase | Scope | Exit criteria |
 |---|---|---|
 | **0. Foundations + risk spikes** | User prerequisites (Docker + NVIDIA toolkit ≥1.20.1 in WSL, Node 24, pnpm, uv, `.wslconfig`, dataset copy). Branch `v2`, `legacy/`, monorepo scaffold, compose dev stack with RAM limits, CI, ADRs (Temporal vs DBOS, Next vs Vite, auth, storage). **Spike:** the hardened PyTorch 2.14 image trains on the 1060. | `compose up` is healthy within budget; CI green; **one NYU2 epoch trains in the hardened container** with metrics; `curl` is blocked inside |
-| **1. Platform core** | Better Auth (invites, roles, CLI bootstrap of the first admin, offboarding that deletes keys), projects and permissions, runs, state machine, Temporal skeleton, approvals with hash binding, cancel, events + SSE. **Gateway:** per-user keys, budgets, journal, paid/free routing, 402 handling. **One real CrewAI step through `BaseLLM` → gateway.** Web: login, projects, wizard, run detail with live timeline and approvals; en/ko scaffolding. | In the browser: a run makes a real LLM call, waits, is approved; another run is cancelled mid-call; killing a worker resumes the run; ledger = OpenRouter usage; stale approval → 409; viewer can't approve |
+| **1. Platform core** | Better Auth (invites, roles, CLI bootstrap of the first admin, offboarding), projects and permissions, runs, state machine, Temporal skeleton, approvals with hash binding, cancel, events + SSE. **Gateway:** budgets, journal, paid/free routing, 402 handling. **One real CrewAI step through `BaseLLM` → gateway.** Web: login, projects, wizard, run detail with live timeline and approvals; en/ko scaffolding. | In the browser: a run makes a real LLM call, waits, is approved; another run is cancelled mid-call; killing a worker resumes the run; ledger = OpenRouter usage; stale approval → 409; viewer can't approve |
 | **2. Literature → method → writing** | worker-fetch zone (SSRF guard), scholarly clients and buckets, waterfall, GROBID + Docling, paper library (full-text search), strict schemas and `degraded` flags, citation verification, method and writing stages, spend dashboard, notifications, approval reminders and expiry. **Then:** Caddy TLS on the server, off-box backups and a restore drill. | A full run works on a paid budget and on free only; every citation resolves; SSRF tests pass; restore drill succeeds; **first lab users onboarded** |
 | **3. Real experiments** | Executor (template only, dataset registry, labels, adopt/reap, CAS cancel, GPU policy), harness-owned data and metrics, model/loss-only coding agent, bounded config, repair loop, provenance, ECharts metrics, Monaco diff review. Delete `legacy/`. | NYU2 run from the UI → real metrics + provenance; fork-bomb, disk-fill, no-network and no-secrets tests pass; cancel kills the job in ≤5 s; worker restart never duplicates a container |
 | **4. Hardening + observability** | Prod compose on the Linux GPU server, CD with an approval step, `obs` profile (OpenTelemetry → otel-lgtm), alerts (balance floor, failures, GPU), OWASP LLM + Agentic Top 10 (2026) review, artifact retention jobs, Renovate, load test, runbooks | Alerts fire in drills; about 10 concurrent users without errors; runbooks reviewed |
-| **5. Later** | pgvector semantic search and project memory, BYOK, project budgets, paid-only mode, pause, fork from stage, evaluator / LLM-as-judge agents, citation graph, gVisor after a GPU upgrade, Helm/k3s, Langfuse, CopilotKit chat panel | — |
+| **5. Later** | pgvector semantic search and project memory, per-user OpenRouter keys, BYOK, project budgets, paid-only mode, pause, fork from stage, evaluator / LLM-as-judge agents, citation graph, gVisor after a GPU upgrade, Helm/k3s, Langfuse, CopilotKit chat panel | — |
 
 ## Verification
 - **Unit (pytest):**
