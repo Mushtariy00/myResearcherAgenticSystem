@@ -317,6 +317,17 @@ describe("useApprovalDecision", () => {
     });
   });
 
+  it("keeps the stage's own attempt number after a retry", () => {
+    // Coding's attempt 1 failed and the run was retried: attempt 2 is the first of a new execution.
+    const { result } = renderDecision({
+      ...run,
+      stages: [stageRunOut("method", "output_ready", { attempt: 2, outputs: [output] })],
+      max_attempts: 3,
+      attempts_left: 2,
+    });
+    expect(result.current.attempt).toEqual({ number: 1, of: 3, stageAttempt: 2 });
+  });
+
   it("offers only approve or reject on the last attempt", async () => {
     const { result } = renderDecision({ ...run, max_attempts: 3, attempts_left: 0 });
     expect(result.current).toMatchObject({

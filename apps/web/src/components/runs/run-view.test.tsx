@@ -457,11 +457,14 @@ describe("RunView", () => {
       ["1", "No value", "0.6"],
       ["2", "0.62", "0.6"],
     ]);
-    // The live charts extend their lines instead of drawing them again.
-    await waitFor(() =>
-      expect(chart.setOption).toHaveBeenLastCalledWith(expect.anything(), {
-        replaceMerge: ["series"],
-      }),
+    // The live charts extend their lines instead of drawing them again. They load lazily, which
+    // can take over the default second while the whole suite runs.
+    await waitFor(
+      () =>
+        expect(chart.setOption).toHaveBeenLastCalledWith(expect.anything(), {
+          replaceMerge: ["series"],
+        }),
+      { timeout: 5000 },
     );
     expect(screen.getByText("Experiment: Epoch 2: val RMSE 0.62 · train 0.6")).toBeTruthy();
 
@@ -545,7 +548,7 @@ describe("RunView", () => {
     window.history.replaceState(null, "", `/runs/${RUN_ID}?stage=coding`);
     renderRun();
     const message =
-      "The generated code failed its smoke test on the GPU in every try (at most 3). The event log says why each try failed.";
+      "No try gave code that passed (at most 3): each was refused by the code checks or failed its smoke test on the GPU. The event log says why each try failed.";
     expect(await screen.findByText("Attempt 1 failed before it produced an output")).toBeTruthy();
     // On the run, in the timeline and on the stage.
     expect(screen.getAllByText(message)).toHaveLength(3);

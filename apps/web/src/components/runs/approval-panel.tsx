@@ -53,6 +53,7 @@ import { useErrorMessage } from "@/hooks/use-error-message";
 import { useStage } from "@/hooks/use-stage";
 import { type DiffBase, type NarrowedOutput, outputAs } from "@/lib/stage-output";
 import { cn } from "@/lib/utils";
+import { AttemptLabel } from "./attempt-label";
 import { DegradedWarning, DemoNotice, OutputMeta } from "./output-notes";
 import { formatFieldPath, literatureOf } from "./run-data";
 import { useLabels } from "./use-labels";
@@ -386,9 +387,7 @@ function ReviewCard({
         {attempt && (
           <CardAction>
             <Badge variant="outline" className="tabular-nums">
-              {attempt.of === null
-                ? t("attempt", { attempt: attempt.number })
-                : t("attemptOf", { attempt: attempt.number, max: attempt.of })}
+              <AttemptLabel attempt={attempt} />
             </Badge>
           </CardAction>
         )}

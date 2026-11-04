@@ -23,6 +23,11 @@ export type ReviewAttempt = {
   number: number;
   /** Attempts the execution allows (`max_attempts`); null when the API does not say. */
   of: number | null;
+  /**
+   * The number the stage's history and timeline give this attempt, when it isn't `number`: after
+   * a retry the stage's count goes on while this execution counts from one again.
+   */
+  stageAttempt: number | null;
 };
 
 /** Where an approve-with-edits failed the stage's schema (422 `decision.invalid_edit`). */
@@ -229,15 +234,17 @@ function nonNegative(value: number | null | undefined): number | null {
  * numbers keep counting); without, it is the stage's own count.
  */
 function reviewAttemptOf(run: ApprovalRun, output: StageOutputOut): ReviewAttempt | null {
-  const left = nonNegative(run.attempts_left);
-  const max = nonNegative(run.max_attempts);
-  if (left !== null && max !== null && left < max) {
-    return { number: max - left, of: max };
-  }
   const stageRun =
     run.stages.find((candidate) => candidate.outputs?.some((item) => item.id === output.id)) ??
     run.stages.filter((candidate) => candidate.stage === run.awaiting_stage).at(-1);
-  return stageRun ? { number: stageRun.attempt, of: null } : null;
+  const left = nonNegative(run.attempts_left);
+  const max = nonNegative(run.max_attempts);
+  if (left !== null && max !== null && left < max) {
+    const number = max - left;
+    const counted = stageRun?.attempt ?? number;
+    return { number, of: max, stageAttempt: counted > number ? counted : null };
+  }
+  return stageRun ? { number: stageRun.attempt, of: null, stageAttempt: null } : null;
 }
 
 /**

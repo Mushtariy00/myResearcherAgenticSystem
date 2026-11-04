@@ -19,6 +19,7 @@ import { useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "sonner";
 import type { StageOutputOut } from "@/client";
+import { AttemptLabel } from "@/components/runs/attempt-label";
 import { DemoBadge } from "@/components/shared/demo-badge";
 import { type JsonParseResult, parseJson, toJsonText } from "@/components/shared/json-parse";
 import { MAX_COMMENT_LENGTH, useApprovalDecision } from "@/hooks/use-approval-decision";
@@ -199,9 +200,7 @@ export function ApprovalDock() {
           </h2>
           {attempt && (
             <span className="text-xs font-medium text-foreground tabular-nums">
-              {attempt.of === null
-                ? tApproval("attempt", { attempt: attempt.number })
-                : tApproval("attemptOf", { attempt: attempt.number, max: attempt.of })}
+              <AttemptLabel attempt={attempt} />
             </span>
           )}
           <span className="text-xs text-muted-foreground tabular-nums">

@@ -133,7 +133,7 @@ async function decisions(count = 1): Promise<unknown[]> {
 describe("ApprovalPanel", () => {
   it("shows the output as inert text and warns when it is a degraded placeholder", () => {
     const { container } = renderPanel(run);
-    expect(screen.getByText("Placeholder output (degraded)")).toBeTruthy();
+    expect(screen.getByText("Known limitation")).toBeTruthy();
     expect(screen.getByText(/this stage is not implemented yet/)).toBeTruthy();
     // Not literature-shaped, so the preview falls back to JSON.
     expect(
@@ -232,6 +232,16 @@ describe("ApprovalPanel", () => {
     expect(button("Request changes").disabled).toBe(false);
   });
 
+  it("names the stage's own attempt too after a retry", () => {
+    renderPanel({
+      ...run,
+      stages: run.stages.map((stage) => ({ ...stage, attempt: 2 })),
+      max_attempts: 3,
+      attempts_left: 2,
+    });
+    expect(screen.getByText("Attempt 2: 1 of 3 since the retry")).toBeTruthy();
+  });
+
   it("offers only approve or reject on the last attempt", () => {
     renderPanel({ ...run, max_attempts: 3, attempts_left: 0 });
     expect(screen.getByText("Attempt 3 of 3")).toBeTruthy();
@@ -303,7 +313,7 @@ describe("ApprovalPanel", () => {
     expect(screen.getByRole("heading", { name: "Review the Method output" })).toBeTruthy();
     // Demo data gets the Demo notice, not the degraded warning.
     expect(screen.getByText("Demo output")).toBeTruthy();
-    expect(screen.queryByText("Placeholder output (degraded)")).toBeNull();
+    expect(screen.queryByText("Known limitation")).toBeNull();
     expect(screen.getByRole("heading", { name: "Research gaps" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: DEMO_METHOD.recommended_option })).toBeTruthy();
     expect(await screen.findByText("Prefer distillation")).toBeTruthy();
