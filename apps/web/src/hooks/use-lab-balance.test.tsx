@@ -10,6 +10,7 @@ import { useLabBalance } from "./use-lab-balance";
 
 const BALANCE: LabBalanceOut = {
   balance_usd: "42.10",
+  free_tier: false,
   month: "2026-10",
   spent_this_month_usd: "7.90",
   free_daily_limit: 1000,
@@ -18,7 +19,7 @@ const BALANCE: LabBalanceOut = {
   alert_floor_usd: "10.00",
   below_floor: false,
   checked_at: "2026-10-30T01:00:00Z",
-  demo: true,
+  demo: false,
 };
 
 const fetchMock = vi.fn<typeof fetch>();

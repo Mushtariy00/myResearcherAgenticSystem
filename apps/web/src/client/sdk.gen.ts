@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMemberData, AddMemberErrors, AddMemberResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CreateProjectData, CreateProjectErrors, CreateProjectResponses, CreateRunData, CreateRunErrors, CreateRunResponses, DecideStageData, DecideStageErrors, DecideStageResponses, EstimateRunCostData, EstimateRunCostErrors, EstimateRunCostResponses, GetArtifactData, GetArtifactErrors, GetArtifactResponses, GetGpuQueueData, GetGpuQueueResponses, GetHealthData, GetHealthResponses, GetLabBalanceData, GetLabBalanceResponses, GetMeData, GetMeResponses, GetModelRoutingData, GetModelRoutingResponses, GetMySettingsData, GetMySettingsResponses, GetPaidModelsData, GetPaidModelsResponses, GetPaperData, GetPaperErrors, GetPaperFileData, GetPaperFileErrors, GetPaperFileResponses, GetPaperResponses, GetProjectData, GetProjectErrors, GetProjectResponses, GetProjectSettingsData, GetProjectSettingsErrors, GetProjectSettingsResponses, GetRunData, GetRunErrors, GetRunResponses, GetStageData, GetStageErrors, GetStageResponses, GetSystemHealthData, GetSystemHealthResponses, GetUsageData, GetUsageErrors, GetUsageResponses, ListAuditLogData, ListAuditLogErrors, ListAuditLogResponses, ListBudgetsData, ListBudgetsResponses, ListDatasetsData, ListDatasetsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListNotificationsData, ListNotificationsResponses, ListPapersData, ListPapersErrors, ListPapersResponses, ListProjectsData, ListProjectsResponses, ListRecentRunsData, ListRecentRunsErrors, ListRecentRunsResponses, ListRunArtifactsData, ListRunArtifactsErrors, ListRunArtifactsResponses, ListRunsData, ListRunsErrors, ListRunsResponses, ListStagesData, ListStagesResponses, MarkNotificationsReadData, MarkNotificationsReadErrors, MarkNotificationsReadResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RetryRunData, RetryRunErrors, RetryRunResponses, SetBudgetData, SetBudgetErrors, SetBudgetResponses, SetPaidModelsData, SetPaidModelsErrors, SetPaidModelsResponses, StreamRunEventsData, StreamRunEventsErrors, StreamRunEventsResponses, UpdateMemberData, UpdateMemberErrors, UpdateMemberResponses, UpdateMySettingsData, UpdateMySettingsErrors, UpdateMySettingsResponses, UpdateProjectSettingsData, UpdateProjectSettingsErrors, UpdateProjectSettingsResponses } from './types.gen';
+import type { AddMemberData, AddMemberErrors, AddMemberResponses, CancelRunData, CancelRunErrors, CancelRunResponses, CreateProjectData, CreateProjectErrors, CreateProjectResponses, CreateRunData, CreateRunErrors, CreateRunResponses, DecideStageData, DecideStageErrors, DecideStageResponses, EstimateRunCostData, EstimateRunCostErrors, EstimateRunCostResponses, GetArtifactData, GetArtifactErrors, GetArtifactResponses, GetGpuQueueData, GetGpuQueueResponses, GetHealthData, GetHealthResponses, GetLabBalanceData, GetLabBalanceResponses, GetMeData, GetMeResponses, GetModelCatalogData, GetModelCatalogResponses, GetModelRoutingData, GetModelRoutingResponses, GetMySettingsData, GetMySettingsResponses, GetPaidModelsData, GetPaidModelsResponses, GetPaperData, GetPaperErrors, GetPaperFileData, GetPaperFileErrors, GetPaperFileResponses, GetPaperResponses, GetProjectData, GetProjectErrors, GetProjectResponses, GetProjectSettingsData, GetProjectSettingsErrors, GetProjectSettingsResponses, GetRunData, GetRunErrors, GetRunResponses, GetStageData, GetStageErrors, GetStageResponses, GetSystemHealthData, GetSystemHealthResponses, GetUsageData, GetUsageErrors, GetUsageResponses, ListAuditLogData, ListAuditLogErrors, ListAuditLogResponses, ListBudgetsData, ListBudgetsResponses, ListDatasetsData, ListDatasetsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListNotificationsData, ListNotificationsResponses, ListPapersData, ListPapersErrors, ListPapersResponses, ListProjectsData, ListProjectsResponses, ListRecentRunsData, ListRecentRunsErrors, ListRecentRunsResponses, ListRunArtifactsData, ListRunArtifactsErrors, ListRunArtifactsResponses, ListRunsData, ListRunsErrors, ListRunsResponses, ListStagesData, ListStagesResponses, MarkNotificationsReadData, MarkNotificationsReadErrors, MarkNotificationsReadResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RetryRunData, RetryRunErrors, RetryRunResponses, SetBudgetData, SetBudgetErrors, SetBudgetResponses, SetPaidModelsData, SetPaidModelsErrors, SetPaidModelsResponses, SetRoleModelsData, SetRoleModelsErrors, SetRoleModelsResponses, StreamRunEventsData, StreamRunEventsErrors, StreamRunEventsResponses, UpdateMemberData, UpdateMemberErrors, UpdateMemberResponses, UpdateMySettingsData, UpdateMySettingsErrors, UpdateMySettingsResponses, UpdateProjectSettingsData, UpdateProjectSettingsErrors, UpdateProjectSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -368,7 +368,8 @@ export const getUsage = <ThrowOnError extends boolean = false>(options?: Options
  * Estimate Run Cost
  *
  * What a run with these options would likely cost the caller, and why: calls per stage
- * times typical tokens times the paid chain's prices. Free when it can't use paid models.
+ * times typical tokens times each role's paid chain's prices. Free when it can't use paid
+ * models.
  */
 export const estimateRunCost = <ThrowOnError extends boolean = false>(options: Options<EstimateRunCostData, ThrowOnError>): RequestResult<EstimateRunCostResponses, EstimateRunCostErrors, ThrowOnError> => (options.client ?? client).post<EstimateRunCostResponses, EstimateRunCostErrors, ThrowOnError>({
     url: '/api/v1/runs/estimate',
@@ -382,15 +383,38 @@ export const estimateRunCost = <ThrowOnError extends boolean = false>(options: O
 /**
  * Get Model Routing
  *
- * Per agent role, the paid and free model chains the gateway tries, with catalog details,
- * and the real state of the paid-models kill switch.
+ * Per agent role, the paid and free model chains the gateway tries, with what its catalog
+ * says about each model, and the state of the paid-models kill switch.
  */
 export const getModelRouting = <ThrowOnError extends boolean = false>(options?: Options<GetModelRoutingData, ThrowOnError>): RequestResult<GetModelRoutingResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetModelRoutingResponses, unknown, ThrowOnError>({ url: '/api/v1/admin/models', ...options });
 
 /**
+ * Get Model Catalog
+ *
+ * The text models OpenRouter offers, to choose chains from.
+ */
+export const getModelCatalog = <ThrowOnError extends boolean = false>(options?: Options<GetModelCatalogData, ThrowOnError>): RequestResult<GetModelCatalogResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetModelCatalogResponses, unknown, ThrowOnError>({ url: '/api/v1/admin/models/catalog', ...options });
+
+/**
+ * Set Role Models
+ *
+ * Give an agent role its own model chains, which its next call uses; both null puts it back
+ * on the lab's. 422 ``routing.unknown_model`` for a model OpenRouter doesn't offer, and
+ * ``routing.wrong_tier`` for a free model in the paid chain or the other way round.
+ */
+export const setRoleModels = <ThrowOnError extends boolean = false>(options: Options<SetRoleModelsData, ThrowOnError>): RequestResult<SetRoleModelsResponses, SetRoleModelsErrors, ThrowOnError> => (options.client ?? client).put<SetRoleModelsResponses, SetRoleModelsErrors, ThrowOnError>({
+    url: '/api/v1/admin/models/{role}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Get Lab Balance
  *
- * The lab's prepaid OpenRouter balance (generated until the gateway reads it), with the
- * real paid spend this month and the real free-tier use today.
+ * The lab's OpenRouter credit as the gateway last read it, every user's paid spend this
+ * month, and the free-tier use today.
  */
 export const getLabBalance = <ThrowOnError extends boolean = false>(options?: Options<GetLabBalanceData, ThrowOnError>): RequestResult<GetLabBalanceResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetLabBalanceResponses, unknown, ThrowOnError>({ url: '/api/v1/admin/balance', ...options });

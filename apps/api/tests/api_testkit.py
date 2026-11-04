@@ -27,6 +27,7 @@ from agentic_api.orchestrator import (
 from agentic_core.contracts import DecisionInput
 from agentic_core.enums import GpuJobKind, GpuJobStatus, RunStatus, StageStatus
 from agentic_core.gpu_jobs import SMOKE_TIMEOUT_SECONDS
+from agentic_db.lab_settings import MODEL_CATALOG_KEY
 from agentic_db.models import (
     Dataset,
     GpuJob,
@@ -34,12 +35,48 @@ from agentic_db.models import (
     PaperText,
     Run,
     RunPaper,
+    Setting,
     StageOutput,
     StageRun,
 )
 
 ORIGIN = "http://localhost:8080"
 Factory = async_sessionmaker[AsyncSession]
+
+
+def catalog_model(
+    model_id: str, prompt: str = "0", completion: str = "0", context: int = 131_072
+) -> dict[str, Any]:
+    """A catalog entry as the gateway stores it (agentic_gateway.reporting)."""
+    return {
+        "id": model_id,
+        "free": model_id.endswith(":free"),
+        "context_length": context,
+        "prompt_usd_per_mtok": prompt,
+        "completion_usd_per_mtok": completion,
+    }
+
+
+CATALOG_MODELS = (
+    catalog_model("anthropic/claude-sonnet-4.5", "3.00", "15.00", 1_000_000),
+    catalog_model("google/gemini-2.5-flash", "0.30", "2.50", 1_048_576),
+    catalog_model("google/gemma-4-31b-it:free"),
+    catalog_model("nvidia/nemotron-3-ultra-550b-a55b:free", context=262_144),
+    catalog_model("openai/gpt-4.1-mini", "0.40", "1.60", 1_047_576),
+)
+CATALOG_CHECKED_AT = "2026-11-04T08:00:00+00:00"
+
+
+async def seed_catalog(db: Factory, models: tuple[dict[str, Any], ...] = CATALOG_MODELS) -> None:
+    async with db() as session:
+        await session.merge(
+            Setting(
+                key=MODEL_CATALOG_KEY,
+                value={"checked_at": CATALOG_CHECKED_AT, "models": list(models)},
+                updated_by="gateway",
+            )
+        )
+        await session.commit()
 
 
 def as_user(user_id: str, role: str = "user") -> dict[str, str]:

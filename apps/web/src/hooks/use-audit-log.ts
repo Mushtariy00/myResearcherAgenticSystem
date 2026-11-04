@@ -17,6 +17,7 @@ export const AUDIT_ACTIONS = [
   "stage.reject",
   "budget.set",
   "settings.paid_models",
+  "settings.model_routing",
 ] as const;
 
 export const AUDIT_PAGE_SIZE = { default: 50, max: 200 } as const;

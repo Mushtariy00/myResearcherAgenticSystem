@@ -59,10 +59,53 @@ export function keyedChain<Model extends { id: string }>(
   });
 }
 
+/** The most models a role's chain may hold (agentic_core.routing.MAX_CHAIN_MODELS). */
+export const MAX_CHAIN_MODELS = 5;
+
+/** `items` with the one at `index` swapped with its neighbour; past either end, unchanged. */
+export function movedOnePlace<Item>(items: readonly Item[], index: number, by: -1 | 1): Item[] {
+  const next = [...items];
+  const item = next[index];
+  const neighbour = next[index + by];
+  if (item !== undefined && neighbour !== undefined) {
+    next[index] = neighbour;
+    next[index + by] = item;
+  }
+  return next;
+}
+
+/** The catalog's models of one kind that a chain can still take, matching every word typed. */
+export function pickableModels(
+  catalog: readonly RoutedModelOut[],
+  { free, chosen, query }: { free: boolean; chosen: readonly string[]; query: string },
+): RoutedModelOut[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return catalog.filter((model) => {
+    const id = model.id.toLowerCase();
+    return (
+      model.free === free && !chosen.includes(model.id) && words.every((word) => id.includes(word))
+    );
+  });
+}
+
+/**
+ * What can be said about the lab's credit: an amount, or why there is none. An account that has
+ * never bought credit has no balance to show, whatever OpenRouter's zero says.
+ */
+export type BalanceState = "known" | "free_tier" | "not_read" | "not_reported";
+
+export function balanceState(data: LabBalanceOut): BalanceState {
+  if (data.free_tier) {
+    return "free_tier";
+  }
+  if (data.balance_usd === null) {
+    return data.checked_at === null ? "not_read" : "not_reported";
+  }
+  return "known";
+}
+
 export type BalanceGaugeValue = {
   balance: number;
-  spent: number;
-  floor: number;
   /** Everything the lab had this month: what is left plus what was spent (top-ups included). */
   funds: number;
   /** Share of this month's funds still left, 0..1. */
@@ -72,8 +115,14 @@ export type BalanceGaugeValue = {
   tone: UsageTone;
 };
 
-/** The balance gauge: how much of this month's funds is left, and how close the floor is. */
-export function balanceGauge(data: LabBalanceOut): BalanceGaugeValue {
+/**
+ * The balance gauge: how much of this month's funds is left, and how close the floor is. Null
+ * while there is no amount to show (`balanceState`).
+ */
+export function balanceGauge(data: LabBalanceOut): BalanceGaugeValue | null {
+  if (balanceState(data) !== "known") {
+    return null;
+  }
   const balance = Math.max(0, toAmount(data.balance_usd));
   const spent = Math.max(0, toAmount(data.spent_this_month_usd));
   const floor = Math.max(0, toAmount(data.alert_floor_usd));
@@ -82,7 +131,7 @@ export function balanceGauge(data: LabBalanceOut): BalanceGaugeValue {
   const floorShare = funds > 0 ? Math.min(1, floor / funds) : 0;
   const tone: UsageTone =
     data.below_floor || balance < floor ? "danger" : balance < floor * 2 ? "warning" : "success";
-  return { balance, spent, floor, funds, share, floorShare, tone };
+  return { balance, funds, share, floorShare, tone };
 }
 
 export type FreeQuota = {

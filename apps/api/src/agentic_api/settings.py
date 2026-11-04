@@ -1,5 +1,6 @@
 """Runtime settings, read from ``ARP_*`` environment variables (and `.env` in development)."""
 
+from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -29,6 +30,8 @@ class Settings(BaseSettings):
     paid_models: str = ""
     free_models: str = ""
     free_requests_per_day: int = 50
+    # The admin page warns when the lab's OpenRouter balance drops below this (auto top-up is off).
+    balance_alert_floor_usd: Decimal = Decimal(2)
     # Where the worker stores files: the papers' PDFs under papers/ (agentic_scholarly.storage).
     # Empty means the default, outside the repo, because the Next dev server watches the repo.
     data_dir: Path = Field(default=Path(DEFAULT_DATA_DIR), validate_default=True)

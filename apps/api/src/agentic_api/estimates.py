@@ -1,18 +1,17 @@
 """Run cost estimates for the new-run wizard: a heuristic that returns every assumption it used.
 
 Each pipeline step makes a typical number of calls (low, expected and high counts) of a typical
-size, and a call costs its tokens at the paid chain's prices. The low end prices every call with
-the chain's cheapest model, the expected value with its first (the one the gateway tries first)
-and the high end with its most expensive, because fallbacks happen. Free models cost nothing,
-so a run that cannot use paid models is estimated at zero.
+size, and a call costs its tokens at the prices of its role's paid chain. The low end prices every
+call with the chain's cheapest model, the expected value with its first (the one the gateway tries
+first) and the high end with its most expensive, because fallbacks happen. Free models cost
+nothing, so a role without a paid chain, or a run that cannot use paid models, adds nothing.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal
 from typing import Literal
 
-from agentic_api.demo.catalog import CATALOG
 from agentic_api.schemas import (
     AgentRole,
     EstimateAssumptions,
@@ -23,6 +22,7 @@ from agentic_api.schemas import (
 from agentic_core.enums import LlmPolicy
 from agentic_core.schemas import RunConfig
 from agentic_core.stages import Stage
+from agentic_db.lab_settings import CatalogModel
 
 # Assumed for a paid model the catalog does not list; on the expensive side on purpose.
 UNKNOWN_PROMPT_USD_PER_MTOK = Decimal("3.00")
@@ -64,10 +64,10 @@ STEPS: tuple[Step, ...] = (
 )
 
 
-def chain_prices(chain: Sequence[str]) -> list[ModelPriceOut]:
+def chain_prices(chain: Sequence[str], catalog: Mapping[str, CatalogModel]) -> list[ModelPriceOut]:
     prices = []
     for model_id in chain:
-        model = CATALOG.get(model_id)
+        model = catalog.get(model_id)
         prices.append(
             ModelPriceOut(
                 id=model_id,
@@ -98,20 +98,23 @@ def estimate_run(
     config: RunConfig,
     policy: LlmPolicy,
     *,
-    paid_chain: Sequence[str],
+    paid_chains: Mapping[AgentRole, Sequence[str]],
+    catalog: Mapping[str, CatalogModel],
     paid_models_enabled: bool,
     budget_remaining_usd: Decimal,
     budget_cap_usd: Decimal | None = None,
 ) -> RunEstimateOut:
     """The estimate for a run with ``config``, charged to someone with ``budget_remaining_usd``
     of paid budget left this month."""
-    prices = chain_prices(paid_chain)
+    used: dict[str, ModelPriceOut] = {}  # the models the steps are priced with, first use first
     steps: list[EstimateStepOut] = []
     for step in STEPS:
         if step.stage not in config.stages:
             continue
         low_calls, expected_calls, high_calls = step.counts(config)
-        per_call = [_call_usd(step, price) for price in prices]
+        prices = chain_prices(paid_chains[step.role], catalog)
+        used |= {price.id: price for price in prices if price.id not in used}
+        per_call = [_call_usd(step, price) for price in prices] or [Decimal(0)]
         steps.append(
             EstimateStepOut(
                 stage=step.stage.value,
@@ -165,6 +168,6 @@ def estimate_run(
         paid_models_enabled=paid_models_enabled,
         budget_remaining_usd=budget_remaining_usd,
         capped_by=capped_by,
-        assumptions=EstimateAssumptions(paid_chain=prices, steps=steps),
-        demo=True,
+        assumptions=EstimateAssumptions(paid_chain=list(used.values()), steps=steps),
+        demo=False,
     )

@@ -693,7 +693,11 @@ export type LabBalanceOut = {
     /**
      * Balance Usd
      */
-    balance_usd: string;
+    balance_usd: string | null;
+    /**
+     * Free Tier
+     */
+    free_tier: boolean;
     /**
      * Month
      */
@@ -725,7 +729,7 @@ export type LabBalanceOut = {
     /**
      * Checked At
      */
-    checked_at: string;
+    checked_at: string | null;
     /**
      * Demo
      */
@@ -841,6 +845,22 @@ export type MemberUpdate = {
 };
 
 /**
+ * ModelCatalogOut
+ *
+ * The text models OpenRouter offers, as the gateway last read them.
+ */
+export type ModelCatalogOut = {
+    /**
+     * Models
+     */
+    models: Array<RoutedModelOut>;
+    /**
+     * Checked At
+     */
+    checked_at: string | null;
+};
+
+/**
  * ModelPriceOut
  */
 export type ModelPriceOut = {
@@ -874,6 +894,18 @@ export type ModelRoutingOut = {
      * Roles
      */
     roles: Array<RoleRoutingOut>;
+    /**
+     * Lab Paid
+     */
+    lab_paid: Array<RoutedModelOut>;
+    /**
+     * Lab Free
+     */
+    lab_free: Array<RoutedModelOut>;
+    /**
+     * Catalog Checked At
+     */
+    catalog_checked_at: string | null;
     /**
      * Demo
      */
@@ -1359,6 +1391,23 @@ export type RecentRunOut = {
 };
 
 /**
+ * RoleModelsIn
+ *
+ * An agent role's own model chains, in the order they are tried. null: the lab's chain. An
+ * empty paid chain keeps the role on free models; a role always has a free chain to fall to.
+ */
+export type RoleModelsIn = {
+    /**
+     * Paid
+     */
+    paid?: Array<string> | null;
+    /**
+     * Free
+     */
+    free?: Array<string> | null;
+};
+
+/**
  * RoleRoutingOut
  */
 export type RoleRoutingOut = {
@@ -1378,6 +1427,14 @@ export type RoleRoutingOut = {
      * Free
      */
     free: Array<RoutedModelOut>;
+    /**
+     * Paid Is Lab Default
+     */
+    paid_is_lab_default: boolean;
+    /**
+     * Free Is Lab Default
+     */
+    free_is_lab_default: boolean;
 };
 
 /**
@@ -3687,6 +3744,52 @@ export type GetModelRoutingResponses = {
 };
 
 export type GetModelRoutingResponse = GetModelRoutingResponses[keyof GetModelRoutingResponses];
+
+export type GetModelCatalogData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/models/catalog';
+};
+
+export type GetModelCatalogResponses = {
+    /**
+     * Successful Response
+     */
+    200: ModelCatalogOut;
+};
+
+export type GetModelCatalogResponse = GetModelCatalogResponses[keyof GetModelCatalogResponses];
+
+export type SetRoleModelsData = {
+    body: RoleModelsIn;
+    path: {
+        /**
+         * Role
+         */
+        role: 'researcher' | 'screener' | 'analyst' | 'methodologist' | 'coder' | 'writer';
+    };
+    query?: never;
+    url: '/api/v1/admin/models/{role}';
+};
+
+export type SetRoleModelsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetRoleModelsError = SetRoleModelsErrors[keyof SetRoleModelsErrors];
+
+export type SetRoleModelsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ModelRoutingOut;
+};
+
+export type SetRoleModelsResponse = SetRoleModelsResponses[keyof SetRoleModelsResponses];
 
 export type GetLabBalanceData = {
     body?: never;

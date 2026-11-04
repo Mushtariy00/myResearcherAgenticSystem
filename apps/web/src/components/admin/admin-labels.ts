@@ -2,11 +2,17 @@
 
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
-import type { AuditEntryOut, HealthCheckOut, RoleRoutingOut, RoutedModelOut } from "@/client";
+import type {
+  AuditEntryOut,
+  HealthCheckOut,
+  LabBalanceOut,
+  RoleRoutingOut,
+  RoutedModelOut,
+} from "@/client";
 import { AUDIT_ACTIONS } from "@/hooks/use-audit-log";
 import { isKnownStage } from "@/lib/labels";
 import type { InterfacePrefix } from "@/lib/notifications";
-import { COMPACT, modelPricing, monthDate, PRICE } from "./admin-format";
+import { balanceState, COMPACT, modelPricing, monthDate, PRICE } from "./admin-format";
 
 /**
  * Names for the codes the admin endpoints return (health details, audit actions, services,
@@ -181,6 +187,27 @@ export function useMonthName(): (month: string) => string {
     },
     [format],
   );
+}
+
+/** Why the balance card has no amount to show, if so. */
+export function useBalanceNotice(data: LabBalanceOut): {
+  title: string;
+  description: string;
+} | null {
+  const t = useTranslations("admin.balance.notices");
+  const format = useFormatter();
+  const state = balanceState(data);
+  switch (state) {
+    case "known":
+      return null;
+    case "free_tier":
+      return {
+        title: t("free_tier.title"),
+        description: t("free_tier.description", { limit: format.number(data.free_daily_limit) }),
+      };
+    default:
+      return { title: t(`${state}.title`), description: t(`${state}.description`) };
+  }
 }
 
 /** A routed model's price and context window as short sentences ("$0.30 in · $2.50 out…"). */

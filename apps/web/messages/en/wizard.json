@@ -135,7 +135,7 @@
         "callsValue": "{low}–{high} (about {expected})",
         "tokensValue": "{prompt} in, {completion} out"
       },
-      "paidChain": "Paid models, in the order they are tried",
+      "paidChain": "Paid models these steps may use",
       "price": "{prompt} in, {completion} out per million tokens",
       "priceUnknown": "price not in the catalogue",
       "roles": {

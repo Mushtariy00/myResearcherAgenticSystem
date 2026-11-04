@@ -92,7 +92,7 @@ function Assumptions({ data }: { data: RunEstimateOut }) {
       {chain.length > 0 && (
         <div className="grid gap-1">
           <p className="text-xs font-medium">{t("paidChain")}</p>
-          <ol className="grid list-decimal gap-0.5 pl-5 text-xs text-muted-foreground">
+          <ul className="grid list-disc gap-0.5 pl-5 text-xs text-muted-foreground">
             {chain.map((model) => (
               <li key={model.id} className="break-words">
                 <code className="font-mono text-foreground">{model.id}</code>{" "}
@@ -104,7 +104,7 @@ function Assumptions({ data }: { data: RunEstimateOut }) {
                   : t("priceUnknown")}
               </li>
             ))}
-          </ol>
+          </ul>
         </div>
       )}
     </div>

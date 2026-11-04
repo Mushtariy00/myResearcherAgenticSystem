@@ -108,6 +108,33 @@
       "free": "Free models",
       "skipped": "Skipped while paid models are off",
       "none": "None configured",
+      "noPaid": "None: this role stays on free models",
+      "ownList": "This role's own list",
+      "catalogMissing": "The gateway has not read OpenRouter's model list yet, so prices are unknown and models can't be added. Check that the gateway is running.",
+      "edit": "Edit models",
+      "editFor": "Edit models for {role}",
+      "editor": {
+        "title": "Models for {role}",
+        "description": "Models are tried from the top. A change applies from this role's next call, in runs already going too.",
+        "paidHint": "Used while the person's budget allows.",
+        "freeHint": "Used when paid models can't be, or none of them answers.",
+        "useLab": "Use the lab's list",
+        "noPaid": "No paid models: this role stays on free models.",
+        "freeNeeded": "Add at least one free model: the role falls back to these.",
+        "catalogMissing": "The gateway has not read OpenRouter's model list yet, so there is nothing to choose from. Check that the gateway is running.",
+        "search": "Search models to add",
+        "searchPlaceholder": "Type a name, such as gemini",
+        "noMatches": "No model matches.",
+        "moreMatches": "Showing {shown} of {total}. Keep typing to narrow the list.",
+        "full": "A list holds at most {max} models. Remove one to add another.",
+        "add": "Add {model}",
+        "moveUp": "Move {model} up",
+        "moveDown": "Move {model} down",
+        "remove": "Remove {model}",
+        "save": "Save",
+        "saving": "Saving…",
+        "savedToast": "Models for {role} saved."
+      },
       "price": "{prompt} in · {completion} out per million tokens",
       "freePrice": "Free",
       "context": "{tokens} tokens of context",
@@ -134,6 +161,21 @@
       "on": "On",
       "off": "Off",
       "checkedLabel": "Last checked",
+      "notChecked": "Not yet",
+      "notices": {
+        "free_tier": {
+          "title": "Free tier: only free models work",
+          "description": "This OpenRouter account has never bought credit, so there is no balance to show and paid calls are refused. Buying $10 of credit once raises free calls from {limit} to 1,000 a day and allows paid models."
+        },
+        "not_read": {
+          "title": "Not read yet",
+          "description": "The gateway reads the balance every 5 minutes. Check that it is running and has its OpenRouter key."
+        },
+        "not_reported": {
+          "title": "Balance unknown",
+          "description": "OpenRouter did not report a balance for this key. The gateway asks again every 5 minutes."
+        }
+      },
       "belowFloorTitle": "The balance is low",
       "belowFloor": "It is below {floor}. Top up the lab's OpenRouter credit before paid calls start to fail.",
       "freeTitle": "Free-model calls today",
@@ -220,7 +262,8 @@
           "set": "Set a monthly budget"
         },
         "settings": {
-          "paid_models": "Switched paid models on or off"
+          "paid_models": "Switched paid models on or off",
+          "model_routing": "Changed an agent role's models"
         }
       },
       "targets": {

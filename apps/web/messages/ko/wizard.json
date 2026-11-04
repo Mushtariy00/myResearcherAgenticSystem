@@ -135,7 +135,7 @@
         "callsValue": "{low}~{high}회 (약 {expected}회)",
         "tokensValue": "입력 {prompt}, 출력 {completion}"
       },
-      "paidChain": "시도하는 순서대로 나열한 유료 모델",
+      "paidChain": "이 단계들이 사용할 수 있는 유료 모델",
       "price": "100만 토큰당 입력 {prompt}, 출력 {completion}",
       "priceUnknown": "가격 정보 없음",
       "roles": {

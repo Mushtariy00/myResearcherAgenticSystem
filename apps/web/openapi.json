@@ -1846,7 +1846,7 @@
           "usage"
         ],
         "summary": "Estimate Run Cost",
-        "description": "What a run with these options would likely cost the caller, and why: calls per stage\ntimes typical tokens times the paid chain's prices. Free when it can't use paid models.",
+        "description": "What a run with these options would likely cost the caller, and why: calls per stage\ntimes typical tokens times each role's paid chain's prices. Free when it can't use paid\nmodels.",
         "operationId": "estimateRunCost",
         "requestBody": {
           "content": {
@@ -1888,7 +1888,7 @@
           "admin"
         ],
         "summary": "Get Model Routing",
-        "description": "Per agent role, the paid and free model chains the gateway tries, with catalog details,\nand the real state of the paid-models kill switch.",
+        "description": "Per agent role, the paid and free model chains the gateway tries, with what its catalog\nsays about each model, and the state of the paid-models kill switch.",
         "operationId": "getModelRouting",
         "responses": {
           "200": {
@@ -1904,13 +1904,96 @@
         }
       }
     },
+    "/api/v1/admin/models/catalog": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Model Catalog",
+        "description": "The text models OpenRouter offers, to choose chains from.",
+        "operationId": "getModelCatalog",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCatalogOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/models/{role}": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Set Role Models",
+        "description": "Give an agent role its own model chains, which its next call uses; both null puts it back\non the lab's. 422 ``routing.unknown_model`` for a model OpenRouter doesn't offer, and\n``routing.wrong_tier`` for a free model in the paid chain or the other way round.",
+        "operationId": "setRoleModels",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "researcher",
+                "screener",
+                "analyst",
+                "methodologist",
+                "coder",
+                "writer"
+              ],
+              "type": "string",
+              "title": "Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleModelsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelRoutingOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/balance": {
       "get": {
         "tags": [
           "admin"
         ],
         "summary": "Get Lab Balance",
-        "description": "The lab's prepaid OpenRouter balance (generated until the gateway reads it), with the\nreal paid spend this month and the real free-tier use today.",
+        "description": "The lab's OpenRouter credit as the gateway last read it, every user's paid spend this\nmonth, and the free-tier use today.",
         "operationId": "getLabBalance",
         "responses": {
           "200": {
@@ -3111,9 +3194,20 @@
       "LabBalanceOut": {
         "properties": {
           "balance_usd": {
-            "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Balance Usd"
+          },
+          "free_tier": {
+            "type": "boolean",
+            "title": "Free Tier"
           },
           "month": {
             "type": "string",
@@ -3146,8 +3240,15 @@
             "title": "Below Floor"
           },
           "checked_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Checked At"
           },
           "demo": {
@@ -3158,6 +3259,7 @@
         "type": "object",
         "required": [
           "balance_usd",
+          "free_tier",
           "month",
           "spent_this_month_usd",
           "free_daily_limit",
@@ -3344,6 +3446,36 @@
         ],
         "title": "MemberUpdate"
       },
+      "ModelCatalogOut": {
+        "properties": {
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/RoutedModelOut"
+            },
+            "type": "array",
+            "title": "Models"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "models",
+          "checked_at"
+        ],
+        "title": "ModelCatalogOut",
+        "description": "The text models OpenRouter offers, as the gateway last read them."
+      },
       "ModelPriceOut": {
         "properties": {
           "id": {
@@ -3387,6 +3519,32 @@
             "type": "array",
             "title": "Roles"
           },
+          "lab_paid": {
+            "items": {
+              "$ref": "#/components/schemas/RoutedModelOut"
+            },
+            "type": "array",
+            "title": "Lab Paid"
+          },
+          "lab_free": {
+            "items": {
+              "$ref": "#/components/schemas/RoutedModelOut"
+            },
+            "type": "array",
+            "title": "Lab Free"
+          },
+          "catalog_checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Checked At"
+          },
           "demo": {
             "type": "boolean",
             "title": "Demo"
@@ -3396,6 +3554,9 @@
         "required": [
           "paid_models_enabled",
           "roles",
+          "lab_paid",
+          "lab_free",
+          "catalog_checked_at",
           "demo"
         ],
         "title": "ModelRoutingOut"
@@ -4243,6 +4404,51 @@
         ],
         "title": "RecentRunOut"
       },
+      "RoleModelsIn": {
+        "properties": {
+          "paid": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^\\S+$"
+                },
+                "type": "array",
+                "maxItems": 5
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid"
+          },
+          "free": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^\\S+$"
+                },
+                "type": "array",
+                "maxItems": 5,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RoleModelsIn",
+        "description": "An agent role's own model chains, in the order they are tried. null: the lab's chain. An\nempty paid chain keeps the role on free models; a role always has a free chain to fall to."
+      },
       "RoleRoutingOut": {
         "properties": {
           "role": {
@@ -4274,6 +4480,14 @@
             },
             "type": "array",
             "title": "Free"
+          },
+          "paid_is_lab_default": {
+            "type": "boolean",
+            "title": "Paid Is Lab Default"
+          },
+          "free_is_lab_default": {
+            "type": "boolean",
+            "title": "Free Is Lab Default"
           }
         },
         "type": "object",
@@ -4281,7 +4495,9 @@
           "role",
           "max_output_tokens",
           "paid",
-          "free"
+          "free",
+          "paid_is_lab_default",
+          "free_is_lab_default"
         ],
         "title": "RoleRoutingOut"
       },

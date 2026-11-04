@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addMember, cancelRun, createProject, createRun, decideStage, estimateRunCost, getArtifact, getGpuQueue, getHealth, getLabBalance, getMe, getModelRouting, getMySettings, getPaidModels, getPaper, getPaperFile, getProject, getProjectSettings, getRun, getStage, getSystemHealth, getUsage, listAuditLog, listBudgets, listDatasets, listMembers, listNotifications, listPapers, listProjects, listRecentRuns, listRunArtifacts, listRuns, listStages, markNotificationsRead, type Options, removeMember, retryRun, setBudget, setPaidModels, streamRunEvents, updateMember, updateMySettings, updateProjectSettings } from '../sdk.gen';
-import type { AddMemberData, AddMemberError, AddMemberResponse, CancelRunData, CancelRunError, CancelRunResponse, CreateProjectData, CreateProjectError, CreateProjectResponse, CreateRunData, CreateRunError, CreateRunResponse, DecideStageData, DecideStageError, DecideStageResponse, EstimateRunCostData, EstimateRunCostError, EstimateRunCostResponse, GetArtifactData, GetArtifactError, GetArtifactResponse, GetGpuQueueData, GetGpuQueueResponse, GetHealthData, GetHealthResponse, GetLabBalanceData, GetLabBalanceResponse, GetMeData, GetMeResponse, GetModelRoutingData, GetModelRoutingResponse, GetMySettingsData, GetMySettingsResponse, GetPaidModelsData, GetPaidModelsResponse, GetPaperData, GetPaperError, GetPaperFileData, GetPaperFileError, GetPaperFileResponse, GetPaperResponse, GetProjectData, GetProjectError, GetProjectResponse, GetProjectSettingsData, GetProjectSettingsError, GetProjectSettingsResponse, GetRunData, GetRunError, GetRunResponse, GetStageData, GetStageError, GetStageResponse, GetSystemHealthData, GetSystemHealthResponse, GetUsageData, GetUsageError, GetUsageResponse, ListAuditLogData, ListAuditLogError, ListAuditLogResponse, ListBudgetsData, ListBudgetsResponse, ListDatasetsData, ListDatasetsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListNotificationsData, ListNotificationsResponse, ListPapersData, ListPapersError, ListPapersResponse, ListProjectsData, ListProjectsResponse, ListRecentRunsData, ListRecentRunsError, ListRecentRunsResponse, ListRunArtifactsData, ListRunArtifactsError, ListRunArtifactsResponse, ListRunsData, ListRunsError, ListRunsResponse, ListStagesData, ListStagesResponse, MarkNotificationsReadData, MarkNotificationsReadError, MarkNotificationsReadResponse, RemoveMemberData, RemoveMemberError, RemoveMemberResponse, RetryRunData, RetryRunError, RetryRunResponse, SetBudgetData, SetBudgetError, SetBudgetResponse, SetPaidModelsData, SetPaidModelsError, SetPaidModelsResponse, StreamRunEventsData, StreamRunEventsError, UpdateMemberData, UpdateMemberError, UpdateMemberResponse, UpdateMySettingsData, UpdateMySettingsError, UpdateMySettingsResponse, UpdateProjectSettingsData, UpdateProjectSettingsError, UpdateProjectSettingsResponse } from '../types.gen';
+import { addMember, cancelRun, createProject, createRun, decideStage, estimateRunCost, getArtifact, getGpuQueue, getHealth, getLabBalance, getMe, getModelCatalog, getModelRouting, getMySettings, getPaidModels, getPaper, getPaperFile, getProject, getProjectSettings, getRun, getStage, getSystemHealth, getUsage, listAuditLog, listBudgets, listDatasets, listMembers, listNotifications, listPapers, listProjects, listRecentRuns, listRunArtifacts, listRuns, listStages, markNotificationsRead, type Options, removeMember, retryRun, setBudget, setPaidModels, setRoleModels, streamRunEvents, updateMember, updateMySettings, updateProjectSettings } from '../sdk.gen';
+import type { AddMemberData, AddMemberError, AddMemberResponse, CancelRunData, CancelRunError, CancelRunResponse, CreateProjectData, CreateProjectError, CreateProjectResponse, CreateRunData, CreateRunError, CreateRunResponse, DecideStageData, DecideStageError, DecideStageResponse, EstimateRunCostData, EstimateRunCostError, EstimateRunCostResponse, GetArtifactData, GetArtifactError, GetArtifactResponse, GetGpuQueueData, GetGpuQueueResponse, GetHealthData, GetHealthResponse, GetLabBalanceData, GetLabBalanceResponse, GetMeData, GetMeResponse, GetModelCatalogData, GetModelCatalogResponse, GetModelRoutingData, GetModelRoutingResponse, GetMySettingsData, GetMySettingsResponse, GetPaidModelsData, GetPaidModelsResponse, GetPaperData, GetPaperError, GetPaperFileData, GetPaperFileError, GetPaperFileResponse, GetPaperResponse, GetProjectData, GetProjectError, GetProjectResponse, GetProjectSettingsData, GetProjectSettingsError, GetProjectSettingsResponse, GetRunData, GetRunError, GetRunResponse, GetStageData, GetStageError, GetStageResponse, GetSystemHealthData, GetSystemHealthResponse, GetUsageData, GetUsageError, GetUsageResponse, ListAuditLogData, ListAuditLogError, ListAuditLogResponse, ListBudgetsData, ListBudgetsResponse, ListDatasetsData, ListDatasetsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListNotificationsData, ListNotificationsResponse, ListPapersData, ListPapersError, ListPapersResponse, ListProjectsData, ListProjectsResponse, ListRecentRunsData, ListRecentRunsError, ListRecentRunsResponse, ListRunArtifactsData, ListRunArtifactsError, ListRunArtifactsResponse, ListRunsData, ListRunsError, ListRunsResponse, ListStagesData, ListStagesResponse, MarkNotificationsReadData, MarkNotificationsReadError, MarkNotificationsReadResponse, RemoveMemberData, RemoveMemberError, RemoveMemberResponse, RetryRunData, RetryRunError, RetryRunResponse, SetBudgetData, SetBudgetError, SetBudgetResponse, SetPaidModelsData, SetPaidModelsError, SetPaidModelsResponse, SetRoleModelsData, SetRoleModelsError, SetRoleModelsResponse, StreamRunEventsData, StreamRunEventsError, UpdateMemberData, UpdateMemberError, UpdateMemberResponse, UpdateMySettingsData, UpdateMySettingsError, UpdateMySettingsResponse, UpdateProjectSettingsData, UpdateProjectSettingsError, UpdateProjectSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -977,7 +977,8 @@ export const getUsageOptions = (options?: Options<GetUsageData>) => queryOptions
  * Estimate Run Cost
  *
  * What a run with these options would likely cost the caller, and why: calls per stage
- * times typical tokens times the paid chain's prices. Free when it can't use paid models.
+ * times typical tokens times each role's paid chain's prices. Free when it can't use paid
+ * models.
  */
 export const estimateRunCostMutation = (options?: Partial<Options<EstimateRunCostData>>): UseMutationOptions<EstimateRunCostResponse, EstimateRunCostError, Options<EstimateRunCostData>> => {
     const mutationOptions: UseMutationOptions<EstimateRunCostResponse, EstimateRunCostError, Options<EstimateRunCostData>> = {
@@ -998,8 +999,8 @@ export const getModelRoutingQueryKey = (options?: Options<GetModelRoutingData>) 
 /**
  * Get Model Routing
  *
- * Per agent role, the paid and free model chains the gateway tries, with catalog details,
- * and the real state of the paid-models kill switch.
+ * Per agent role, the paid and free model chains the gateway tries, with what its catalog
+ * says about each model, and the state of the paid-models kill switch.
  */
 export const getModelRoutingOptions = (options?: Options<GetModelRoutingData>) => queryOptions<GetModelRoutingResponse, DefaultError, GetModelRoutingResponse, ReturnType<typeof getModelRoutingQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1014,13 +1015,54 @@ export const getModelRoutingOptions = (options?: Options<GetModelRoutingData>) =
     queryKey: getModelRoutingQueryKey(options)
 });
 
+export const getModelCatalogQueryKey = (options?: Options<GetModelCatalogData>) => createQueryKey('getModelCatalog', options);
+
+/**
+ * Get Model Catalog
+ *
+ * The text models OpenRouter offers, to choose chains from.
+ */
+export const getModelCatalogOptions = (options?: Options<GetModelCatalogData>) => queryOptions<GetModelCatalogResponse, DefaultError, GetModelCatalogResponse, ReturnType<typeof getModelCatalogQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getModelCatalog({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getModelCatalogQueryKey(options)
+});
+
+/**
+ * Set Role Models
+ *
+ * Give an agent role its own model chains, which its next call uses; both null puts it back
+ * on the lab's. 422 ``routing.unknown_model`` for a model OpenRouter doesn't offer, and
+ * ``routing.wrong_tier`` for a free model in the paid chain or the other way round.
+ */
+export const setRoleModelsMutation = (options?: Partial<Options<SetRoleModelsData>>): UseMutationOptions<SetRoleModelsResponse, SetRoleModelsError, Options<SetRoleModelsData>> => {
+    const mutationOptions: UseMutationOptions<SetRoleModelsResponse, SetRoleModelsError, Options<SetRoleModelsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await setRoleModels({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const getLabBalanceQueryKey = (options?: Options<GetLabBalanceData>) => createQueryKey('getLabBalance', options);
 
 /**
  * Get Lab Balance
  *
- * The lab's prepaid OpenRouter balance (generated until the gateway reads it), with the
- * real paid spend this month and the real free-tier use today.
+ * The lab's OpenRouter credit as the gateway last read it, every user's paid spend this
+ * month, and the free-tier use today.
  */
 export const getLabBalanceOptions = (options?: Options<GetLabBalanceData>) => queryOptions<GetLabBalanceResponse, DefaultError, GetLabBalanceResponse, ReturnType<typeof getLabBalanceQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

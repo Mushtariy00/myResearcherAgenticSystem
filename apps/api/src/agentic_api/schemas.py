@@ -27,6 +27,7 @@ from agentic_core.enums import (
     RunStatus,
     StageStatus,
 )
+from agentic_core.routing import MAX_CHAIN_MODELS, RoutingRole
 from agentic_core.schemas import EvidenceQuote, PaperSource, RunConfig, ScreeningDecision
 from agentic_core.stages import MAX_ATTEMPTS
 
@@ -584,7 +585,7 @@ class GpuQueueOut(BaseModel):
 # --- Usage, estimates and model routing -----------------------------------------------------
 
 UsageScope = Literal["me", "lab"]
-AgentRole = Literal["researcher", "screener", "analyst", "methodologist", "coder", "writer"]
+AgentRole = RoutingRole
 
 
 class UsageTotalsOut(BaseModel):
@@ -667,7 +668,7 @@ class EstimateStepOut(BaseModel):
 
 
 class EstimateAssumptions(BaseModel):
-    paid_chain: list[ModelPriceOut]  # the order the gateway tries them in
+    paid_chain: list[ModelPriceOut]  # the paid models the steps are priced with, first use first
     steps: list[EstimateStepOut]
 
 
@@ -699,25 +700,56 @@ class RoutedModelOut(BaseModel):
 
 class RoleRoutingOut(BaseModel):
     role: AgentRole
-    max_output_tokens: int  # the gateway reserves budget for this much output per call
-    paid: list[RoutedModelOut]  # tried in order while the budget allows
+    max_output_tokens: int  # the most one of its calls may ask for; the budget is held for it
+    paid: list[RoutedModelOut]  # tried in order while the budget allows; empty: free models only
     free: list[RoutedModelOut]  # otherwise
+    paid_is_lab_default: bool  # false: an admin gave this role its own chain
+    free_is_lab_default: bool
 
 
 class ModelRoutingOut(BaseModel):
     paid_models_enabled: bool  # the real kill switch
     roles: list[RoleRoutingOut]
-    demo: bool
+    lab_paid: list[RoutedModelOut]  # the lab's chains, for roles without their own
+    lab_free: list[RoutedModelOut]
+    catalog_checked_at: datetime | None  # when the gateway last read the catalog; None: not yet
+    demo: bool  # always false: this is what the gateway follows
+
+
+class ModelCatalogOut(BaseModel):
+    """The text models OpenRouter offers, as the gateway last read them."""
+
+    models: list[RoutedModelOut]  # by id
+    checked_at: datetime | None  # None: the gateway hasn't read the catalog yet
+
+
+ModelId = Annotated[str, StringConstraints(min_length=1, max_length=128, pattern=r"^\S+$")]
+
+
+class RoleModelsIn(_In):
+    """An agent role's own model chains, in the order they are tried. null: the lab's chain. An
+    empty paid chain keeps the role on free models; a role always has a free chain to fall to."""
+
+    paid: list[ModelId] | None = Field(default=None, max_length=MAX_CHAIN_MODELS)
+    free: list[ModelId] | None = Field(default=None, min_length=1, max_length=MAX_CHAIN_MODELS)
+
+    @field_validator("paid", "free")
+    @classmethod
+    def _each_model_once(cls, chain: list[str] | None) -> list[str] | None:
+        if chain is not None and len(set(chain)) != len(chain):
+            raise ValueError("a chain names a model twice")
+        return chain
 
 
 class LabBalanceOut(BaseModel):
-    balance_usd: Decimal  # OpenRouter credit left
+    balance_usd: Decimal | None  # OpenRouter credit left; None: not read yet, or it wouldn't say
+    free_tier: bool  # the account has never bought credits: only free models work
     month: str  # UTC month, YYYY-MM
     spent_this_month_usd: Decimal  # every user's paid calls this month
     free_daily_limit: int  # free-model requests per UTC day for the whole lab
     free_calls_today: int
     auto_top_up: bool
-    alert_floor_usd: Decimal  # admins are alerted below this balance
-    below_floor: bool
-    checked_at: datetime
-    demo: bool
+    alert_floor_usd: Decimal  # admins are warned below this balance
+    below_floor: bool  # never on the free tier: there is no credit to run out of
+    checked_at: datetime | None  # when the gateway last read the account; None: not yet
+    demo: bool  # always false

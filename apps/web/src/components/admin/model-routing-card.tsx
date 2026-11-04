@@ -20,17 +20,31 @@ import { useModelRouting } from "@/hooks/use-model-routing";
 import { cn } from "@/lib/utils";
 import { keyedChain } from "./admin-format";
 import { useAdminLabels, useModelText } from "./admin-labels";
+import { RoleModelsDialog } from "./role-models-dialog";
 
 /** A model chain in the order the gateway tries it, with price and context per model. */
-function ModelChain({ models, skipped }: { models: RoutedModelOut[]; skipped?: boolean }) {
+function ModelChain({
+  models,
+  skipped,
+  own,
+  empty,
+}: {
+  models: RoutedModelOut[];
+  skipped?: boolean;
+  /** The role has its own list rather than the lab's. */
+  own: boolean;
+  /** What an empty chain means. */
+  empty: string;
+}) {
   const t = useTranslations("admin.routing");
   const describe = useModelText();
-  if (models.length === 0) {
-    return <span className="text-muted-foreground">{t("none")}</span>;
-  }
   return (
-    <div className="grid gap-1.5">
+    <div className="grid justify-items-start gap-1.5">
+      {own && <Badge variant="outline">{t("ownList")}</Badge>}
       {skipped && <p className="text-xs font-medium text-muted-foreground">{t("skipped")}</p>}
+      {models.length === 0 && (
+        <span className="text-xs whitespace-normal text-muted-foreground">{empty}</span>
+      )}
       <ol className={cn("grid gap-2", skipped && "border-l-2 border-dashed pl-2")}>
         {keyedChain(models).map(({ key, model }, index) => {
           const { price, context } = describe(model);
@@ -40,7 +54,9 @@ function ModelChain({ models, skipped }: { models: RoutedModelOut[]; skipped?: b
                 <span aria-hidden className="text-xs text-muted-foreground tabular-nums">
                   {index + 1}.
                 </span>
-                <span className="truncate font-mono text-xs">{model.id}</span>
+                <span className="truncate font-mono text-xs" title={model.id}>
+                  {model.id}
+                </span>
               </span>
               <span className="pl-4 text-xs whitespace-normal text-muted-foreground">
                 {context ? `${price} · ${context}` : price}
@@ -90,6 +106,12 @@ export function ModelRoutingCard() {
                 <AlertDescription>{t("paidOffNotice")}</AlertDescription>
               </Alert>
             )}
+            {routing.data.catalog_checked_at === null && (
+              <Alert>
+                <TriangleAlertIcon aria-hidden />
+                <AlertDescription>{t("catalogMissing")}</AlertDescription>
+              </Alert>
+            )}
             <Table>
               <TableHeader>
                 <TableRow>
@@ -101,17 +123,29 @@ export function ModelRoutingCard() {
               <TableBody>
                 {routing.data.roles.map((role) => (
                   <TableRow key={role.role} className="align-top">
-                    <TableCell className="align-top">
-                      <p className="font-medium">{labels.agentRole(role.role)}</p>
-                      <p className="text-xs whitespace-normal text-muted-foreground">
-                        {t("maxOutput", { tokens: format.number(role.max_output_tokens) })}
-                      </p>
+                    <TableCell className="grid justify-items-start gap-2 align-top">
+                      <div>
+                        <p className="font-medium">{labels.agentRole(role.role)}</p>
+                        <p className="text-xs whitespace-normal text-muted-foreground">
+                          {t("maxOutput", { tokens: format.number(role.max_output_tokens) })}
+                        </p>
+                      </div>
+                      <RoleModelsDialog role={role} routing={routing.data} />
                     </TableCell>
                     <TableCell className="min-w-56 align-top">
-                      <ModelChain models={role.paid} skipped={!paidOn} />
+                      <ModelChain
+                        models={role.paid}
+                        skipped={!paidOn}
+                        own={!role.paid_is_lab_default}
+                        empty={t("noPaid")}
+                      />
                     </TableCell>
                     <TableCell className="min-w-56 align-top">
-                      <ModelChain models={role.free} />
+                      <ModelChain
+                        models={role.free}
+                        own={!role.free_is_lab_default}
+                        empty={t("none")}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

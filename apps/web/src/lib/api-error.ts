@@ -32,6 +32,8 @@ export const KNOWN_ERROR_CODES = [
   "member.exists",
   "paper.not_found",
   "artifact.not_found",
+  "routing.unknown_model",
+  "routing.wrong_tier",
   "orchestrator.unavailable",
   "db.unavailable",
   // Stored on runs and stages by the worker (apps/worker).

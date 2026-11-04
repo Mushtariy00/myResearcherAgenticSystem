@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentic_api.auth import CurrentUser, current_user
 from agentic_api.authz import get_db, require_admin
-from agentic_api.demo.catalog import DEFAULT_PAID_MODELS, model_chain
 from agentic_api.estimates import estimate_run
+from agentic_api.llm_routing import paid_chains
 from agentic_api.schemas import (
     BudgetStatusOut,
     RunEstimateIn,
@@ -24,7 +24,7 @@ from agentic_api.schemas import (
     UsageUserOut,
 )
 from agentic_api.users import users_by_id
-from agentic_db.lab_settings import paid_models_enabled
+from agentic_db.lab_settings import model_catalog, model_routing, paid_models_enabled
 from agentic_db.spend import month_spend, month_start, monthly_budget
 from agentic_db.usage import (
     Usage,
@@ -132,12 +132,15 @@ async def estimate_run_cost(
     body: RunEstimateIn, request: Request, user: User, db: Db
 ) -> RunEstimateOut:
     """What a run with these options would likely cost the caller, and why: calls per stage
-    times typical tokens times the paid chain's prices. Free when it can't use paid models."""
+    times typical tokens times each role's paid chain's prices. Free when it can't use paid
+    models."""
     _, _, remaining = await _remaining_budget(db, user.id)
+    catalog = await model_catalog(db)
     return estimate_run(
         body.config,
         body.llm_policy,
-        paid_chain=model_chain(request.app.state.settings.paid_models, DEFAULT_PAID_MODELS),
+        paid_chains=paid_chains(request.app.state.settings, await model_routing(db)),
+        catalog=catalog.models if catalog else {},
         paid_models_enabled=await paid_models_enabled(db),
         budget_remaining_usd=remaining,
         budget_cap_usd=body.budget_cap_usd,

@@ -51,6 +51,7 @@ describe("admin translations", () => {
       "stage.request_changes",
       "stage.reject",
       "settings.paid_models",
+      "settings.model_routing",
     ];
     expect([...AUDIT_ACTIONS].sort()).toEqual(fromApi.sort());
     for (const action of AUDIT_ACTIONS) {

@@ -25,9 +25,14 @@ const ROUTING: ModelRoutingOut = {
         },
       ],
       free: [],
+      paid_is_lab_default: true,
+      free_is_lab_default: true,
     },
   ],
-  demo: true,
+  lab_paid: [],
+  lab_free: [],
+  catalog_checked_at: "2026-11-04T08:00:00Z",
+  demo: false,
 };
 
 const fetchMock = vi.fn<typeof fetch>();

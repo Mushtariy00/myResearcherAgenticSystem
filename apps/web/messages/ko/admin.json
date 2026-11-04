@@ -108,6 +108,33 @@
       "free": "무료 모델",
       "skipped": "유료 모델이 꺼져 있는 동안 건너뜀",
       "none": "설정된 모델 없음",
+      "noPaid": "없음: 이 역할은 무료 모델만 사용합니다",
+      "ownList": "이 역할 전용 목록",
+      "catalogMissing": "게이트웨이가 아직 OpenRouter 모델 목록을 읽지 못해 가격을 알 수 없고 모델을 추가할 수 없습니다. 게이트웨이가 실행 중인지 확인하세요.",
+      "edit": "모델 편집",
+      "editFor": "{role} 모델 편집",
+      "editor": {
+        "title": "{role} 모델",
+        "description": "위에서부터 차례로 시도합니다. 변경 내용은 이 역할의 다음 호출부터 적용되며, 이미 진행 중인 실행에도 적용됩니다.",
+        "paidHint": "사용자의 예산이 남아 있는 동안 사용합니다.",
+        "freeHint": "유료 모델을 쓸 수 없거나 어느 모델도 응답하지 않을 때 사용합니다.",
+        "useLab": "랩 공통 목록 사용",
+        "noPaid": "유료 모델 없음: 이 역할은 무료 모델만 사용합니다.",
+        "freeNeeded": "무료 모델을 하나 이상 추가하세요. 이 역할은 마지막에 무료 모델로 넘어갑니다.",
+        "catalogMissing": "게이트웨이가 아직 OpenRouter 모델 목록을 읽지 못해 고를 수 있는 모델이 없습니다. 게이트웨이가 실행 중인지 확인하세요.",
+        "search": "추가할 모델 검색",
+        "searchPlaceholder": "이름을 입력하세요 (예: gemini)",
+        "noMatches": "일치하는 모델이 없습니다.",
+        "moreMatches": "{total}개 중 {shown}개를 표시합니다. 계속 입력해 목록을 좁히세요.",
+        "full": "목록에는 모델을 {max}개까지 넣을 수 있습니다. 다른 모델을 추가하려면 하나를 빼세요.",
+        "add": "{model} 추가",
+        "moveUp": "{model} 위로 이동",
+        "moveDown": "{model} 아래로 이동",
+        "remove": "{model} 빼기",
+        "save": "저장",
+        "saving": "저장 중…",
+        "savedToast": "{role} 모델을 저장했습니다."
+      },
       "price": "100만 토큰당 입력 {prompt} · 출력 {completion}",
       "freePrice": "무료",
       "context": "컨텍스트 {tokens} 토큰",
@@ -134,6 +161,21 @@
       "on": "켜짐",
       "off": "꺼짐",
       "checkedLabel": "마지막 확인",
+      "notChecked": "아직 없음",
+      "notices": {
+        "free_tier": {
+          "title": "무료 등급: 무료 모델만 사용할 수 있습니다",
+          "description": "이 OpenRouter 계정은 크레딧을 구매한 적이 없어 표시할 잔액이 없고 유료 호출은 거부됩니다. 크레딧을 한 번 10달러 구매하면 무료 호출이 하루 {limit}회에서 1,000회로 늘고 유료 모델도 쓸 수 있습니다."
+        },
+        "not_read": {
+          "title": "아직 읽지 않음",
+          "description": "게이트웨이가 5분마다 잔액을 읽습니다. 게이트웨이가 실행 중이고 OpenRouter 키가 있는지 확인하세요."
+        },
+        "not_reported": {
+          "title": "잔액을 알 수 없음",
+          "description": "OpenRouter가 이 키의 잔액을 알려 주지 않았습니다. 게이트웨이가 5분마다 다시 확인합니다."
+        }
+      },
       "belowFloorTitle": "잔액이 부족합니다",
       "belowFloor": "잔액이 {floor} 아래로 떨어졌습니다. 유료 호출이 실패하기 전에 랩의 OpenRouter 크레딧을 충전하세요.",
       "freeTitle": "오늘의 무료 모델 호출",
@@ -220,7 +262,8 @@
           "set": "월 예산을 정했습니다"
         },
         "settings": {
-          "paid_models": "유료 모델을 켜거나 껐습니다"
+          "paid_models": "유료 모델을 켜거나 껐습니다",
+          "model_routing": "에이전트 역할의 모델을 바꿨습니다"
         }
       },
       "targets": {

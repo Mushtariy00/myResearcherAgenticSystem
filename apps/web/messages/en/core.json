@@ -234,6 +234,10 @@
       "no_dataset": "The run's dataset is not registered or is turned off, so the training could not start.",
       "demo_code": "The approved code is demo output that never ran, so it cannot be trained. Retry the run from the coding stage.",
       "invalid_code_config": "The approved code's config.json cannot be trained (an edit on approval may have broken it). Retry the run from the coding stage."
+    },
+    "routing": {
+      "unknown_model": "OpenRouter no longer offers one of these models. Remove it and save again.",
+      "wrong_tier": "A free model can't go in the paid list, or a paid model in the free list."
     }
   },
   "degradedReasons": {

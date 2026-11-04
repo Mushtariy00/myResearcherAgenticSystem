@@ -8,10 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from agentic_api.estimates import estimate_run
 from agentic_core.enums import LlmCallState, LlmPolicy, LlmTier
+from agentic_core.routing import ROUTING_ROLES
 from agentic_core.schemas import RunConfig
 from agentic_core.stages import Stage
+from agentic_db.lab_settings import CatalogModel
 from agentic_db.models import LlmCall
-from api_testkit import ADMIN, as_user, start_run, team_project
+from api_testkit import ADMIN, as_user, seed_catalog, start_run, team_project
 
 Factory = async_sessionmaker[AsyncSession]
 GEMINI = "google/gemini-2.5-flash"
@@ -202,7 +204,8 @@ def _range(estimate: dict[str, Any]) -> tuple[str, str, str]:
     return estimate["low_usd"], estimate["expected_usd"], estimate["high_usd"]
 
 
-async def test_an_estimate_shows_its_assumptions(client: httpx.AsyncClient) -> None:
+async def test_an_estimate_shows_its_assumptions(client: httpx.AsyncClient, db: Factory) -> None:
+    await seed_catalog(db)
     await client.put("/api/v1/admin/budgets/bob", json={"monthly_usd": "10"}, headers=ADMIN)
     estimate = await _estimate(client)
     assert _range(estimate) == ("0.0752", "0.1478", "0.2843")
@@ -219,7 +222,7 @@ async def test_an_estimate_shows_its_assumptions(client: httpx.AsyncClient) -> N
     assert (estimate["llm_policy"], estimate["paid_models_enabled"], estimate["demo"]) == (
         "auto",
         True,
-        True,
+        False,
     )
     assert Decimal(estimate["budget_remaining_usd"]) == 10
     assumptions = estimate["assumptions"]
@@ -270,6 +273,26 @@ async def test_an_estimate_shows_its_assumptions(client: httpx.AsyncClient) -> N
     ] == [("researcher", 2, 2, 4), ("screener", 5, 10, 15), ("analyst", 15, 23, 50)]
 
 
+async def test_each_role_is_priced_with_its_own_chain(
+    client: httpx.AsyncClient, db: Factory
+) -> None:
+    await seed_catalog(db)
+    await client.put("/api/v1/admin/budgets/bob", json={"monthly_usd": "10"}, headers=ADMIN)
+    sonnet = "anthropic/claude-sonnet-4.5"
+    await client.put("/api/v1/admin/models/coder", json={"paid": [sonnet]}, headers=ADMIN)
+    await client.put("/api/v1/admin/models/screener", json={"paid": []}, headers=ADMIN)
+    estimate = await _estimate(client)
+    steps = {step["role"]: step for step in estimate["assumptions"]["steps"]}
+    assert steps["screener"]["expected_usd"] == "0.0000"  # stays on free models
+    # Three calls of 7,000 + 3,500 tokens at $3 and $15 per million.
+    assert steps["coder"]["expected_usd"] == "0.2205"
+    assert [model["id"] for model in estimate["assumptions"]["paid_chain"]] == [
+        GEMINI,
+        MINI,
+        sonnet,
+    ]
+
+
 async def test_estimates_are_zero_when_paid_models_cannot_be_used(
     client: httpx.AsyncClient,
 ) -> None:
@@ -295,7 +318,10 @@ async def test_estimates_are_zero_when_paid_models_cannot_be_used(
     )
 
 
-async def test_estimates_stop_at_the_run_cap_and_the_budget(client: httpx.AsyncClient) -> None:
+async def test_estimates_stop_at_the_run_cap_and_the_budget(
+    client: httpx.AsyncClient, db: Factory
+) -> None:
+    await seed_catalog(db)
     await client.put("/api/v1/admin/budgets/bob", json={"monthly_usd": "10"}, headers=ADMIN)
     capped = await _estimate(client, budget_cap_usd="0.10")
     assert (_range(capped), capped["capped_by"]) == (("0.0752", "0.1000", "0.1000"), "run_cap")
@@ -330,7 +356,8 @@ def test_models_missing_from_the_catalog_get_a_conservative_price() -> None:
     estimate = estimate_run(
         RunConfig(stages=[Stage.LITERATURE, Stage.METHOD]),
         LlmPolicy.AUTO,
-        paid_chain=["unknown/model", GEMINI],
+        paid_chains={role: ["unknown/model", GEMINI] for role in ROUTING_ROLES},
+        catalog={GEMINI: CatalogModel(GEMINI, False, 1_048_576, Decimal("0.30"), Decimal("2.50"))},
         paid_models_enabled=True,
         budget_remaining_usd=Decimal(100),
     )
