@@ -20,6 +20,8 @@ from sqlalchemy import and_, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from agentic_core.enums import LlmCallState, LlmPolicy, LlmTier, Privacy
+from agentic_core.routing import DEFAULT_FREE_MODELS, DEFAULT_PAID_MODELS, routing_role
+from agentic_db.lab_settings import RoleChains, model_routing
 from agentic_db.models import LlmCall, Project, Run, Setting
 from agentic_db.spend import month_spend, monthly_budget, run_spend
 from agentic_gateway.catalog import Catalog, ModelInfo
@@ -35,6 +37,7 @@ from agentic_gateway.openrouter import (
     UpstreamError,
     UpstreamInterruptedError,
     UpstreamRateLimitError,
+    UpstreamTimeoutError,
 )
 from agentic_gateway.quota import FreeQuota
 
@@ -42,15 +45,13 @@ log = logging.getLogger(__name__)
 
 DEFAULT_MAX_OUTPUT_TOKENS = 2048
 CHARS_PER_TOKEN = 3.5  # conservative: overestimating tokens only makes the reservation larger
-DEFAULT_PAID_MODELS = ("google/gemini-2.5-flash", "openai/gpt-4.1-mini")
-# Free models change often; unlisted ones are skipped and the catalog fills in text models.
-# Nemotron first: on 2026-10-30 Gemma answered empty or rate-limited on every live call.
-DEFAULT_FREE_MODELS = ("nvidia/nemotron-3-ultra-550b-a55b:free", "google/gemma-4-31b-it:free")
 PAID_MODELS_SETTING = "paid_models_enabled"
 # Passive model health (docs/PLAN.md: from real call outcomes, no probes). A model that answered
 # empty, or that its provider rate-limited, moves to the back of its chain for a while: each
 # free try spends a unit of the daily quota whether or not an answer comes back.
 EMPTY_ANSWER_COOLDOWN_SECONDS = 600.0
+# A model that didn't answer in time cost the call its whole time limit: longer at the back.
+NO_ANSWER_COOLDOWN_SECONDS = 1800.0
 # With less time than this left before the call's deadline no attempt starts: it would likely be
 # cut off, and a paid one billed all the same.
 MIN_ATTEMPT_SECONDS = 5.0
@@ -121,6 +122,7 @@ class _Policy:
     deny_data_collection: bool  # a confidential project
     allow_free: bool
     paid_enabled: bool  # the admin kill switch is off
+    chains: RoleChains  # the call's agent role's own chains, if an admin set any
 
 
 def estimate_tokens(messages: list[dict[str, str]]) -> int:
@@ -140,7 +142,8 @@ class Router:
         paid_models: list[str] | None = None,
         free_models: list[str] | None = None,
         timeout: float = 120.0,
-        deadline: float = 150.0,
+        slowest_tokens_per_second: float = 20.0,
+        attempts_per_call: float = 3.0,
         lease_seconds: int = 300,
     ) -> None:
         self._sessions = sessions
@@ -149,34 +152,37 @@ class Router:
         self._quota = quota
         self._paid = list(paid_models or DEFAULT_PAID_MODELS)
         self._free = list(free_models or DEFAULT_FREE_MODELS)
-        self._timeout = timeout  # one upstream attempt
-        self._deadline = deadline  # the whole call, every attempt included
+        self._timeout = timeout  # one upstream attempt, before the time to write its answer
+        self._tokens_per_second = slowest_tokens_per_second
+        self._attempts_per_call = attempts_per_call  # the whole call, in attempts' limits
         self._lease = timedelta(seconds=lease_seconds)
         # Model id -> monotonic time until which it goes last in its chain (this process only).
         self._cooling: dict[str, float] = {}
 
     async def complete(self, req: CompletionRequest) -> CompletionResult:
-        deadline = time.monotonic() + self._deadline
+        limit = self._timeout + req.max_output_tokens / self._tokens_per_second
+        deadline = time.monotonic() + limit * self._attempts_per_call
         async with self._exclusive(req.idempotency_key):
             policy = await self._policy(req)
             if (replayed := await self._replay(req.idempotency_key)) is not None:
                 return replayed
-            return await self._route(req, policy, deadline)
+            return await self._route(req, policy, limit, deadline)
 
     async def _route(
-        self, req: CompletionRequest, policy: _Policy, deadline: float
+        self, req: CompletionRequest, policy: _Policy, limit: float, deadline: float
     ) -> CompletionResult:
         deny = policy.deny_data_collection
         prompt_tokens = estimate_tokens(req.messages)
+        paid_models = self._paid if policy.chains.paid is None else policy.chains.paid
         # Why paid routing stopped decides what a project without free models gets.
-        ruled_out = req.policy == LlmPolicy.FREE or not policy.paid_enabled
+        ruled_out = req.policy == LlmPolicy.FREE or not policy.paid_enabled or not paid_models
         limited = False  # a key limit or budget at OpenRouter: the answer "switched to free"
         last_error: Exception | None = None
 
         if not ruled_out:
-            chain = await self._chain(self._paid, prompt_tokens, req.max_output_tokens, free=False)
+            chain = await self._chain(paid_models, prompt_tokens, req.max_output_tokens, free=False)
             for info in chain:
-                if (timeout := self._attempt_timeout(deadline)) is None:
+                if (timeout := self._attempt_timeout(limit, deadline)) is None:
                     break
                 call_id = await self._reserve_paid(req, info, prompt_tokens)
                 if call_id is None:
@@ -188,6 +194,12 @@ class Router:
                     await self._finish(call_id, LlmCallState.RELEASED, "key_limit")
                     limited = True
                     break
+                except UpstreamTimeoutError as exc:
+                    # The row stays unknown and counts at its reservation, so the budget still
+                    # holds if this model bills after all: the next paid model gets its turn.
+                    self._cool(info.id, NO_ANSWER_COOLDOWN_SECONDS)
+                    last_error = exc
+                    continue
                 except UpstreamInterruptedError as exc:
                     # Maybe billed (the row stays unknown): don't pay a second model for the call.
                     log.warning("paid call %s kept at its reservation: %s", call_id, exc)
@@ -219,24 +231,33 @@ class Router:
             if limited or (ruled_out and last_error is None):
                 raise FreeModelsDisabledError(req.project_id)
             raise last_error or _gave_up(deadline, "no paid model available")
-        return await self._complete_free(req, deny, prompt_tokens, limited, deadline)
+        free_models = self._free if policy.chains.free is None else policy.chains.free
+        return await self._complete_free(
+            req, deny, free_models, prompt_tokens, limited, limit, deadline
+        )
 
     async def _complete_free(
         self,
         req: CompletionRequest,
         deny: bool,
+        free_models: list[str],
         prompt_tokens: int,
         switched: bool,
+        limit: float,
         deadline: float,
     ) -> CompletionResult:
         last_error: Exception | None = None
-        for info in await self._chain(self._free, prompt_tokens, req.max_output_tokens, free=True):
-            if (timeout := self._attempt_timeout(deadline)) is None:
+        for info in await self._chain(free_models, prompt_tokens, req.max_output_tokens, free=True):
+            if (timeout := self._attempt_timeout(limit, deadline)) is None:
                 break
             await self._quota.acquire(req.user_id)  # raises when the caller has to wait
             call_id = await self._record(req, info.id, LlmTier.FREE, Decimal(0))
             try:
                 result = await self._send(call_id, info.id, req, deny, timeout)
+            except UpstreamTimeoutError as exc:
+                self._cool(info.id, NO_ANSWER_COOLDOWN_SECONDS)
+                last_error = exc
+                continue
             except UpstreamInterruptedError as exc:
                 last_error = exc  # the row stays unknown; trying another free model costs nothing
                 continue
@@ -260,11 +281,11 @@ class Router:
             raise last_error
         raise _gave_up(deadline, f"no free model answered (last error: {last_error!r})")
 
-    def _attempt_timeout(self, deadline: float) -> float | None:
+    def _attempt_timeout(self, limit: float, deadline: float) -> float | None:
         """The next attempt's timeout: its own limit or the time left, whichever is shorter.
         None when too little time is left to start one."""
         left = deadline - time.monotonic()
-        return min(self._timeout, left) if left >= MIN_ATTEMPT_SECONDS else None
+        return min(limit, left) if left >= MIN_ATTEMPT_SECONDS else None
 
     # --- journal -------------------------------------------------------------------------
 
@@ -434,10 +455,13 @@ class Router:
                     raise RunInactiveError(req.run_id)
             project = await session.get(Project, req.project_id) if req.project_id else None
             setting = await session.get(Setting, PAID_MODELS_SETTING)
+            routing = await model_routing(session)
+        role = routing_role(req.role)
         return _Policy(
             deny_data_collection=project is not None and project.privacy == Privacy.CONFIDENTIAL,
             allow_free=project.allow_free_models if project is not None else True,
             paid_enabled=bool(setting.value.get("enabled", True)) if setting else True,
+            chains=routing.get(role, RoleChains()) if role else RoleChains(),
         )
 
     async def _chain(

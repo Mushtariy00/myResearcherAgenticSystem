@@ -1,5 +1,6 @@
 """Thin OpenRouter chat client with the error classes routing decisions depend on."""
 
+import asyncio
 import time
 from dataclasses import dataclass
 from decimal import Decimal
@@ -21,6 +22,7 @@ NOT_SENT_ERRORS = (
     httpx.ProxyError,
     httpx.UnsupportedProtocol,
 )
+CONNECT_TIMEOUT_SECONDS = 15.0  # a host that can't be reached says so long before a model would
 
 
 class UpstreamError(Exception):
@@ -28,9 +30,13 @@ class UpstreamError(Exception):
 
 
 class UpstreamInterruptedError(Exception):
-    """The request was sent but no usable answer came back (read timeout, dropped connection,
-    unreadable body). OpenRouter keeps processing a non-streaming request after the client gives
-    up and bills it in full."""
+    """The request was sent but no usable answer came back (dropped connection, unreadable body).
+    OpenRouter keeps processing a non-streaming request after the client gives up and bills it in
+    full."""
+
+
+class UpstreamTimeoutError(UpstreamInterruptedError):
+    """No answer within the attempt's time limit: a model that hangs, or one too slow to wait."""
 
 
 class KeyLimitError(Exception):
@@ -136,11 +142,19 @@ class OpenRouterClient:
 
         started = time.monotonic()
         try:
-            response = await self._client.post(
-                self._url, json=body, headers=self._headers, timeout=request_timeout
-            )
+            # On the whole request, not only httpx's timeout: OpenRouter keeps a non-streaming
+            # request alive with whitespace while the model writes, and that resets a read timeout.
+            async with asyncio.timeout(request_timeout):
+                response = await self._client.post(
+                    self._url,
+                    json=body,
+                    headers=self._headers,
+                    timeout=httpx.Timeout(request_timeout, connect=CONNECT_TIMEOUT_SECONDS),
+                )
         except NOT_SENT_ERRORS as exc:
             raise UpstreamError(f"could not reach OpenRouter for {model}: {exc!r}") from exc
+        except (TimeoutError, httpx.TimeoutException) as exc:
+            raise UpstreamTimeoutError(f"{model}: no answer in {request_timeout:.0f} s") from exc
         except httpx.HTTPError as exc:
             raise UpstreamInterruptedError(f"{model}: {exc!r} after sending") from exc
         latency_ms = int((time.monotonic() - started) * 1000)

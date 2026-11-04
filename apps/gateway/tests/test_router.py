@@ -2,6 +2,7 @@
 
 import asyncio
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -26,6 +27,7 @@ from agentic_gateway.quota import FreeQuota, QuotaExhaustedError, QuotaUnavailab
 from agentic_gateway.service import (
     EMPTY_ANSWER_COOLDOWN_SECONDS,
     MIN_ATTEMPT_SECONDS,
+    NO_ANSWER_COOLDOWN_SECONDS,
     CallInProgressError,
     CompletionRequest,
     DeadlineExceededError,
@@ -50,6 +52,7 @@ from gateway_testkit import (
     FakeOpenRouter,
     budget_limit,
     daily_limit,
+    hanging,
 )
 
 Factory = async_sessionmaker[AsyncSession]
@@ -218,8 +221,7 @@ async def test_a_call_that_never_left_costs_nothing(
 
 
 @pytest.mark.parametrize(
-    "lost",
-    [httpx.ReadTimeout("no answer in time"), httpx.RemoteProtocolError("server disconnected")],
+    "lost", [httpx.ReadError("connection reset"), httpx.RemoteProtocolError("server disconnected")]
 )
 async def test_a_paid_call_lost_after_sending_keeps_its_reservation_and_no_other_is_paid(
     router: Router, upstream: FakeOpenRouter, db: Factory, lost: Exception
@@ -355,10 +357,20 @@ async def test_a_retry_while_the_call_is_in_flight_does_not_pay_again(
     assert upstream.calls == [PAID]
 
 
+async def test_a_call_that_may_write_more_gets_more_time(
+    router: Router, upstream: FakeOpenRouter
+) -> None:
+    timed = variant(router, timeout=100, slowest_tokens_per_second=10)
+    await timed.complete(request("stage-1:call-1", max_output_tokens=1000))
+    await timed.complete(request("stage-1:call-2", max_output_tokens=16000))
+    assert upstream.timeouts == [pytest.approx(200), pytest.approx(1700)]
+
+
 async def test_each_attempt_gets_at_most_the_time_left(
     router: Router, upstream: FakeOpenRouter
 ) -> None:
-    await variant(router, timeout=120, deadline=8).complete(request())
+    tight = variant(router, timeout=7, slowest_tokens_per_second=1000, attempts_per_call=1)
+    await tight.complete(request())  # 8 s in all: 7 + 1000 tokens at 1000 a second
     [timeout] = upstream.timeouts
     assert MIN_ATTEMPT_SECONDS <= timeout <= 8
 
@@ -368,10 +380,71 @@ async def test_no_attempt_starts_when_the_deadline_is_near(
 ) -> None:
     upstream.plan[FREE_A].append(OVERLOADED)
     upstream.delays[FREE_A] = 1.2
-    tight = variant(router, deadline=MIN_ATTEMPT_SECONDS + 1)
+    tight = variant(
+        router, timeout=MIN_ATTEMPT_SECONDS, slowest_tokens_per_second=1000, attempts_per_call=1
+    )
     with pytest.raises(DeadlineExceededError):
         await tight.complete(request())
     assert upstream.calls == [FREE_A]  # FREE_B would have had less than MIN_ATTEMPT_SECONDS
+
+
+@pytest.fixture
+def short_attempts(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Attempts of a fraction of a second may start (the tests' limit is 0.2 s)."""
+    monkeypatch.setattr("agentic_gateway.service.MIN_ATTEMPT_SECONDS", 0.01)
+
+
+def impatient(router: Router, **kwargs: object) -> Router:
+    return variant(router, timeout=0.2, slowest_tokens_per_second=1_000_000, **kwargs)
+
+
+@pytest.mark.usefixtures("short_attempts")
+async def test_a_free_model_that_never_answers_is_cut_off_and_the_next_one_answers(
+    router: Router, upstream: FakeOpenRouter, db: Factory
+) -> None:
+    upstream.plan[FREE_A].append(hanging())
+    async with asyncio.timeout(5):  # without a limit on the whole request this never ends
+        result = await impatient(router).complete(request())
+    assert result.model == FREE_B
+    assert upstream.calls == [FREE_A, FREE_B]
+    hung, answered = await calls(db)
+    assert (hung.state, hung.error_class) == (LlmCallState.UNKNOWN, "TimeoutError")
+    assert answered.state == LlmCallState.SETTLED
+
+
+@pytest.mark.usefixtures("short_attempts")
+@pytest.mark.parametrize(
+    ("planned", "error_class"),
+    [(hanging, "TimeoutError"), (lambda: httpx.ReadTimeout("no bytes"), "ReadTimeout")],
+)
+async def test_a_paid_model_that_never_answers_gives_way_to_the_next_paid_model(
+    router: Router,
+    upstream: FakeOpenRouter,
+    db: Factory,
+    planned: Callable[[], httpx.Response | Exception],
+    error_class: str,
+) -> None:
+    await set_budget(db, "1.00")
+    upstream.plan[PAID].append(planned())
+    async with asyncio.timeout(5):
+        result = await impatient(router).complete(request())
+    assert (result.tier, result.model) == (LlmTier.PAID, PAID_BACKUP)
+    hung, _ = await calls(db)
+    assert (hung.state, hung.error_class) == (LlmCallState.UNKNOWN, error_class)
+    # It may still bill: it counts at its reservation until the sweeper knows better.
+    assert await spent(db) == hung.reserved_usd + Decimal("0.0021")
+
+
+@pytest.mark.usefixtures("short_attempts")
+async def test_a_call_gives_up_when_its_models_use_up_the_time(
+    router: Router, upstream: FakeOpenRouter, db: Factory
+) -> None:
+    upstream.plan[FREE_A].append(hanging())
+    upstream.plan[FREE_B].append(hanging())
+    async with asyncio.timeout(5):
+        with pytest.raises(DeadlineExceededError):
+            await impatient(router, attempts_per_call=1.5).complete(request())
+    assert upstream.calls[0] == FREE_A  # FREE_B only if the journal left it time
 
 
 async def test_a_finished_run_gets_no_more_calls(
@@ -433,6 +506,20 @@ async def test_a_model_that_answered_empty_goes_last_for_a_while(
 
     clock.now += EMPTY_ANSWER_COOLDOWN_SECONDS + 1
     assert (await router.complete(request("stage-1:call-3"))).model == FREE_A
+
+
+@pytest.mark.usefixtures("short_attempts")
+async def test_a_model_that_never_answered_goes_last_for_longer(
+    router: Router, upstream: FakeOpenRouter, clock: FakeClock
+) -> None:
+    upstream.plan[FREE_A].append(hanging())
+    quick = impatient(router)
+    assert (await quick.complete(request("stage-1:call-1"))).model == FREE_B
+    assert (await quick.complete(request("stage-1:call-2"))).model == FREE_B
+    assert upstream.calls == [FREE_A, FREE_B, FREE_B]  # no second wait for it
+
+    clock.now += NO_ANSWER_COOLDOWN_SECONDS + 1
+    assert (await quick.complete(request("stage-1:call-3"))).model == FREE_A
 
 
 async def test_a_model_rate_limited_by_its_provider_waits_at_the_back(
@@ -530,6 +617,52 @@ async def test_kill_switch_forces_free(router: Router, db: Factory) -> None:
         session.add(Setting(key="paid_models_enabled", value={"enabled": False}, updated_by="root"))
         await session.commit()
     assert (await router.complete(request())).tier == LlmTier.FREE
+
+
+async def set_routing(db: Factory, **roles: dict[str, list[str] | None]) -> None:
+    async with db() as session:
+        session.add(Setting(key="model_routing", value={"roles": roles}, updated_by="root"))
+        await session.commit()
+
+
+async def test_a_role_with_its_own_chains_uses_them(
+    router: Router, upstream: FakeOpenRouter, db: Factory
+) -> None:
+    await set_budget(db, "1.00")
+    await set_routing(db, coder={"paid": [PAID_BACKUP], "free": [FREE_B]})
+    assert (await router.complete(request("a:1", role="coding.write"))).model == PAID_BACKUP
+    assert (await router.complete(request("a:2", role="coding.repair"))).model == PAID_BACKUP
+    assert (
+        await router.complete(request("a:3", role="coding.repair", policy=LlmPolicy.FREE))
+    ).model == FREE_B
+    # Every other role keeps the lab's chains, and so does a call role nothing lists.
+    assert (await router.complete(request("a:4", role="literature.screen"))).model == PAID
+    assert (await router.complete(request("a:5", role="new.kind_of_call"))).model == PAID
+
+
+async def test_a_role_can_set_one_chain_and_keep_the_labs_other(
+    router: Router, upstream: FakeOpenRouter, db: Factory
+) -> None:
+    await set_budget(db, "1.00")
+    await set_routing(db, writer={"paid": None, "free": [FREE_B]})
+    assert (await router.complete(request("a:1", role="writing.section"))).model == PAID
+    assert (
+        await router.complete(request("a:2", role="writing.section", policy=LlmPolicy.FREE))
+    ).model == FREE_B
+
+
+async def test_an_empty_paid_chain_keeps_a_role_on_free_models(
+    router: Router, upstream: FakeOpenRouter, db: Factory
+) -> None:
+    await set_budget(db, "1.00")
+    await set_routing(db, screener={"paid": [], "free": None})
+    result = await router.complete(request("a:1", role="literature.screen"))
+    assert (result.tier, result.model) == (LlmTier.FREE, FREE_A)
+    assert await spent(db) == 0
+
+    project = await add_project(db, allow_free_models=False)
+    with pytest.raises(FreeModelsDisabledError):  # final: retrying doesn't change the settings
+        await router.complete(request("a:2", role="literature.screen", project_id=project.id))
 
 
 async def test_confidential_projects_ask_providers_not_to_keep_data(

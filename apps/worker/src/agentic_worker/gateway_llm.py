@@ -83,7 +83,9 @@ class GatewayLLM(BaseLLM):
     budget_cap_usd: str | None = None
     max_output_tokens: int = 2048
     json_mode: bool = False
-    # Above the gateway's 150 s deadline per call, so the gateway always answers first.
+    # Less than a long answer can take. The gateway goes on after this; the retry waits for it
+    # (call.in_progress) and gets the answer from the journal, so nothing is paid twice, and a
+    # cancelled attempt is noticed at the next call instead of after the whole answer.
     timeout_seconds: float = 180.0
     calls: list[dict[str, Any]] = Field(
         default_factory=list

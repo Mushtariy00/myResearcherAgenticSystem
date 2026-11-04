@@ -38,6 +38,21 @@ async def models() -> dict[str, Any]:
     }
 
 
+@app.get("/api/v1/credits")
+async def credits_left() -> dict[str, Any]:
+    return {"data": {"total_credits": 50, "total_usage": 1.25}}
+
+
+@app.get("/api/v1/key")
+async def key() -> dict[str, Any]:
+    return {
+        "data": {
+            "is_free_tier": False,
+            "free_model_daily_requests": {"used": 0, "limit": 1000, "remaining": 1000},
+        }
+    }
+
+
 def _topic(messages: list[dict[str, Any]]) -> str:
     joined = "\n".join(str(m.get("content", "")) for m in messages)
     match = re.search(r"research topic:\s*(.+)", joined)

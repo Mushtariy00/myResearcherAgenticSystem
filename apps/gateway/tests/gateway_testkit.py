@@ -5,7 +5,7 @@ import json
 import time
 import uuid
 from collections import defaultdict
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 
 import httpx
@@ -44,12 +44,34 @@ CATALOG["data"].append(
         "id": AUDIO,
         "pricing": {"prompt": "0", "completion": "0"},
         "context_length": 2_000_000,
-        "architecture": {"input_modalities": ["text"], "output_modalities": ["audio"]},
+        "architecture": {"input_modalities": ["text"], "output_modalities": ["text", "audio"]},
+    }
+)
+
+# OpenRouter's auto-router: negative prices, not a model anyone can price or pick.
+AUTO_ROUTER = "openrouter/auto"
+CATALOG["data"].append(
+    {
+        "id": AUTO_ROUTER,
+        "pricing": {"prompt": "-1", "completion": "-1"},
+        "context_length": 2_000_000,
     }
 )
 
 # What a model does next: (status, JSON body), a whole response, or an error to raise.
 Planned = tuple[int, dict[str, Any]] | httpx.Response | Exception
+
+
+def hanging() -> httpx.Response:
+    """A model that never answers: OpenRouter keeps the request alive with whitespace meanwhile,
+    which resets a read timeout (seen live: answers took up to 454 s past a 120 s read timeout)."""
+
+    async def whitespace() -> AsyncIterator[bytes]:
+        while True:
+            yield b"\n"
+            await asyncio.sleep(0.01)
+
+    return httpx.Response(200, content=whitespace())
 
 
 def daily_limit(reset_in_seconds: float) -> tuple[int, dict[str, Any]]:
@@ -100,10 +122,29 @@ class FakeOpenRouter:
         self.costs: dict[str, float] = {}  # what /generation reports, by generation id
         self.lookups: list[str] = []
         self.during_lookup: Callable[[], Awaitable[None]] | None = None
+        # What the account endpoints answer, and the keys they were asked with.
+        self.credits: tuple[int, dict[str, Any]] = (
+            200,
+            {"data": {"total_credits": 25, "total_usage": 7.5}},
+        )
+        self.key: tuple[int, dict[str, Any]] = (
+            200,
+            {
+                "data": {
+                    "is_free_tier": False,
+                    "free_model_daily_requests": {"used": 3, "limit": 1000, "remaining": 997},
+                }
+            },
+        )
+        self.account_keys: list[str] = []
 
     async def handler(self, request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/models"):
             return httpx.Response(200, json=CATALOG)
+        if request.url.path.endswith(("/credits", "/key")):
+            self.account_keys.append(request.headers["authorization"])
+            status, body = self.credits if request.url.path.endswith("/credits") else self.key
+            return httpx.Response(status, json=body)
         if request.url.path.endswith("/generation"):
             return await self._generation(request.url.params["id"])
         body = json.loads(request.content)

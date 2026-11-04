@@ -29,7 +29,8 @@ class ModelInfo:
     prompt_usd_per_token: Decimal
     completion_usd_per_token: Decimal
     context_length: int
-    # Reads and writes text. Zero-priced music/image models exist and must never be picked.
+    # Reads text and writes only text. Zero-priced music and image models exist, some of which
+    # write text as well as their music, and they must never be picked.
     text_io: bool = True
 
     @property
@@ -65,7 +66,7 @@ def parse_models(payload: Any) -> dict[str, ModelInfo]:
                 prompt_usd_per_token=Decimal(str(pricing.get("prompt", "0"))),
                 completion_usd_per_token=Decimal(str(pricing.get("completion", "0"))),
                 context_length=int(item.get("context_length") or 0),
-                text_io="text" in inputs and "text" in outputs,
+                text_io="text" in inputs and set(outputs) == {"text"},
             )
         except (KeyError, ArithmeticError, ValueError, TypeError, AttributeError):
             continue  # one malformed entry must not hide the others
@@ -79,6 +80,7 @@ class Catalog:
         self._models: dict[str, ModelInfo] = {}
         self._next_refresh = 0.0  # time.monotonic() after which the next lookup fetches
         self._lock = asyncio.Lock()  # concurrent lookups share one fetch
+        self.refreshes = 0  # catalogs read so far, so the reporter stores each new one once
 
     async def models(self) -> dict[str, ModelInfo]:
         if time.monotonic() >= self._next_refresh:
@@ -106,3 +108,4 @@ class Catalog:
             return
         self._models = models
         self._next_refresh = time.monotonic() + REFRESH_SECONDS
+        self.refreshes += 1

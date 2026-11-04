@@ -48,6 +48,7 @@ from agentic_gateway.openrouter import (
     UpstreamRateLimitError,
 )
 from agentic_gateway.quota import Counter, FreeQuota, QuotaExhaustedError, QuotaUnavailableError
+from agentic_gateway.reporting import Reporter
 from agentic_gateway.service import (
     CallInProgressError,
     CompletionRequest,
@@ -61,6 +62,7 @@ from agentic_gateway.settings import GatewaySettings, get_settings
 
 log = logging.getLogger(__name__)
 SWEEP_SECONDS = 300
+REPORT_SECONDS = 300  # how old the balance on the admin page can be
 # A free call checks its quota in Valkey first. A hung Valkey must turn into a quick
 # free_quota.unavailable, not a call that sits until the worker gives up on it.
 VALKEY_TIMEOUT_SECONDS = 2.0
@@ -133,9 +135,12 @@ def create_app(settings: GatewaySettings | None = None, *, router: Router | None
             retry=Retry(NoBackoff(), 1),  # once, for a pooled connection a restart left dead
         )
         api_key = settings.openrouter_api_key.get_secret_value()
+        sessions = session_factory(engine)
+        catalog = Catalog(http, settings.openrouter_base_url)
+        reports = Reporter(sessions, catalog, http, settings.openrouter_base_url, api_key)
         app.state.router = Router(
-            session_factory(engine),
-            Catalog(http, settings.openrouter_base_url),
+            sessions,
+            catalog,
             OpenRouterClient(http, settings.openrouter_base_url, api_key, settings.public_origin),
             FreeQuota(
                 cast(Counter, valkey),
@@ -146,7 +151,8 @@ def create_app(settings: GatewaySettings | None = None, *, router: Router | None
             paid_models=_split(settings.paid_models),
             free_models=_split(settings.free_models),
             timeout=settings.request_timeout_seconds,
-            deadline=settings.complete_deadline_seconds,
+            slowest_tokens_per_second=settings.slowest_tokens_per_second,
+            attempts_per_call=settings.attempts_per_call,
             lease_seconds=settings.lease_seconds,
         )
 
@@ -158,13 +164,23 @@ def create_app(settings: GatewaySettings | None = None, *, router: Router | None
                 except Exception:
                     log.exception("sweep failed")
 
-        task = asyncio.create_task(sweeper())
+        async def reporter() -> None:
+            while True:
+                try:
+                    await reports.report()
+                except Exception:
+                    log.exception("report failed")
+                await asyncio.sleep(REPORT_SECONDS)
+
+        tasks = [asyncio.create_task(sweeper()), asyncio.create_task(reporter())]
         try:
             yield
         finally:
-            task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await task
+            for task in tasks:
+                task.cancel()
+            for task in tasks:
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
             await http.aclose()
             await valkey.aclose()
             await engine.dispose()

@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Self
 
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,10 +23,15 @@ class GatewaySettings(BaseSettings):
     free_requests_per_day: int = 50
     # One person's share of the day's free requests, so nobody can use up the whole lab's.
     free_requests_per_user_per_day: int = 20
-    request_timeout_seconds: float = 120.0  # one upstream attempt
-    # One /v1/complete with all its attempts. The worker waits 180 s for the answer, so it always
-    # gets one (or a retryable error) before giving up and resending the call.
-    complete_deadline_seconds: float = 150.0
+    # One upstream attempt: this long, plus the time to write all the call may ask for at the
+    # slowest speed worth waiting for. Measured on free models: up to 454 s for a coding answer,
+    # and as low as 13 tokens/s, so a flat limit would cut off long answers that were on their way.
+    request_timeout_seconds: float = Field(default=120.0, gt=0)
+    slowest_tokens_per_second: float = Field(default=20.0, gt=0)
+    # One /v1/complete with all its attempts, in attempts' limits. The worker stops waiting long
+    # before that (its 180 s); the gateway goes on, and the worker's retry waits for the answer
+    # (call.in_progress) and gets it from the journal.
+    attempts_per_call: float = Field(default=3.0, gt=0)
     lease_seconds: int = 300
 
     @model_validator(mode="after")
