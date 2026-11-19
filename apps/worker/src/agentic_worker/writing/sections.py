@@ -12,7 +12,7 @@ from agentic_worker.llm_json import InvalidModelOutputError
 from agentic_worker.stages import StageContext
 from agentic_worker.upstream import reviewer_feedback
 from agentic_worker.writing.outline import Outline, section_name
-from agentic_worker.writing.research import ABOUT, Research, simulated_note
+from agentic_worker.writing.research import NO_RESULTS_NOTE, Research, about, simulated_note
 
 MAX_OUTPUT_TOKENS = 3000
 ROLE = "writing.section"
@@ -28,14 +28,14 @@ CUT_OFF = (
 )
 
 WRITER = Persona(
-    role="{topic} Technical Writer",
+    role="{topic} Academic Writer",
     goal=(
         "Write the sections of a research paper on {topic} from the approved research, citing "
         "only the papers it lists"
     ),
     backstory=(
-        "You're a skilled academic writer who turns technical work into clear, precise prose. "
-        "You cite only the sources you were given, and you never present a number as a result "
+        "You're a skilled academic writer who turns research into clear, precise prose. You "
+        "cite only the sources you were given, and you never present a number as a result "
         "unless an experiment measured it."
     ),
 )
@@ -98,6 +98,8 @@ def section_prompt(
     ]
     if research.simulated:
         parts.append(simulated_note(research.simulated))
+    if not research.has_results:
+        parts.append(NO_RESULTS_NOTE)
     if previous is not None:
         parts += [
             "The reviewer asked for changes to the previous draft, whose text of this section "
@@ -108,7 +110,7 @@ def section_prompt(
     if ctx.feedback_history:
         parts.append(reviewer_feedback(ctx.feedback_history))
     parts += [
-        ABOUT,
+        about(research),
         fenced("RESEARCH", research.brief),
         "Cite papers by their number in brackets, e.g. [2] or [1, 3], and only for what their "
         "notes support; cite nothing that is not in the list. Numbers in brackets always mean "

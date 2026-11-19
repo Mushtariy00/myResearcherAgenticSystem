@@ -348,6 +348,8 @@ async def _discard(code: str, params: dict[str, Any], message: str) -> None:
 def context(
     stage: str,
     *,
+    config: RunConfig | None = None,
+    inputs: Mapping[str, dict[str, Any]] | None = None,
     degraded_inputs: Mapping[str, str] | None = None,
     previous_output: dict[str, Any] | None = None,
     feedback_history: tuple[str, ...] = (),
@@ -366,7 +368,8 @@ def context(
         project_id=str(uuid.uuid4()),
         llm_policy="auto",
         budget_cap_usd=None,
-        inputs=inputs_for(stage),
+        config=config or RunConfig(),
+        inputs=inputs_for(stage) if inputs is None else dict(inputs),
         degraded_inputs=degraded_inputs or {},
         log=log,
         previous_output=previous_output,

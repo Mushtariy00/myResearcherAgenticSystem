@@ -24,7 +24,7 @@ from llm_stages_testkit import (
 from temporalio.exceptions import ApplicationError
 from temporalio.testing import ActivityEnvironment
 
-from agentic_core.schemas import WritingOutput, validate_stage_output
+from agentic_core.schemas import RunConfig, WritingOutput, validate_stage_output
 from agentic_worker.activities import approved_degraded_reasons
 from agentic_worker.gateway_llm import AttemptEndedError
 from agentic_worker.outputs import WRITING_PROMPT_VERSION
@@ -123,6 +123,8 @@ async def test_the_writing_stage_outlines_writes_each_section_and_assembles_the_
     assert "\nMETHOD\nResearch gaps:\n" in research and "\nRecommended proposal: " in research
     assert "\nCODE\nSummary: " in research and "\nEXPERIMENT\nStatus: " in research
     assert "to be confirmed" not in outline
+    assert "the method and what the experiment shows" in outline
+    assert "no code or experiment of its own" not in outline
     method = sections[1]
     assert 'Write section 2 of 3, "Method", of a research paper draft on this topic' in method
     assert "Its objective: Describe the model." in method
@@ -183,6 +185,32 @@ async def test_only_demo_outputs_count_as_simulated_results(db: Factory) -> None
         prompt
     )
     assert "\nCODE\n" in block(prompt, "RESEARCH")
+
+
+async def test_a_run_without_code_writes_a_review_that_proposes_the_study(db: Factory) -> None:
+    """Literature, method, writing: no code or experiment to read, and no results to report."""
+    mw = harness(db)
+    config = RunConfig.model_validate({"stages": ["literature", "method", "writing"]})
+    inputs = {name: data for name, data in upstream().items() if name in ("literature", "method")}
+    outcome = await mw.runner.run(context("writing", config=config, inputs=inputs))
+    assert (outcome.degraded, outcome.degraded_reason) == (False, None)
+    output = WritingOutput.model_validate(outcome.data)
+    assert [c.key for c in output.citations] == [1, 2, 3]
+    outline, *sections = prompts(mw.gateway.calls)
+    assert len(sections) == 3
+    for prompt in (outline, *sections):
+        research = block(prompt, "RESEARCH")
+        assert research.lstrip().startswith("LITERATURE REVIEW\nScope: ")
+        assert "\nMETHOD\nResearch gaps:\n" in research
+        assert "\nCODE\n" not in research and "\nEXPERIMENT\n" not in research
+        assert "this project has no code or experiment of its own" in prompt
+        assert "Never present data, numbers or findings as this project's own results" in prompt
+        assert "literature review, with its papers numbered for citation, then the method." in (
+            prompt
+        )
+    assert "the problem, what the reviewed studies show and the proposed study" in outline
+    assert "the proposed study and a conclusion, with no results section" in outline
+    assert "review article that ends in a proposal" in outline
 
 
 async def test_a_draft_built_on_a_generated_review_says_so_first(db: Factory) -> None:

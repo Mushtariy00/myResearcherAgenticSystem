@@ -13,6 +13,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from agentic_core.schemas import LiteratureOutput, MethodOutput, NonEmptyStr, PaperRef
+from agentic_core.stages import Stage
 from agentic_worker.agents import JSON_ONLY, Persona, Request, fenced
 from agentic_worker.llm_json import InvalidModelOutputError, parse_model_output
 from agentic_worker.stages import StageContext
@@ -134,8 +135,31 @@ def parse_method(raw: str, papers: Sequence[PaperRef]) -> Proposed:
     return Proposed(output=output, unknown_evidence=unknown)
 
 
-def method_prompt(ctx: StageContext, literature: LiteratureOutput) -> str:
-    """The proposals request; a request-changes attempt shows the answer it revises."""
+_TRAINED_FIELDS = (
+    '- "implementation_focus": 2 or 3 sentences on what to implement first and how to keep '
+    "it small enough to train on one GPU\n"
+    '- "datasets": the datasets to train and evaluate on\n'
+    '- "evaluation_metrics": the metrics to report'
+)
+_STUDY_FIELDS = (
+    '- "implementation_focus": 2 or 3 sentences on what to do first and how to keep the study '
+    "feasible: its size, its time, and any ethics approval it needs\n"
+    '- "datasets": the data the study uses: datasets, corpora, texts, archives or participants\n'
+    '- "evaluation_metrics": the measures and analyses that show whether it worked'
+)
+
+
+def _setting(ctx: StageContext) -> str:
+    """What the method must fit. Only a run with a coding stage trains a model, and only its
+    experiment uses the registered dataset; any other run gets a study the researchers carry out
+    themselves, whatever the dataset field says."""
+    if Stage.CODING not in ctx.config.stages:
+        return (
+            "This run writes no code and runs no experiment of its own. Propose study designs "
+            "that fit the field and the evidence, such as an experiment or intervention, a "
+            "survey, interviews, an analysis of a corpus, texts or archives, or a modelling "
+            "study, which the researchers carry out themselves."
+        )
     if ctx.config.dataset:
         dataset = (
             f'The experiments run on the lab\'s registered dataset "{ctx.config.dataset}": plan '
@@ -143,10 +167,18 @@ def method_prompt(ctx: StageContext, literature: LiteratureOutput) -> str:
         )
     else:
         dataset = "The run has no registered dataset: propose public datasets that fit the topic."
+    return (
+        f"{dataset} The coding stage then writes only the model and the loss: the lab's harness "
+        "supplies the data loader, the metrics and the training loop, on one GPU."
+    )
+
+
+def method_prompt(ctx: StageContext, literature: LiteratureOutput) -> str:
+    """The proposals request; a request-changes attempt shows the answer it revises."""
+    trained = Stage.CODING in ctx.config.stages
     parts = [
         f"Propose methods for a research project on this topic: {ctx.topic}",
-        f"{dataset} The coding stage then writes only the model and the loss: the lab's harness "
-        "supplies the data loader, the metrics and the training loop, on one GPU.",
+        _setting(ctx),
     ]
     if ctx.previous_output is not None:
         previous = json.dumps(ctx.previous_output, ensure_ascii=False, indent=2)
@@ -170,11 +202,8 @@ def method_prompt(ctx: StageContext, literature: LiteratureOutput) -> str:
         '- "proposals": 3 methods that address the gaps, each with a short "name", the '
         '"rationale" the evidence gives for it, its "expected_benefit", its main "risk", and '
         '"evidence_paper_ids": the keys of the papers that support it, copied from the list\n'
-        '- "recommended_option": the name of the proposal to implement first, copied exactly\n'
-        '- "implementation_focus": 2 or 3 sentences on what to implement first and how to keep '
-        "it small enough to train on one GPU\n"
-        '- "datasets": the datasets to train and evaluate on\n'
-        '- "evaluation_metrics": the metrics to report',
+        '- "recommended_option": the name of the proposal to carry out first, copied exactly\n'
+        + (_TRAINED_FIELDS if trained else _STUDY_FIELDS),
         JSON_ONLY,
     ]
     return "\n\n".join(parts)

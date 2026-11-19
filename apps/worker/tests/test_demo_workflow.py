@@ -226,6 +226,24 @@ async def test_the_run_completes_after_the_last_configured_stage(
     assert len(literature["papers"]) <= 6  # the rest of the config reaches the stages too
 
 
+async def test_a_run_without_code_skips_the_coding_and_the_experiment(
+    client: Client, db: Factory
+) -> None:
+    run_id = await create_run(
+        db, config={"stages": ["literature", "method", "writing"], "max_papers": 6}
+    )
+    handle = await start_run(client, run_id)
+    await approve_all(handle, db, ("literature", "method", "writing"))
+    assert await handle.result() == "completed"
+    assert await stage_runs(db, run_id) == [
+        ("literature", 1, StageStatus.APPROVED),
+        ("method", 1, StageStatus.APPROVED),
+        ("writing", 1, StageStatus.APPROVED),
+    ]
+    writing = await output_data(db, (await approved_output_ids(db, run_id))["writing"])
+    assert "Proposed Study" in [section["name"] for section in writing["sections"]]
+
+
 async def test_an_invalid_stored_config_fails_the_run_with_a_code(
     client: Client, db: Factory
 ) -> None:

@@ -346,11 +346,13 @@ class PipelineStageRunner:
             return demo.experiment(
                 ctx.topic, self._coding(ctx), seed, feedback=ctx.feedback, finished_at=finished
             )
+        # A run without code (NO_CODE_STAGES) has no experiment: its draft is a review.
+        experiment = self._experiment(ctx) if Stage.EXPERIMENT in ctx.config.stages else None
         return demo.writing(
             ctx.topic,
             self._literature(ctx),
             self._method(ctx),
-            self._experiment(ctx),
+            experiment,
             seed,
             ctx.feedback,
         )

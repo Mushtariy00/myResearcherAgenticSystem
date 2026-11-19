@@ -14,7 +14,7 @@ from agentic_worker.agents import JSON_ONLY, Persona, Request, fenced
 from agentic_worker.llm_json import InvalidModelOutputError, parse_model_output
 from agentic_worker.stages import StageContext
 from agentic_worker.upstream import reviewer_feedback
-from agentic_worker.writing.research import ABOUT, Research, simulated_note
+from agentic_worker.writing.research import NO_RESULTS_NOTE, Research, about, simulated_note
 
 MAX_OUTPUT_TOKENS = 4000
 ROLE = "writing.outline"
@@ -23,9 +23,9 @@ MAX_SECTIONS = 8  # one call each: a draft costs at most 9 calls before repairs
 # Ported from main:src/agentic_ai_system/config/agents.yaml ("writing_strategist").
 WRITING_STRATEGIST = Persona(
     role="{topic} Writing Strategist",
-    goal="Produce a section-wise writing plan based on approved research and experiment context",
+    goal="Produce a section-wise writing plan from the approved research",
     backstory=(
-        "You're an academic writing planner who structures technical findings into "
+        "You're an academic writing planner who structures research findings into "
         "publication-ready sections with precise review focus."
     ),
 )
@@ -122,6 +122,17 @@ def outline_prompt(ctx: StageContext, research: Research, previous: WritingOutpu
     parts = [f"Plan the draft of a research paper on this topic: {ctx.topic}"]
     if research.simulated:
         parts.append(simulated_note(research.simulated))
+    if not research.has_results:
+        parts.append(
+            f"{NO_RESULTS_NOTE} Plan sections such as an introduction, a review of the evidence, "
+            "the research gaps, the proposed study and a conclusion, with no results section."
+        )
+    if research.has_results:
+        shows = "the method and what the experiment shows"
+        form = "Markdown draft structured like a conference paper"
+    else:
+        shows = "what the reviewed studies show and the proposed study"
+        form = "Markdown draft structured like a review article that ends in a proposal"
     if previous is not None:
         parts += [
             "The reviewer asked for changes to the previous draft, whose outline is between the "
@@ -132,18 +143,17 @@ def outline_prompt(ctx: StageContext, research: Research, previous: WritingOutpu
     if ctx.feedback_history:
         parts.append(reviewer_feedback(ctx.feedback_history))
     parts += [
-        ABOUT,
+        about(research),
         fenced("RESEARCH", research.brief),
         "Return ONLY a JSON object with exactly these keys:\n"
         f"{SHAPE}\n"
         '- "title": the paper\'s title\n'
-        '- "abstract": one paragraph of 150 to 250 words on the problem, the method and what '
-        "the experiment shows, in plain text without citations or formulas\n"
+        f'- "abstract": one paragraph of 150 to 250 words on the problem, {shows}, in plain '
+        "text without citations or formulas\n"
         f'- "sections": 5 to {MAX_SECTIONS} sections in order, each with its "name" and its '
         '"objective" (what it must cover, in one or two sentences); leave out the abstract and '
         "the references, which are added for you\n"
-        '- "output_format": the form of the draft, e.g. "Markdown draft structured like a '
-        'conference paper"\n'
+        f'- "output_format": the form of the draft, e.g. "{form}"\n'
         '- "review_focus": what the reviewer should check first, in one or two sentences',
         JSON_ONLY,
     ]

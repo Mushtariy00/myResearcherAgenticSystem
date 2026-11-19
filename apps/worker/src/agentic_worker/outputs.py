@@ -25,8 +25,8 @@ PLAN_PROMPT_VERSION = "literature-plan@1"
 LITERATURE_PROMPT_VERSION = "literature@1"
 # The real method and writing stages (agentic_worker.method, agentic_worker.writing): bump each
 # when any of its prompts changes.
-METHOD_PROMPT_VERSION = "method@1"
-WRITING_PROMPT_VERSION = "writing@1"
+METHOD_PROMPT_VERSION = "method@2"  # @2: study designs for a run without code
+WRITING_PROMPT_VERSION = "writing@2"  # @2: a review with a proposed study for a run without code
 # The real coding stage's prompts (agentic_worker.coding), and the real experiment stage's
 # training recipe (agentic_worker.experiment): bump each when it changes.
 CODING_PROMPT_VERSION = "coding@1"

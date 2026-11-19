@@ -199,12 +199,21 @@ models, or buy the one-time $10 that raises the cap to 1,000 a day.
 
 ## Method and writing (built 2026-10-30, `ARP_LLM_STAGES=real`)
 
-- **Method** (`method@1`): one call on the approved review, which gives research gaps and
+- **Method** (`method@2`): one call on the approved review, which gives research gaps and
   proposals.
   - Evidence ids must name papers of the review; unknown ones are dropped.
   - The recommendation must be one of the proposals: one repair, then the stage fails.
-- **Writing** (`writing@1`): an outline call, then one call per section (at most 8). Sections
+  - Only a run with a coding stage is told about the harness, the GPU and the registered
+    dataset. Any other run is asked for a study the researchers carry out themselves (an
+    intervention, a survey, interviews, a corpus or archive analysis), whatever the dataset
+    field says.
+- **Writing** (`writing@2`): an outline call, then one call per section (at most 8). Sections
   come back as Markdown between marker lines, not JSON, so LaTeX and line breaks survive.
+- **Research without code** (added 2026-11-20): a run's stages are a prefix of the pipeline,
+  or literature, method and writing (`NO_CODE_STAGES`), for fields such as languages,
+  education or history. The writer then reads only the review and the method; the draft is a
+  review that ends in the proposed study, and its prompts forbid presenting any data or
+  finding as the project's own. In demo mode the generated draft has the same shape.
 - **Citations are code, not trust:**
   - the writer sees the review's papers numbered;
   - every `[n]` must be in range, and an out-of-range one is removed and flagged
