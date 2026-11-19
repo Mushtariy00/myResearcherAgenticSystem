@@ -239,7 +239,7 @@ describe("NewRunWizard steps", () => {
     expect(within(preview).getByText("Experiment").textContent).toBe("Experimentnot run");
     expect(within(preview).getByText("Coding").textContent).toBe("Codingincluded");
     expect(
-      screen.getByText("This run stops before the experiment, so it does not use a dataset."),
+      screen.getByText("This run has no experiment, so it does not use a dataset."),
     ).toBeTruthy();
 
     fireEvent.click(button("Next"));
@@ -256,6 +256,38 @@ describe("NewRunWizard steps", () => {
     await waitFor(() =>
       expect(estimates.at(-1)).toMatchObject({
         config: { stages: ["literature", "method", "coding"] },
+      }),
+    );
+  });
+
+  it("takes the path without code: literature, method and a draft", async () => {
+    renderWizard();
+    await fillTopicAndContinue();
+    fireEvent.click(button("Next"));
+    await expectStep("Stages");
+
+    const option = screen.getByRole("radio", { name: "Writing, without code" });
+    fireEvent.click(option);
+    expect(option.getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("radio", { name: "Writing" }).getAttribute("aria-checked")).toBe(
+      "false",
+    );
+    const preview = screen.getByRole("list", { name: "Stages of this run" });
+    expect(within(preview).getByText("Coding").textContent).toBe("Codingnot run");
+    expect(within(preview).getByText("Experiment").textContent).toBe("Experimentnot run");
+    expect(within(preview).getByText("Writing").textContent).toBe("Writingincluded");
+    expect(
+      screen.getByText("This run has no experiment, so it does not use a dataset."),
+    ).toBeTruthy();
+
+    fireEvent.click(button("Next"));
+    await expectStep("Models and budget");
+    fireEvent.click(button("Review"));
+    await expectStep("Review");
+    expect(screen.getByText("Literature → Method → Writing")).toBeTruthy();
+    await waitFor(() =>
+      expect(estimates.at(-1)).toMatchObject({
+        config: { stages: ["literature", "method", "writing"] },
       }),
     );
   });

@@ -178,13 +178,19 @@ describe("useNewRunForm steps", () => {
     );
   });
 
-  it("sets the stages to a pipeline prefix", () => {
+  it("sets the stages to a pipeline prefix, or to the path without code", () => {
     const { result } = setup();
-    act(() => result.current.setLastStage("coding"));
+    act(() => result.current.setStages("coding"));
     expect(result.current.form.getValues("config.stages")).toEqual([
       "literature",
       "method",
       "coding",
+    ]);
+    act(() => result.current.setStages("no_code"));
+    expect(result.current.form.getValues("config.stages")).toEqual([
+      "literature",
+      "method",
+      "writing",
     ]);
   });
 });

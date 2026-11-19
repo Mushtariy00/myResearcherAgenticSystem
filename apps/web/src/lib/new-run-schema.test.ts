@@ -4,6 +4,8 @@ import {
   estimateBodyOf,
   firstStepWithError,
   isPipelinePrefix,
+  isRunStages,
+  isStagesChoice,
   lastStageOf,
   NEW_RUN_ERROR_CODES,
   NEW_RUN_STEPS,
@@ -11,6 +13,7 @@ import {
   type NewRunFormInput,
   NewRunValidationError,
   type NewRunValues,
+  NO_CODE_STAGES,
   newRunDefaults,
   newRunErrorValues,
   newRunFieldError,
@@ -19,6 +22,8 @@ import {
   SEARCH_SOURCES,
   type SearchSource,
   serverFieldErrors,
+  stagesChoiceOf,
+  stagesFor,
   stagesThrough,
 } from "./new-run-schema";
 import { STAGE_ORDER } from "./timeline";
@@ -89,6 +94,16 @@ describe("newRunSchema", () => {
   it("requires stages to be a prefix of the pipeline starting with literature", () => {
     for (const stages of [["literature"], ["literature", "method"], [...STAGE_ORDER]]) {
       expect(errors(withConfig({ stages })), stages.join()).toEqual({});
+    }
+    // Research without code: literature, method and a draft.
+    expect(errors(withConfig({ stages: ["literature", "method", "writing"] }))).toEqual({});
+    for (const stages of [
+      ["literature", "writing"],
+      ["literature", "method", "coding", "writing"],
+    ]) {
+      expect(errors(withConfig({ stages })), stages.join()).toEqual({
+        "config.stages": "stages.notPrefix",
+      });
     }
     expect(errors(withConfig({ stages: [] }))).toEqual({ "config.stages": "stages.empty" });
     expect(errors(withConfig({ stages: ["method"] }))).toEqual({
@@ -279,6 +294,22 @@ describe("stage helpers", () => {
     expect(isPipelinePrefix(["literature", "method", "coding"])).toBe(true);
     expect(isPipelinePrefix(["literature", "coding"])).toBe(false);
     expectTypeOf(stagesThrough).returns.toEqualTypeOf<Stage[]>();
+  });
+
+  it("offers the path without code beside the prefixes", () => {
+    expect(stagesFor("no_code")).toEqual(["literature", "method", "writing"]);
+    expect(stagesFor("method")).toEqual(["literature", "method"]);
+    expect(stagesChoiceOf([...NO_CODE_STAGES])).toBe("no_code");
+    expect(stagesChoiceOf([...STAGE_ORDER])).toBe("writing");
+    expect(stagesChoiceOf(["literature", "writing"])).toBeNull();
+    expect(lastStageOf([...NO_CODE_STAGES])).toBeNull(); // not a prefix
+    expect(isRunStages([...NO_CODE_STAGES])).toBe(true);
+    expect(isRunStages(["literature", "method", "coding", "writing"])).toBe(false);
+    expect([isStagesChoice("no_code"), isStagesChoice("coding"), isStagesChoice("all")]).toEqual([
+      true,
+      true,
+      false,
+    ]);
   });
 });
 

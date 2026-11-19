@@ -107,6 +107,45 @@ export function lastStageOf(stages: readonly string[]): Stage | null {
   return isStage(last) && isPipelinePrefix(stages) ? last : null;
 }
 
+/**
+ * Literature, method and a draft, for research that needs no code or GPU: the one stage list
+ * besides a pipeline prefix that RunConfig accepts (agentic_core.stages.NO_CODE_STAGES).
+ */
+export const NO_CODE_STAGES = [
+  "literature",
+  "method",
+  "writing",
+] as const satisfies readonly Stage[];
+
+/** What a stages picker offers: stop after a stage, or the path without code. */
+export type StagesChoice = Stage | "no_code";
+
+export function isStagesChoice(value: unknown): value is StagesChoice {
+  return value === "no_code" || isStage(value);
+}
+
+export function isNoCodeStages(stages: readonly string[]): boolean {
+  return (
+    stages.length === NO_CODE_STAGES.length &&
+    stages.every((stage, index) => stage === NO_CODE_STAGES[index])
+  );
+}
+
+/** Whether RunConfig accepts `stages`: a pipeline prefix, or the path without code. */
+export function isRunStages(stages: readonly string[]): boolean {
+  return isPipelinePrefix(stages) || isNoCodeStages(stages);
+}
+
+/** The stages a choice runs. */
+export function stagesFor(choice: StagesChoice): Stage[] {
+  return choice === "no_code" ? [...NO_CODE_STAGES] : stagesThrough(choice);
+}
+
+/** The choice that gives these stages, or null when RunConfig would refuse them. */
+export function stagesChoiceOf(stages: readonly string[]): StagesChoice | null {
+  return isNoCodeStages(stages) ? "no_code" : lastStageOf(stages);
+}
+
 // --- Field schemas ------------------------------------------------------------------------------
 
 /** What number inputs hand over: a number (`valueAsNumber`, NumberField), text, or nothing. */
@@ -220,7 +259,7 @@ const stagesSchema = z
   .array(z.string(), { error: "stages.invalid" })
   .min(1, { error: "stages.empty" })
   .refine((stages) => stages.every(isStage), { error: "stages.invalid" })
-  .refine(isPipelinePrefix, { error: "stages.notPrefix" })
+  .refine(isRunStages, { error: "stages.notPrefix" })
   .transform((stages) => stages as Stage[]);
 
 /** A dataset id (see GET /api/v1/datasets); an empty choice means none. */

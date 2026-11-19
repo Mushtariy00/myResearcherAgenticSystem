@@ -10,9 +10,9 @@ import type { NewRunForm } from "@/hooks/use-new-run-form";
 import {
   isSearchSource,
   LLM_POLICIES,
-  lastStageOf,
   NEW_RUN_LIMITS,
   SEARCH_SOURCES,
+  stagesChoiceOf,
 } from "@/lib/new-run-schema";
 import { cn } from "@/lib/utils";
 import {
@@ -242,7 +242,7 @@ export function StagesStep({ wizard }: StepProps) {
   const ids = useId();
   const { formState, control } = wizard.form;
   const stages = useWatch({ control, name: "config.stages" });
-  const last = lastStageOf(Array.isArray(stages) ? stages : []);
+  const choice = stagesChoiceOf(Array.isArray(stages) ? stages : []);
   const stagesError = fieldError(formState.errors.config?.stages);
   const datasetError = fieldError(formState.errors.config?.dataset);
   const experimentIncluded = Array.isArray(stages) && stages.includes("experiment");
@@ -254,8 +254,8 @@ export function StagesStep({ wizard }: StepProps) {
           {t("stages.legend")}
         </p>
         <StagePrefixChooser
-          value={last}
-          onChange={wizard.setLastStage}
+          value={choice}
+          onChange={wizard.setStages}
           labelledBy={`${ids}-stages`}
           describedBy={stagesError ? `${ids}-stages-error` : undefined}
           invalid={Boolean(stagesError)}

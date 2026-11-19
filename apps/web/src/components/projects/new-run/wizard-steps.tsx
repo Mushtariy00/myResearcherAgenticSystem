@@ -6,7 +6,7 @@ import { CheckIcon } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useId } from "react";
 import { Controller, type UseFormReturn, useWatch } from "react-hook-form";
-import type { DatasetOut, LlmPolicy, Stage } from "@/client";
+import type { DatasetOut, LlmPolicy } from "@/client";
 import { QueryError } from "@/components/app/query-state";
 import { DemoBadge } from "@/components/shared/demo-badge";
 import { formatBytes } from "@/components/shared/format";
@@ -24,13 +24,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useDatasets } from "@/hooks/use-datasets";
 import {
-  isStage,
+  isStagesChoice,
   LLM_POLICIES,
-  lastStageOf,
   NEW_RUN_LIMITS,
   type NewRunFormInput,
   type NewRunValues,
   SEARCH_SOURCES,
+  type StagesChoice,
+  stagesChoiceOf,
 } from "@/lib/new-run-schema";
 import { STAGE_ORDER } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
@@ -344,16 +345,16 @@ function DatasetField({ form, used }: { form: NewRunFormApi; used: boolean }) {
 
 export function StagesStep({
   form,
-  setLastStage,
+  setStages,
 }: {
   form: NewRunFormApi;
-  setLastStage: (stage: Stage) => void;
+  setStages: (choice: StagesChoice) => void;
 }) {
   const t = useTranslations("wizard.stages");
   const tStages = useTranslations("stages");
   const ids = useId();
   const stages = useWatch({ control: form.control, name: "config.stages" }) ?? [];
-  const last = lastStageOf(stages);
+  const choice = stagesChoiceOf(stages);
   const error = form.formState.errors.config?.stages;
 
   return (
@@ -368,10 +369,10 @@ export function StagesStep({
         <RadioGroup
           aria-labelledby={`${ids}-stages`}
           aria-describedby={describedBy(`${ids}-hint`, `${ids}-error`, Boolean(error))}
-          value={last}
+          value={choice}
           onValueChange={(value) => {
-            if (isStage(value)) {
-              setLastStage(value);
+            if (isStagesChoice(value)) {
+              setStages(value);
             }
           }}
           className="grid gap-2"
@@ -401,6 +402,26 @@ export function StagesStep({
               </span>
             </Label>
           ))}
+          <Label className={OPTION_CLASS}>
+            <RadioGroupItem
+              value="no_code"
+              className="mt-0.5"
+              aria-labelledby={`${ids}-no-code-label`}
+              aria-describedby={`${ids}-no-code-description`}
+            />
+            <span className="grid gap-1">
+              <span id={`${ids}-no-code-label`} className="flex items-center gap-1.5 font-medium">
+                <StageIcon stage="writing" />
+                {t("noCode.label")}
+              </span>
+              <span
+                id={`${ids}-no-code-description`}
+                className="text-xs leading-snug text-muted-foreground"
+              >
+                {t("noCode.description")}
+              </span>
+            </span>
+          </Label>
         </RadioGroup>
         <PipelinePreview stages={stages} />
         <FieldError id={`${ids}-error`} error={error} />

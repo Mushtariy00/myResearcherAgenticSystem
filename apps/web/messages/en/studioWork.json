@@ -128,11 +128,16 @@
         "legend": "Stop after",
         "summary": "The run goes up to and including {stage}.",
         "choose": "Choose the stage the run stops after.",
-        "skipped": "Not run: {stages}."
+        "skipped": "Not run: {stages}.",
+        "noCode": {
+          "label": "Without code: literature, method and a draft",
+          "description": "For research that needs no code or GPU, such as in languages, education or history. The draft reviews the literature and proposes a study.",
+          "summary": "The run reads the literature, proposes a study and drafts a paper, with no code or experiment."
+        }
       },
       "dataset": {
         "legend": "Dataset",
-        "notUsed": "This run stops before the experiment stage, so the dataset is not used.",
+        "notUsed": "This run has no experiment stage, so the dataset is not used.",
         "version": "v{version}",
         "samples": "{count, plural, one {# sample} other {# samples}}",
         "sizeUnknown": "size unknown",
@@ -186,7 +191,7 @@
         "stages": {
           "empty": "The run needs at least the literature stage.",
           "invalid": "One of the stages is not known.",
-          "notPrefix": "Stages start with literature and follow the pipeline order."
+          "notPrefix": "Stages follow the pipeline from literature, or take the path without code."
         },
         "dataset": {
           "invalid": "Choose a dataset from the list."

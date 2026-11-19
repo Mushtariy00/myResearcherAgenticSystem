@@ -252,7 +252,7 @@ describe("NewRunWizard steps", () => {
     await stepHeading("Stages", 3);
 
     const chooser = screen.getByRole("radiogroup", { name: "Stop after" });
-    expect(within(chooser).getAllByRole("radio")).toHaveLength(5);
+    expect(within(chooser).getAllByRole("radio")).toHaveLength(6); // the stages, and no code
     fireEvent.click(within(chooser).getByRole("radio", { name: "Coding" }));
     expect(
       within(chooser).getByRole("radio", { name: "Coding" }).getAttribute("aria-checked"),
@@ -274,6 +274,38 @@ describe("NewRunWizard steps", () => {
     });
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/studio/runs/${RUN.id}`));
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("takes the path without code and starts it", async () => {
+    renderWizard();
+    fireEvent.change(await screen.findByRole("textbox", { name: "Research topic" }), {
+      target: { value: "Corrective feedback in L2 writing" },
+    });
+    next();
+    await stepHeading("Literature", 2);
+    next();
+    await stepHeading("Stages", 3);
+
+    const chooser = screen.getByRole("radiogroup", { name: "Stop after" });
+    const option = within(chooser).getByRole("radio", {
+      name: "Without code: literature, method and a draft",
+    });
+    fireEvent.click(option);
+    expect(option.getAttribute("aria-checked")).toBe("true");
+    expect(
+      within(chooser).getByRole("radio", { name: "Writing" }).getAttribute("aria-checked"),
+    ).toBe("false");
+    expect(screen.getByText(/proposes a study and drafts a paper, with no code/)).toBeTruthy();
+    expect(screen.getByText(/Not run: Coding and Experiment\./)).toBeTruthy();
+
+    next();
+    await stepHeading("Models and budget", 4);
+    fireEvent.click(screen.getByRole("button", { name: "Start run" }));
+    await waitFor(() => expect(creations()).toHaveLength(1));
+    expect(creations()[0]?.body).toMatchObject({
+      topic: "Corrective feedback in L2 writing",
+      config: { stages: ["literature", "method", "writing"] },
+    });
   });
 });
 

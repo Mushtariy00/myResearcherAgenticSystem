@@ -57,7 +57,7 @@
     },
     "stages": {
       "label": "Stop after",
-      "hint": "Stages always start with the literature and follow the pipeline in order.",
+      "hint": "Runs start with the literature and follow the pipeline in order. Research that needs no code can skip the coding and the experiment.",
       "stopAfter": "{stage}",
       "descriptions": {
         "literature": "Only the literature: screened papers, their analyses and a synthesis.",
@@ -65,6 +65,10 @@
         "coding": "Adds the model and loss code for the chosen method, for review.",
         "experiment": "Adds a GPU training run on the dataset, with metrics.",
         "writing": "The whole pipeline: ends with a paper draft with linked citations."
+      },
+      "noCode": {
+        "label": "Writing, without code",
+        "description": "Literature, method and a paper draft, for research that needs no code or GPU, such as in languages, education or history. The draft reviews the literature and proposes a study; it reports no results of its own."
       },
       "preview": "Stages of this run",
       "included": "included",
@@ -75,7 +79,7 @@
       "none": "No dataset",
       "loading": "Loading datasets…",
       "hint": "The experiment trains and evaluates on this dataset (mounted read-only).",
-      "notUsed": "This run stops before the experiment, so it does not use a dataset.",
+      "notUsed": "This run has no experiment, so it does not use a dataset.",
       "option": "{name} ({version})",
       "facts": "{samples} samples · {size} · {modality} · {license}",
       "sizeUnknown": "size unknown",
@@ -169,7 +173,7 @@
       "stages": {
         "empty": "Choose at least the literature stage.",
         "invalid": "One of the stages is not known.",
-        "notPrefix": "Stages must start with the literature and follow the pipeline order."
+        "notPrefix": "Stages follow the pipeline from the literature, or take the path without code."
       },
       "dataset": {
         "invalid": "Choose a dataset from the list."

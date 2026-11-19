@@ -10,7 +10,7 @@ import {
 } from "@tanstack/react-query";
 import { type BaseSyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { get, type UseFormReturn, useForm, useWatch } from "react-hook-form";
-import type { RunCreate, RunEstimateIn, RunEstimateOut, RunOut, Stage } from "@/client";
+import type { RunCreate, RunEstimateIn, RunEstimateOut, RunOut } from "@/client";
 import { listRecentRunsQueryKey, listRunsQueryKey } from "@/client/@tanstack/react-query.gen";
 import { client } from "@/client/client.gen";
 import { createRun, estimateRunCost } from "@/client/sdk.gen";
@@ -28,8 +28,9 @@ import {
   type NewRunValues,
   newRunDefaults,
   newRunSchema,
+  type StagesChoice,
   serverFieldErrors,
-  stagesThrough,
+  stagesFor,
 } from "@/lib/new-run-schema";
 import { useDebouncedValue } from "./use-paper-search";
 
@@ -149,8 +150,11 @@ export type NewRunForm = {
   /** Why creating the run failed, when no field explains it (e.g. `orchestrator.unavailable`). */
   submitError: ApiError | null;
   estimate: NewRunEstimate;
-  /** Sets the stages to the pipeline up to and including `stage` ("stop after"). */
-  setLastStage: (stage: Stage) => void;
+  /**
+   * Sets the stages: the pipeline up to and including a stage ("stop after"), or the path
+   * without code (literature, method and writing).
+   */
+  setStages: (choice: StagesChoice) => void;
   /** Back to the starting values and the first step. */
   reset: () => void;
 };
@@ -318,9 +322,9 @@ export function useNewRunForm(projectId: string, options: UseNewRunFormOptions =
     [next, stepIndex, submit],
   );
 
-  const setLastStage = useCallback(
-    (stage: Stage) =>
-      form.setValue("config.stages", stagesThrough(stage), {
+  const setStages = useCallback(
+    (choice: StagesChoice) =>
+      form.setValue("config.stages", stagesFor(choice), {
         shouldDirty: true,
         shouldTouch: true,
         shouldValidate: true,
@@ -393,7 +397,7 @@ export function useNewRunForm(projectId: string, options: UseNewRunFormOptions =
         estimateKey !== settledKey || (estimateQuery.isFetching && estimateQuery.isPlaceholderData),
       error: estimateQuery.error,
     },
-    setLastStage,
+    setStages,
     reset,
   };
 }

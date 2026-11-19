@@ -212,7 +212,7 @@ export function NewRunWizard({
 
             {current === "topic" && <TopicStep form={form} />}
             {current === "literature" && <LiteratureStep form={form} />}
-            {current === "stages" && <StagesStep form={form} setLastStage={wizard.setLastStage} />}
+            {current === "stages" && <StagesStep form={form} setStages={wizard.setStages} />}
             {current === "budget" && <BudgetStep form={form} allowFreeModels={allowFreeModels} />}
             {current === "review" && (
               <div className="grid gap-6">
