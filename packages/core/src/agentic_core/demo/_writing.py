@@ -1,13 +1,16 @@
-"""Demo writing stage: a 900-1500 word Markdown draft built from the earlier stage outputs.
+"""Demo writing stage: a Markdown draft built from the earlier stage outputs.
 
-Every [n] marker cites an included paper from the literature stage, the results table repeats
-the experiment's final metrics, and the Method section holds one LaTeX formula. Text taken from
-earlier outputs is escaped (reviewers may have edited it), so the draft never contains raw HTML.
+A run with an experiment gets a 900-1500 word paper: every [n] marker cites an included paper
+from the literature stage, the results table repeats the experiment's final metrics, and the
+Method section holds one LaTeX formula. A run without code (agentic_core.stages.NO_CODE_STAGES)
+gets a review that ends in the study the method stage proposes, with no results of its own. Text
+taken from earlier outputs is escaped (reviewers may have edited it), so a draft never contains
+raw HTML.
 """
 
 import random
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 from agentic_core.demo._coding import GPU_NAME
 from agentic_core.demo._people import short_author_list
@@ -47,17 +50,44 @@ _SECTION_OBJECTIVES = (
     ("Conclusion", "Summarize the findings and the next steps."),
     ("References", "List every cited paper with its venue and year."),
 )
+_NUMBERED = {
+    "Introduction": 1,
+    "Related Work": 2,
+    "Method": 3,
+    "Experiments": 4,
+    "Discussion": 5,
+    "Conclusion": 6,
+}
+_REVIEW_OBJECTIVES = (
+    ("Abstract", "Summarize the question, what the studies show and the proposed study."),
+    ("Introduction", "Motivate the question and say what the review covers."),
+    ("Review of the Evidence", "Group the papers the literature stage kept by what they show."),
+    ("Research Gaps", "State the open problems the review leaves."),
+    ("Proposed Study", "Describe the recommended study as planned work, with its data."),
+    ("Conclusion", "Summarize the review and what the proposed study would add."),
+    ("References", "List every cited paper with its venue and year."),
+)
+_REVIEW_NUMBERED = {
+    "Introduction": 1,
+    "Review of the Evidence": 2,
+    "Research Gaps": 3,
+    "Proposed Study": 4,
+    "Conclusion": 5,
+}
 
 
 def writing(
     topic: str,
     literature: LiteratureOutput,
     method: MethodOutput,
-    experiment: ExperimentOutput,
+    experiment: ExperimentOutput | None,
     seed: int,
     feedback: str = "",
 ) -> WritingOutput:
-    """A paper draft for the recommended method and its experiment, citing included papers."""
+    """A paper draft for the recommended method and its experiment, citing included papers;
+    without an experiment (a run without code), a review that ends in the proposed study."""
+    if experiment is None:
+        return _review(topic, literature, method, seed, feedback)
     rng = rng_for(seed, "writing")
     dataset_id = experiment.provenance.dataset
     profile = profile_for(topic, dataset_id)
@@ -92,6 +122,31 @@ def writing(
     )
 
 
+def _review(
+    topic: str, literature: LiteratureOutput, method: MethodOutput, seed: int, feedback: str
+) -> WritingOutput:
+    draft = _Review(rng_for(seed, "writing"), topic, literature, method)
+    note = revision_note(feedback)
+    markdown = _render(draft.title, note, draft.sections(), _REVIEW_OBJECTIVES, _REVIEW_NUMBERED)
+    focus = (
+        "Check that every [n] citation supports its claim, and that the proposed study reads as "
+        "planned work with no results of its own."
+    )
+    return WritingOutput(
+        title=draft.title,
+        abstract=draft.abstract(plain=True),
+        markdown=markdown,
+        sections=[
+            WritingSection(name=name, objective=objective) for name, objective in _REVIEW_OBJECTIVES
+        ],
+        citations=[
+            Citation(key=key, paper_id=paper.paper_id) for key, paper in draft.cited.items()
+        ],
+        output_format="Markdown draft structured like a review article that ends in a proposal",
+        review_focus=f"{note} {focus}" if note else focus,
+    )
+
+
 def _words(markdown: str) -> int:
     return len(markdown.split())
 
@@ -100,49 +155,41 @@ def _lower_first(text: str) -> str:
     return text[:1].lower() + text[1:]
 
 
-def _render(title: str, note: str, sections: dict[str, list[str]]) -> str:
+def _render(
+    title: str,
+    note: str,
+    sections: Mapping[str, list[str]],
+    objectives: tuple[tuple[str, str], ...] = _SECTION_OBJECTIVES,
+    numbered: Mapping[str, int] = _NUMBERED,
+) -> str:
     parts = [f"# {markdown_text(title)}"]
     if note:
         parts.append(f"> {markdown_text(note)}")
-    for name, _ in _SECTION_OBJECTIVES:
-        number = _NUMBERED.get(name)
+    for name, _ in objectives:
+        number = numbered.get(name)
         parts.append(f"## {number}. {name}" if number else f"## {name}")
         parts.extend(sections[name])
     return "\n\n".join(parts) + "\n"
 
 
-_NUMBERED = {
-    "Introduction": 1,
-    "Related Work": 2,
-    "Method": 3,
-    "Experiments": 4,
-    "Discussion": 5,
-    "Conclusion": 6,
-}
-
-
-class _Draft:
-    """The pieces of the draft; text from earlier stage outputs goes through ``self.md``."""
+class _Papers:
+    """What every draft builds on: the papers it cites and the method stage's recommendation.
+    Text from earlier stage outputs goes through ``self.md``."""
 
     def __init__(
         self,
         rng: random.Random,
-        profile: Profile,
         topic: str,
         literature: LiteratureOutput,
         method: MethodOutput,
-        experiment: ExperimentOutput,
+        fallback_gap: str,
     ) -> None:
         self.rng = rng
-        self.profile = profile
         self.literature = literature
         self.method = method
-        self.experiment = experiment
         self.md: Callable[[str], str] = markdown_text
         subject = subject_phrase(topic)
         self.subject = lower_phrase(subject)
-        self.dataset = dataset_spec(profile, experiment.provenance.dataset)
-        self.model = str(experiment.config.get("model") or profile.model_class)
         self.recommended = next(
             (p for p in method.proposals if p.name == method.recommended_option),
             method.proposals[0],
@@ -156,17 +203,72 @@ class _Draft:
         papers = [p for p in literature.papers if p.decision == "include"]
         papers.sort(key=lambda paper: paper.relevance, reverse=True)
         self.cited: dict[int, PaperRef] = dict(enumerate(papers[:MAX_CITATIONS], 1))
-        self.metrics = [
-            series for series in experiment.series if series.name != "loss" and series.points
-        ]
-        self.techniques = rng.sample(profile.techniques, 3)
-        self.gap = method.research_gaps[0] if method.research_gaps else profile.gaps[0]
-
-    # --- helpers ----------------------------------------------------------------------------
+        self.gap = method.research_gaps[0] if method.research_gaps else fallback_gap
 
     def cite(self, *keys: int) -> str:
         known = [f"[{key}]" for key in keys if key in self.cited]
         return f" {', '.join(known)}" if known else ""
+
+    def short(self, paper: PaperRef) -> str:
+        family = [author.split()[-1] for author in paper.authors]
+        if len(family) == 1:
+            return self.md(family[0])
+        if len(family) == 2:
+            return self.md(f"{family[0]} and {family[1]}")
+        return self.md(f"{family[0]} et al.")
+
+    def paper_sentence(self, key: int) -> str:
+        paper = self.cited[key]
+        analysis = self.analyses.get(paper.paper_id)
+        plural = len(paper.authors) > 1  # "Park et al. report", "Park reports"
+        who = f"{self.short(paper)} [{key}]"
+        if analysis is None:
+            return f"{who} {'study' if plural else 'studies'} {self.md(paper.title)}."
+        if key % 2:
+            text = analysis.results.rstrip(".")
+            match = re.match(r"reports?\s+", text, re.IGNORECASE)
+            rest = text[match.end() :] if match else _lower_first(text)
+            return f"{who} {'report' if plural else 'reports'} {self.md(rest)}."
+        text = _lower_first(analysis.method.rstrip("."))
+        return f"{who} {'use' if plural else 'uses'} {self.md(text)}."
+
+    def references(self) -> str:
+        if not self.cited:
+            return "No papers are cited."
+        lines = []
+        for key, paper in self.cited.items():
+            authors = self.md(short_author_list(paper.authors).rstrip("."))
+            venue = self.md(paper.venue or "Preprint")
+            entry = f"- [{key}] {authors}. {self.md(paper.title)}. {venue}, {paper.year}."
+            if paper.arxiv_id:
+                entry += f" arXiv:{self.md(paper.arxiv_id)}."
+            lines.append(entry)
+        return "\n".join(lines)
+
+
+class _Draft(_Papers):
+    """The pieces of a paper on the recommended method and its experiment."""
+
+    def __init__(
+        self,
+        rng: random.Random,
+        profile: Profile,
+        topic: str,
+        literature: LiteratureOutput,
+        method: MethodOutput,
+        experiment: ExperimentOutput,
+    ) -> None:
+        super().__init__(rng, topic, literature, method, profile.gaps[0])
+        self.profile = profile
+        self.experiment = experiment
+        self.dataset = dataset_spec(profile, experiment.provenance.dataset)
+        self.model = str(experiment.config.get("model") or profile.model_class)
+        self.metrics = [
+            series for series in experiment.series if series.name != "loss" and series.points
+        ]
+        self.techniques = rng.sample(profile.techniques, 3)
+
+    # --- helpers ----------------------------------------------------------------------------
 
     def label(self, name: str) -> str:
         spec = metric_spec(self.profile, name)
@@ -179,14 +281,6 @@ class _Draft:
     def setting(self, key: str, default: str) -> str:
         value = self.experiment.config.get(key)
         return self.md(str(value)) if value is not None else default
-
-    def short(self, paper: PaperRef) -> str:
-        family = [author.split()[-1] for author in paper.authors]
-        if len(family) == 1:
-            return self.md(family[0])
-        if len(family) == 2:
-            return self.md(f"{family[0]} and {family[1]}")
-        return self.md(f"{family[0]} et al.")
 
     # --- sections ---------------------------------------------------------------------------
 
@@ -278,21 +372,6 @@ class _Draft:
             sentences = [theme, *(self.paper_sentence(key) for key in group), closing]
             paragraphs.append(" ".join(sentences))
         return paragraphs
-
-    def paper_sentence(self, key: int) -> str:
-        paper = self.cited[key]
-        analysis = self.analyses.get(paper.paper_id)
-        plural = len(paper.authors) > 1  # "Park et al. report", "Park reports"
-        who = f"{self.short(paper)} [{key}]"
-        if analysis is None:
-            return f"{who} {'study' if plural else 'studies'} {self.md(paper.title)}."
-        if key % 2:
-            text = analysis.results.rstrip(".")
-            match = re.match(r"reports?\s+", text, re.IGNORECASE)
-            rest = text[match.end() :] if match else _lower_first(text)
-            return f"{who} {'report' if plural else 'reports'} {self.md(rest)}."
-        text = _lower_first(analysis.method.rstrip("."))
-        return f"{who} {'use' if plural else 'uses'} {self.md(text)}."
 
     def method_section(self) -> list[str]:
         proposal = self.recommended
@@ -437,15 +516,112 @@ class _Draft:
             f"highlighted: {self.md(_lower_first(self.gap))}."
         )
 
-    def references(self) -> str:
-        if not self.cited:
-            return "No papers are cited."
-        lines = []
-        for key, paper in self.cited.items():
-            authors = self.md(short_author_list(paper.authors).rstrip("."))
-            venue = self.md(paper.venue or "Preprint")
-            entry = f"- [{key}] {authors}. {self.md(paper.title)}. {venue}, {paper.year}."
-            if paper.arxiv_id:
-                entry += f" arXiv:{self.md(paper.arxiv_id)}."
-            lines.append(entry)
-        return "\n".join(lines)
+
+class _Review(_Papers):
+    """A review of the papers the literature stage kept, ending in the study the method stage
+    proposes: planned work, with no data or results of its own."""
+
+    def __init__(
+        self,
+        rng: random.Random,
+        topic: str,
+        literature: LiteratureOutput,
+        method: MethodOutput,
+    ) -> None:
+        super().__init__(rng, topic, literature, method, "the evidence is still thin")
+
+    def abstract(self, *, plain: bool = False) -> str:
+        quote = (lambda text: text) if plain else self.md
+        return (
+            f"This review brings together {len(self.cited)} studies on {self.subject} that a "
+            "structured literature search kept for full reading, and asks what they show and "
+            "where they fall short. The studies differ in their settings, data and measures, "
+            f"and {quote(_lower_first(self.gap.rstrip('.')))} remains open. We propose "
+            f"{quote(lower_phrase(self.method.recommended_option))}, a study to address it, and "
+            "describe its design, its data and its risks. The study has not been carried out: "
+            "this draft reports no results of its own."
+        )
+
+    def sections(self) -> dict[str, list[str]]:
+        return {
+            "Abstract": [self.abstract()],
+            "Introduction": self.introduction(),
+            "Review of the Evidence": self.evidence(),
+            "Research Gaps": self.gaps(),
+            "Proposed Study": self.proposed_study(),
+            "Conclusion": [self.conclusion()],
+            "References": [self.references()],
+        }
+
+    def introduction(self) -> list[str]:
+        motivation = (
+            f"{sentence(self.subject)} has drawn steady research attention{self.cite(1)}, yet "
+            f"studies differ in their settings, data and measures{self.cite(2)}, which makes "
+            f"their findings hard to compare{self.cite(3)}."
+        )
+        scope = (
+            f"This draft reviews the {len(self.cited)} studies the literature stage kept for "
+            f"full reading, out of {len(self.literature.papers)} it screened, sets out the gaps "
+            "they leave, and proposes the study the method stage recommended. It reports no "
+            "data of its own."
+        )
+        return [motivation, scope]
+
+    def evidence(self) -> list[str]:
+        keys = list(self.cited)
+        if not keys:
+            return [
+                "The literature stage kept no papers for full reading, so there is no evidence "
+                "to review yet."
+            ]
+        # Odd keys say what a paper reports, even ones how it was done (paper_sentence).
+        groups = [keys[index::2] for index in range(2)]
+        themes = ("**What the studies report.**", "**How the studies were done.**")
+        closings = (
+            "These results point in a similar direction but rest on different settings.",
+            "Their designs differ enough that comparing them directly needs care.",
+        )
+        paragraphs = []
+        for theme, closing, group in zip(themes, closings, groups, strict=True):
+            if group:
+                sentences = [theme, *(self.paper_sentence(key) for key in group), closing]
+                paragraphs.append(" ".join(sentences))
+        return paragraphs
+
+    def gaps(self) -> list[str]:
+        listed = "\n".join(f"- {self.md(gap)}" for gap in self.method.research_gaps)
+        return [
+            "The review leaves these questions open:",
+            listed,
+            f"The first of them, {self.md(_lower_first(self.gap.rstrip('.')))}, shapes the "
+            "study proposed next.",
+        ]
+
+    def proposed_study(self) -> list[str]:
+        proposal = self.recommended
+        rationale = _SUPPORTED_BY.sub("", proposal.rationale)
+        design = (
+            f"We propose {self.md(lower_phrase(proposal.name))}. {self.md(rationale)} "
+            f"{self.md(self.method.implementation_focus)}"
+        )
+        data = (
+            f"The study would draw on {self.md(', '.join(self.method.datasets))} and judge its "
+            f"outcome by {self.md(', '.join(self.method.evaluation_metrics))}."
+        )
+        benefit = proposal.expected_benefit.rstrip(".")
+        risk = proposal.risk.rstrip(".")
+        expectations = (
+            f"The method stage expects {self.md(_lower_first(benefit))}. The main risk it "
+            f"names is that {self.md(_lower_first(risk))}. The study has not been run, so "
+            "these are expectations, not findings."
+        )
+        return [design, data, expectations]
+
+    def conclusion(self) -> str:
+        return (
+            f"The studies reviewed here show what is known about {self.subject} and where the "
+            "evidence is thin. The proposed study, "
+            f"{self.md(lower_phrase(self.method.recommended_option))}, targets "
+            f"{self.md(_lower_first(self.gap.rstrip('.')))}. Carrying it out and reporting its "
+            "data openly is the next step."
+        )

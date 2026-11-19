@@ -123,8 +123,17 @@ async def test_run_options_default_and_are_validated(client: httpx.AsyncClient) 
         "experiment",
         "writing",
     ]
+    # Research without code: literature, method and a draft.
+    no_code = {"stages": ["literature", "method", "writing"]}
+    created = await client.post(
+        url, json={"topic": "Feedback in L2 writing", "config": no_code}, headers=as_user("bob")
+    )
+    assert created.status_code == 201, created.text
+    assert created.json()["config"]["stages"] == ["literature", "method", "writing"]
     for config in (
         {"stages": ["method"]},  # must start with literature
+        {"stages": ["literature", "writing"]},  # a draft needs the method
+        {"stages": ["literature", "method", "coding", "writing"]},  # code needs its experiment
         {"year_from": 2026, "year_to": 2020},
         {"sources": ["arxiv", "arxiv"]},
         {"max_papers": 500},

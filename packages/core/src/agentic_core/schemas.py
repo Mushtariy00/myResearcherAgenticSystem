@@ -22,7 +22,7 @@ from pydantic import (
     model_validator,
 )
 
-from agentic_core.stages import STAGE_ORDER, Stage
+from agentic_core.stages import NO_CODE_STAGES, STAGE_ORDER, Stage
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 Sha256Hex = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
@@ -66,7 +66,8 @@ class RunConfig(StrictModel):
         default_factory=lambda: ["arxiv", "semantic_scholar", "openalex"], min_length=1
     )
     max_papers: int = Field(default=20, ge=5, le=50)
-    # The run stops after the last listed stage; always a prefix of STAGE_ORDER.
+    # The run stops after the last listed stage: a prefix of STAGE_ORDER, or NO_CODE_STAGES for
+    # research without code (no coding or experiment, and the draft proposes a study instead).
     stages: list[Stage] = Field(default_factory=lambda: list(STAGE_ORDER), min_length=1)
     dataset: str | None = "nyu2"
 
@@ -76,8 +77,12 @@ class RunConfig(StrictModel):
             raise ValueError("year_from must not be after year_to")
         if len(set(self.sources)) != len(self.sources):
             raise ValueError("sources must be unique")
-        if tuple(self.stages) != STAGE_ORDER[: len(self.stages)]:
-            raise ValueError("stages must start with literature and follow the pipeline order")
+        stages = tuple(self.stages)
+        if stages != STAGE_ORDER[: len(stages)] and stages != NO_CODE_STAGES:
+            raise ValueError(
+                "stages must start with literature and follow the pipeline order, or be "
+                "literature, method and writing"
+            )
         return self
 
 

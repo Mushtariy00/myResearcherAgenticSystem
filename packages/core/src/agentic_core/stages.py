@@ -13,6 +13,11 @@ class Stage(StrEnum):
 
 STAGE_ORDER: tuple[Stage, ...] = tuple(Stage)
 
+# Research that needs no code or GPU (languages, education, history): the literature, a method
+# for a study the researchers carry out themselves, then a draft, a review that ends in that
+# proposed study. The one stage list besides a prefix of STAGE_ORDER that a run may have.
+NO_CODE_STAGES: tuple[Stage, ...] = (Stage.LITERATURE, Stage.METHOD, Stage.WRITING)
+
 # Generated code is always reviewed by a human, even when a project enables auto-approve.
 NEVER_AUTO_APPROVE: frozenset[Stage] = frozenset({Stage.CODING})
 

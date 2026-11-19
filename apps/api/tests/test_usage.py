@@ -272,6 +272,11 @@ async def test_an_estimate_shows_its_assumptions(client: httpx.AsyncClient, db: 
         for s in short["assumptions"]["steps"]
     ] == [("researcher", 2, 2, 4), ("screener", 5, 10, 15), ("analyst", 15, 23, 50)]
 
+    # Research without code: no coding or experiment, still a draft.
+    no_code = await _estimate(client, config={"stages": ["literature", "method", "writing"]})
+    roles = [step["role"] for step in no_code["assumptions"]["steps"]]
+    assert "coder" not in roles and roles[-2:] == ["methodologist", "writer"]
+
 
 async def test_each_role_is_priced_with_its_own_chain(
     client: httpx.AsyncClient, db: Factory

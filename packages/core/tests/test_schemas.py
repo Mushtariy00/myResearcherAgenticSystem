@@ -13,7 +13,7 @@ from agentic_core.schemas import (
     WritingOutput,
     validate_stage_output,
 )
-from agentic_core.stages import Stage
+from agentic_core.stages import NO_CODE_STAGES, Stage
 
 PAPER = {
     "paper_id": "arxiv:2406.09414",
@@ -214,9 +214,15 @@ def test_run_config_defaults_and_rules() -> None:
         Stage.LITERATURE,
         Stage.METHOD,
     ]
+    # Research without code: no coding or experiment, and still a draft.
+    no_code = ["literature", "method", "writing"]
+    assert RunConfig.model_validate({"stages": no_code}).stages == list(NO_CODE_STAGES)
     for bad in (
         {"stages": ["method"]},  # must start with literature
         {"stages": ["literature", "coding"]},  # no gaps
+        {"stages": ["literature", "writing"]},  # a draft needs the method
+        {"stages": ["literature", "method", "coding", "writing"]},  # code needs its experiment
+        {"stages": ["literature", "method", "writing", "coding"]},
         {"stages": []},
         {"year_from": 2025, "year_to": 2020},
         {"sources": ["arxiv", "arxiv"]},

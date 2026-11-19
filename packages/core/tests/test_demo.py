@@ -219,6 +219,35 @@ def test_draft_cites_included_papers_and_reports_the_final_metrics() -> None:
         assert writing.abstract in re.sub(r"\\(.)", r"\1", markdown)
 
 
+def test_a_run_without_code_gets_a_review_that_proposes_the_study() -> None:
+    for config, seed in product(CONFIGS, range(3)):
+        topic = TOPICS[seed]
+        literature, method = pipeline(topic, config, seed)[:2]
+        writing = demo.writing(topic, literature, method, None, seed)
+        data = writing.model_dump(mode="json")
+        assert validate_stage_output("writing", data).model_dump(mode="json") == data
+        markdown = writing.markdown
+        for heading in ("## 2. Review of the Evidence", "## 4. Proposed Study", "## References"):
+            assert heading in markdown
+        assert "Experiments" not in markdown and "| Metric |" not in markdown
+        keys = {citation.key for citation in writing.citations}
+        assert {int(key) for key in MARKER.findall(markdown)} == keys
+        included = {paper.paper_id for paper in literature.papers if paper.decision == "include"}
+        assert {citation.paper_id for citation in writing.citations} <= included
+        assert not HTML_TAG.search(markdown)
+        assert writing.abstract.endswith("this draft reports no results of its own.")
+        assert writing.abstract in re.sub(r"\\(.)", r"\1", markdown)
+        assert [section.name for section in writing.sections][3:5] == [
+            "Research Gaps",
+            "Proposed Study",
+        ]
+    # Deterministic, and the feedback shows as with the other outputs.
+    literature, method = pipeline(TOPICS[0], RunConfig(), 5)[:2]
+    again = demo.writing(TOPICS[0], literature, method, None, 5, "Shorter abstract")
+    assert again == demo.writing(TOPICS[0], literature, method, None, 5, "Shorter abstract")
+    assert "Shorter abstract" in again.review_focus
+
+
 @pytest.mark.parametrize("stage", STAGES)
 def test_feedback_is_visibly_reflected(stage: str) -> None:
     feedback = "Focus on papers from 2024 and explain the loss."
