@@ -60,7 +60,10 @@ STEPS: tuple[Step, ...] = (
     Step(Stage.CODING, "coder", 7_000, 3_500, (1, 3, 6)),
     # The harness owns training; one call summarizes the results.
     Step(Stage.EXPERIMENT, "analyst", 3_500, 700, (1, 1, 2)),
-    Step(Stage.WRITING, "writer", 12_000, 4_000, (2, 3, 5)),
+    # An outline, then 5 to 8 sections, one call each; any call may need one repair. The first
+    # real draft (free models) took 16 calls: 8 sections, 7 of them repaired, of about 8,000
+    # tokens in and 1,800 out each.
+    Step(Stage.WRITING, "writer", 8_000, 1_800, (6, 13, 18)),
 )
 
 

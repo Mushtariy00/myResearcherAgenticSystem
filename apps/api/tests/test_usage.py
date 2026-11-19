@@ -208,11 +208,11 @@ async def test_an_estimate_shows_its_assumptions(client: httpx.AsyncClient, db: 
     await seed_catalog(db)
     await client.put("/api/v1/admin/budgets/bob", json={"monthly_usd": "10"}, headers=ADMIN)
     estimate = await _estimate(client)
-    assert _range(estimate) == ("0.0752", "0.1478", "0.2843")
+    assert _range(estimate) == ("0.0892", "0.1967", "0.3405")
     assert (estimate["calls_low"], estimate["expected_calls"], estimate["calls_high"]) == (
-        15,
-        24,
-        47,
+        19,
+        34,
+        60,
     )
     assert (estimate["paid_possible"], estimate["paid_blocked_by"], estimate["capped_by"]) == (
         True,
@@ -276,6 +276,10 @@ async def test_an_estimate_shows_its_assumptions(client: httpx.AsyncClient, db: 
     no_code = await _estimate(client, config={"stages": ["literature", "method", "writing"]})
     roles = [step["role"] for step in no_code["assumptions"]["steps"]]
     assert "coder" not in roles and roles[-2:] == ["methodologist", "writer"]
+    # A draft is an outline and a call per section, each perhaps repaired: most of such a run.
+    writer = no_code["assumptions"]["steps"][-1]
+    assert (writer["calls_low"], writer["calls_expected"], writer["calls_high"]) == (6, 13, 18)
+    assert (no_code["calls_low"], no_code["expected_calls"], no_code["calls_high"]) == (17, 30, 52)
 
 
 async def test_each_role_is_priced_with_its_own_chain(
@@ -304,7 +308,7 @@ async def test_estimates_are_zero_when_paid_models_cannot_be_used(
     no_budget = await _estimate(client)
     assert (no_budget["paid_possible"], no_budget["paid_blocked_by"]) == (False, "budget")
     assert _range(no_budget) == ("0.0000", "0.0000", "0.0000")
-    assert no_budget["expected_calls"] == 24  # the calls still happen, on free models
+    assert no_budget["expected_calls"] == 34  # the calls still happen, on free models
 
     await client.put("/api/v1/admin/budgets/bob", json={"monthly_usd": "10"}, headers=ADMIN)
     free = await _estimate(client, llm_policy="free")
@@ -329,9 +333,9 @@ async def test_estimates_stop_at_the_run_cap_and_the_budget(
     await seed_catalog(db)
     await client.put("/api/v1/admin/budgets/bob", json={"monthly_usd": "10"}, headers=ADMIN)
     capped = await _estimate(client, budget_cap_usd="0.10")
-    assert (_range(capped), capped["capped_by"]) == (("0.0752", "0.1000", "0.1000"), "run_cap")
+    assert (_range(capped), capped["capped_by"]) == (("0.0892", "0.1000", "0.1000"), "run_cap")
     roomy = await _estimate(client, budget_cap_usd="5")
-    assert (_range(roomy), roomy["capped_by"]) == (("0.0752", "0.1478", "0.2843"), None)
+    assert (_range(roomy), roomy["capped_by"]) == (("0.0892", "0.1967", "0.3405"), None)
 
     await client.put("/api/v1/admin/budgets/bob", json={"monthly_usd": "0.05"}, headers=ADMIN)
     for cap in (None, "1"):
