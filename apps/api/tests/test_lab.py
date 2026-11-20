@@ -85,7 +85,7 @@ async def test_model_routing_shows_every_role_and_the_kill_switch(db: Factory) -
             4000,
             4000,
             16000,
-            4000,
+            4500,
         ]
         researcher = routing["roles"][0]
         assert researcher["paid"] == [

@@ -2,8 +2,9 @@
 
 Each step asks a fresh agent with its own GatewayLLM, so its calls get the step's semantic
 idempotency keys (``<key prefix>:call-<n>``) and an attempt that runs again replays them. An
-answer that is not what the step needs gets one repair request, as the plan step does; a second
-unusable answer fails the stage (``<stage>.invalid_output``).
+answer that is not what the step needs gets one repair request, as the plan step does, unless
+the request's fallback can use it as it stands; a second unusable answer fails the stage
+(``<stage>.invalid_output``).
 """
 
 import asyncio
@@ -66,6 +67,10 @@ class Request[T]:
     # is not a JSON object (a section of the draft) words them for its own form.
     repair: str = REPAIR_PROMPT
     cut_off: str = CUT_OFF
+    # Reads an answer that missed the form `parse` needs but is usable as it stands (a section
+    # without its marker lines). Never used on an answer that ran out of tokens: cut off, it
+    # could pass for a whole one.
+    fallback: Callable[[str], T] | None = None
 
 
 @dataclass(frozen=True)
@@ -104,6 +109,26 @@ def gateway_llms(gateway_url: str, gateway_token: str) -> LlmFactory:
         )
 
     return make
+
+
+def _ran_out(llm: GatewayLLM, request: Request[Any]) -> bool:
+    """Whether the last call used its whole output budget, or did not say how much it used."""
+    used = llm.calls[-1].get("completion_tokens") if llm.calls else None
+    return not isinstance(used, int) or used >= request.max_output_tokens
+
+
+def _read[T](request: Request[T], llm: GatewayLLM, answer: str) -> T:
+    """What `parse` reads from the answer, else what the request's fallback reads from a whole
+    one; raises parse's InvalidModelOutputError, which the repair request quotes, if neither."""
+    try:
+        return request.parse(answer)
+    except InvalidModelOutputError as error:
+        if request.fallback is None or _ran_out(llm, request):
+            raise
+        try:
+            return request.fallback(answer)
+        except InvalidModelOutputError:
+            raise error from None
 
 
 def fenced(label: str, text: str) -> str:
@@ -148,7 +173,7 @@ class StageAgents:
             raise StageFailedError("crewai.kickoff_returned_coroutine")
         answer = str(result.raw)
         try:
-            value = request.parse(answer)
+            value = _read(request, llm, answer)
         except InvalidModelOutputError as first_error:
             error = str(first_error)
             used = llm.calls[-1].get("completion_tokens") if llm.calls else None
@@ -166,7 +191,7 @@ class StageAgents:
                 ]
             )
             try:
-                value = request.parse(repaired)
+                value = _read(request, llm, repaired)
             except InvalidModelOutputError as exc:
                 raise StageFailedError(
                     f"{ctx.stage}.invalid_output: {request.role}: {exc}"

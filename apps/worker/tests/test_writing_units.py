@@ -9,7 +9,11 @@ from agentic_core.schemas import WritingSection
 from agentic_worker.llm_json import InvalidModelOutputError
 from agentic_worker.writing.draft import Cited, references, writing_output
 from agentic_worker.writing.outline import MAX_SECTIONS, Outline, parse_outline
-from agentic_worker.writing.sections import parse_section, previous_sections
+from agentic_worker.writing.sections import (
+    parse_section,
+    parse_unmarked_section,
+    previous_sections,
+)
 
 
 def test_markers_outside_the_list_are_removed_and_ranges_cite_every_paper() -> None:
@@ -87,6 +91,28 @@ def test_a_section_is_read_between_its_last_pair_of_marker_lines() -> None:
         parse_section("## Method\nText without markers.", "Method")
     with pytest.raises(InvalidModelOutputError, match="empty"):
         parse_section("--- BEGIN SECTION ---\n## Method\n--- END SECTION ---", "Method")
+
+
+def test_an_answer_that_only_lost_its_marker_lines_is_the_section() -> None:
+    name = "Review of the Evidence"
+    review = "### 3.1 Direct Feedback\nDirect feedback helps [2].\n\n### 3.2 Indirect\nLess so [1]."
+    assert parse_unmarked_section(review, name, 3) == review
+    headed = f"## 3. {name}\n{review}".replace("\n", "\r\n")
+    assert parse_unmarked_section(headed, name, 3) == review
+    intro = "Feedback matters [1].\n\n### 1.1 Aim\nWe review it."  # text before its subsection
+    assert parse_unmarked_section(intro, "Introduction", 1) == intro
+    for answer, why in (
+        (f"Okay, I'll write section 3.\n{review}", "reasoning"),
+        (f"Let me think about the evidence.\n\n{review}", "reasoning"),
+        (f"{review}\n\nNote: I cited two papers.", "notes"),
+        (f"{review}\n\nI hope this helps.", "notes"),
+        ("Direct feedback helps [2].", "subsection 3.1"),  # nothing shows it is the section
+        ("### 3.10 Other\nText.", "subsection 3.1"),
+        (f"--- BEGIN SECTION ---\n{review}", "not a pair"),  # cut off before its end marker
+        ("## 3. Review of the Evidence", "empty"),
+    ):
+        with pytest.raises(InvalidModelOutputError, match=why):
+            parse_unmarked_section(answer, name, 3)
 
 
 def test_previous_sections_are_found_by_their_name() -> None:

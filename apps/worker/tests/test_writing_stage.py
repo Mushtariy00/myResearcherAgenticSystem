@@ -303,6 +303,47 @@ async def test_a_section_without_its_marker_lines_gets_one_repair(db: Factory) -
     assert WritingOutput.model_validate(outcome.data).markdown == DRAFT
 
 
+def _experiments_without_markers(prompt: str) -> str:
+    """The Experiments section as free models answer through CrewAI: the section alone, without
+    its marker lines; the other sections, and repairs, as asked."""
+    answer = section_answer(prompt)
+    if "### 3.1" not in answer or "Your previous answer could not be used" in prompt:
+        return answer
+    return SECTION_TEXT["Experiments"]
+
+
+async def test_a_whole_section_without_its_marker_lines_needs_no_repair(db: Factory) -> None:
+    fake = gateway({"writing.section": _experiments_without_markers})
+    mw = harness(db, fake)
+    ctx = context("writing")
+    outcome = await mw.runner.run(ctx)
+    assert fake.keys("writing.section") == [
+        f"{ctx.stage_run_id}:writing:section:{n}:call-1" for n in (1, 2, 3)
+    ]
+    assert WritingOutput.model_validate(outcome.data).markdown == DRAFT
+
+
+async def test_a_section_without_markers_that_ran_out_of_room_is_asked_again(
+    db: Factory,
+) -> None:
+    """Cut off, an answer without its markers could pass for a whole section."""
+    fake = gateway({"writing.section": _experiments_without_markers})
+    fake.cut_off = lambda key: key.endswith(":writing:section:3:call-1")
+    mw = harness(db, fake)
+    ctx = context("writing")
+    outcome = await mw.runner.run(ctx)
+    assert fake.keys("writing.section")[2:] == [
+        f"{ctx.stage_run_id}:writing:section:3:call-1",
+        f"{ctx.stage_run_id}:writing:section:3:call-2",
+    ]
+    repair = fake.calls[-1].messages[-1]["content"]
+    assert repair.startswith(
+        "Your previous answer could not be used: it ran out of room (4500 tokens) before the "
+        "section was complete"
+    )
+    assert WritingOutput.model_validate(outcome.data).markdown == DRAFT
+
+
 async def test_a_revision_shows_the_previous_draft_and_every_comment(db: Factory) -> None:
     previous = (await harness(db).runner.run(context("writing"))).data
     comments = ("Shorten the introduction", "Cite AdaBins in the method")

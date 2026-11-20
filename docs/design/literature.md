@@ -209,6 +209,13 @@ models, or buy the one-time $10 that raises the cap to 1,000 a day.
     field says.
 - **Writing** (`writing@2`): an outline call, then one call per section (at most 8). Sections
   come back as Markdown between marker lines, not JSON, so LaTeX and line breaks survive.
+  - Through CrewAI, free models leave the markers out of most first answers (on 2026-11-20,
+    of every section). An answer that plainly is the whole section is used without them: no
+    reasoning before it or notes after it, its first numbered subsection (`### 3.1`) in it,
+    and its output budget not used up, since a cut-off answer could pass for a whole one.
+    Anything else gets the one repair.
+  - A section may write 4,500 tokens: a review's evidence section took 2,900, and the repair
+    that rewrote it with its markers was cut off at the earlier limit of 3,000.
 - **Research without code** (added 2026-11-20): a run's stages are a prefix of the pipeline,
   or literature, method and writing (`NO_CODE_STAGES`), for fields such as languages,
   education or history. The writer then reads only the review and the method; the draft is a

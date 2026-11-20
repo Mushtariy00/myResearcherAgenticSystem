@@ -33,7 +33,7 @@ MAX_OUTPUT_TOKENS: dict[RoutingRole, int] = {
     "analyst": 4000,
     "methodologist": 4000,
     "coder": 16000,
-    "writer": 4000,
+    "writer": 4500,
 }
 
 
