@@ -267,7 +267,7 @@
       "stageWaiting": "{stage} 단계 대기 중: {reason}",
       "llmCall": "LLM 호출 · {model} ({tier})",
       "attempt": "{attempt}번째 시도",
-      "degraded": "임시 결과(품질 저하)",
+      "degraded": "알려진 제한 사항 있음",
       "switchedToFree": "무료 모델로 전환됨",
       "replayed": "이미 비용을 낸 응답을 재사용함",
       "inStage": "{stage}: {line}",

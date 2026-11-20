@@ -267,7 +267,7 @@
       "stageWaiting": "{stage} is waiting: {reason}",
       "llmCall": "LLM call · {model} ({tier})",
       "attempt": "attempt {attempt}",
-      "degraded": "placeholder (degraded)",
+      "degraded": "with a known limitation",
       "switchedToFree": "switched to free models",
       "replayed": "reused a response already paid for",
       "inStage": "{stage}: {line}",
