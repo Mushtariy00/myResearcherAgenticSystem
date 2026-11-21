@@ -54,7 +54,9 @@ Settings come from the environment first, then from the repo's `.env`:
 - **Temporal's state.** The dev server keeps it in SQLite under `.data/temporal`, which is not
   backed up. A restore brings back Postgres and the files only. Runs that were active at backup
   time may no longer match Temporal's history, so check them after a restore (step 7 below). In
-  production Temporal runs on its own Postgres, which needs its own pgBackRest stanza.
+  production Temporal runs on its own Postgres, which needs its own pgBackRest stanza. The file
+  uses SQLite's write-ahead log, so to copy it by hand, stop the container and take
+  `temporal.db` with its `-wal` and `-shm` files.
 - **Valkey:** rate-limit buckets and SSE wake-ups, never the source of truth (ADR 0005). It comes
   back empty.
 - **Secrets:** `.env`, `infra/compose/.env`, the SOPS age key and the backup passwords stay out of

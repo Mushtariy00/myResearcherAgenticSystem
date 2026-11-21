@@ -54,7 +54,13 @@ services:
     <<: *defaults
     # Temporal CLI dev server (SQLite, includes the Web UI on :8233). Prod uses the server + Postgres.
     image: temporalio/temporal:1.9.1
-    command: ["server", "start-dev", "--ip", "0.0.0.0", "--db-filename", "/data/temporal.db"]
+    # SQLite's write-ahead log, synced at checkpoints only. By default every write waited for
+    # several disk syncs: on a dev disk at 138 ms a sync (WSL on a hard drive) each workflow-task
+    # reply took 1-1.6 s, and a third of the tasks were recorded as started but never reached the
+    # worker, so each cost a 10 s timeout. A power cut can lose the last moments of writes, never
+    # corrupt the file.
+    command: ["server", "start-dev", "--ip", "0.0.0.0", "--db-filename", "/data/temporal.db",
+              "--sqlite-pragma", "journal_mode=wal", "--sqlite-pragma", "synchronous=normal"]
     # The image runs as uid 1000; match the host user so it can write the bind-mounted state.
     user: "${ARP_UID:-1000}:${ARP_GID:-1000}"
     ports:
